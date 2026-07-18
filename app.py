@@ -92,6 +92,8 @@ if not st.session_state.tutorial_shown:
     show_tutorial()
 
 # ==========================================
+# 核心邏輯引擎
+# ==========================================
 def init_dbs():
     for db_name in ['ptcg_tw.db', 'ptcg_en.db']:
         try:
@@ -123,7 +125,6 @@ def get_card_data(card_key):
 
     alt_name = name.replace("Basic ", "").strip() if name.startswith("Basic ") else name
 
-    # 🛡️ 處理相對路徑與無效圖片
     def process_img_url(url):
         if url and is_valid_img(url):
             if not url.startswith('http'):
@@ -146,7 +147,6 @@ def get_card_data(card_key):
                     parts = bracket_content.split()
                     if len(parts) >= 2:
                         set_code, number = parts[0], parts[1]
-                        # 🛡️ 將 number=? 改為 LIKE 解決 064 vs G 064/071 的問題
                         c.execute("SELECT image_url FROM cards WHERE (name=? OR name=?) AND set_code LIKE ? AND number LIKE ? LIMIT 1", (name, alt_name, f"%{set_code}%", f"%{number}%"))
                         res = c.fetchone()
                         if res: 
@@ -165,7 +165,6 @@ def get_card_data(card_key):
                 img = process_img_url(res[0])
                 if img: return img
             
-            # 🛡️ 終極模糊搜救：拔掉所有奇怪括號
             clean_name = re.sub(r'[<>＜＞\[\]]', '', name).strip()
             fuzzy_name = clean_name.replace("'", "").replace("é", "e").split()[0]
             c.execute("SELECT image_url FROM cards WHERE name LIKE ? ORDER BY release_date DESC LIMIT 1", (f"%{fuzzy_name}%",))
@@ -290,7 +289,6 @@ def fetch_official_deck(deck_code):
             
             final_card_key = name + set_info
             
-            # 🚀 終極提速與防禦：優先提取 data-original 擊破 Lazy Loading！
             img_url = ""
             if img_tag:
                 src = img_tag.get('data-original') or img_tag.get('data-src') or img_tag.get('src', '')
@@ -403,6 +401,9 @@ with st.sidebar:
     tab_link, tab_import, tab_edit = st.tabs(["🔗 官方代碼", "📝 文字匯入", "🛠️ 編輯"])
     
     with tab_link:
+        # ✨ 新增連結 1：官方網站
+        st.markdown("👉 **[點我前往寶可夢台灣官網](https://asia.pokemon-card.com/tw/)**") 
+        
         st.markdown("<p style='font-size:13px; color:#aaa;'>💡 貼上官網牌組短網址或代碼，系統將即時解析。</p>", unsafe_allow_html=True)
         deck_code_input = st.text_input("牌組編碼", placeholder="例: uCRvSM-NdxUvZ-iWAqYI")
         if st.button("🌐 解析官方牌組", use_container_width=True):
@@ -419,6 +420,9 @@ with st.sidebar:
                 preview_readonly_dialog(st.session_state.deck_dict)
 
     with tab_import:
+        # ✨ 新增連結 2：Limitless
+        st.markdown("👉 **[點我前往 Limitless 抄牌網](https://limitlesstcg.com/decks)**")
+        
         deck_input = st.text_area("貼上 Limitless 牌組內容...", height=150)
         if st.button("📥 解析文字牌組", use_container_width=True):
             if deck_input.strip():
