@@ -6,20 +6,97 @@ import math
 import random
 import requests
 import time
+import os
 from bs4 import BeautifulSoup
 import streamlit.components.v1 as components
 
 # ==========================================
-# 0. 頁面初始設定
+# 0. 頁面初始設定與狀態
 # ==========================================
-st.set_page_config(layout="wide", page_title="PTCG 專業沙盤推演機 (蒙地卡羅版)")
+st.set_page_config(layout="wide", page_title="PTCG 專業沙盤推演機 (蒙地卡羅商業版)")
 DEFAULT_CARDBACK = "https://tcg.pokemon.com/assets/img/global/tcg-card-back-2x.jpg"
 
+if 'tutorial_shown' not in st.session_state:
+    st.session_state.tutorial_shown = False
+
 # ==========================================
-# 1. 介面縮放與極限排版 CSS
+# 1. 新手教學 Dialog (子資料夾與分頁升級版)
+# ==========================================
+@st.dialog("📖 PTCG 覆盤工具 (人人都能精準拿捏機率)", width="large")
+def tutorial_modal():
+    st.markdown("歡迎來到專為 PTCG 玩家打造的戰術沙盤！只要簡單三步驟，就能輕鬆推演你的致勝機率：")
+    
+    tab1, tab2, tab3 = st.tabs(["🛠️ 1. 編輯牌組", "⚔️ 2. 戰場操作", "🎲 3. 機率運算"])
+    
+    # 💡 智慧圖片載入：自動導向 tutor_pic 資料夾，並支援寬度約束
+    def safe_image(base_name, constrain=False):
+        file_path = None
+        for ext in ['.jpg', '.png', '.jpeg']:
+            temp_path = os.path.join("tutor_pic", base_name + ext)
+            if os.path.exists(temp_path):
+                file_path = temp_path; break
+                
+        if file_path:
+            if constrain:
+                # 💡 直式圖片極致瘦身：加大兩側空白，讓圖片縮得更精緻
+                col1, col2, col3 = st.columns([2, 1.2, 2])
+                with col2: st.image(file_path, use_container_width=True)
+            else:
+                st.image(file_path, use_container_width=True)
+        else:
+            st.info(f"🖼️ 圖片載入中... (請建立 `tutor_pic` 資料夾，並將截圖命名為 `{base_name}.jpg` 或 `.png` 放入其中)")
+
+    with tab1:
+        st.markdown("### 🛠️ 1. 編輯牌組 (所有戰術的起點)")
+        st.markdown("建立牌組有三種方式，任君挑選：")
+        
+        # 💡 水平切換導覽，消滅垂直滾動條
+        edit_mode = st.radio("請選擇建立方式：", ["A. 官方代碼匯入", "B. 文字匯入 (Limitless)", "C. 編輯功能 (自訂卡片)"], horizontal=True, label_visibility="collapsed")
+        st.markdown("<hr style='margin: 5px 0 15px 0;'>", unsafe_allow_html=True)
+
+        if edit_mode == "A. 官方代碼匯入":
+            st.markdown("**A. 官方代碼匯入**\n前往寶可夢官方網站構築牌組後，複製「牌組編碼」，即可一鍵匯入！")
+            c1, c2 = st.columns(2)
+            with c1: safe_image("tut_official_1")
+            with c2: safe_image("tut_official_2")
+        
+        elif edit_mode == "B. 文字匯入 (Limitless)":
+            st.markdown("**B. 文字匯入 (支援最夯的 Limitless)**\n在國際版抄牌網 Limitless 看到上位牌組？直接點擊 \"Copy to Clipboard\"，將文字貼上即可無縫解析！")
+            safe_image("tut_import")
+            
+        elif edit_mode == "C. 編輯功能 (自訂卡片)":
+            st.markdown("**C. 編輯功能 (彈性 UPUP)**\n不管你是想微調牌組，還是加入未發售的自創卡片，「編輯」區都能讓你自由增減，甚至強制綁定你的專屬 ID 建立自訂卡片！")
+            safe_image("tut_edit", constrain=True) # 💡 啟動直式圖片約束
+
+    with tab2:
+        st.markdown("### ⚔️ 2. 開局並編輯戰場")
+        st.markdown("牌組滿 60 張後，點擊左下角「鎖定牌組並開局」！系統會為你自動洗牌、抽出 7 張起始手牌與 6 張獎賞卡。\n\n接下來，你可以**「自由拖曳」**任何卡片，完美還原實體桌台的錯位疊放與操作手感！")
+        safe_image("tut_battle")
+
+    with tab3:
+        st.markdown("### 🎲 3. 支援複雜故事線、機率運算，讓你成為寶可夢大師！")
+        st.markdown("展開畫面上方的「進階情境」，這才是本系統的靈魂：\n設定你的**「直接解牌目標」**與**「延續解牌(連鎖抽牌或檢索)」**。系統會在 0.1 秒內進行 10,000 次蒙地卡羅真實推演，告訴你這波操作的最終成功率！")
+        safe_image("tut_prob")
+
+    st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
+    if st.button("我準備好了，開始組建牌組！", use_container_width=True, type="primary"):
+        st.session_state.tutorial_shown = True
+        st.rerun()
+
+# 首次載入自動彈出教學
+if not st.session_state.tutorial_shown:
+    tutorial_modal()
+    st.session_state.tutorial_shown = True
+
+# ==========================================
+# 2. 介面縮放與極限排版 CSS
 # ==========================================
 with st.sidebar:
-    st.markdown("### 👤 玩家資料庫綁定")
+    c1, c2 = st.columns([3, 1])
+    with c1: st.markdown("### 👤 玩家資料庫綁定")
+    with c2: 
+        if st.button("❓ 教學", use_container_width=True): tutorial_modal()
+        
     user_id = st.text_input("輸入您的玩家 ID (保留自訂卡牌)", value="guest")
     st.session_state.user_id = user_id.strip() or "guest"
     st.divider()
@@ -30,17 +107,41 @@ with st.sidebar:
 
 st.markdown(f"""
 <style>
-.block-container {{ padding-top: 1rem !important; padding-bottom: 0rem !important; padding-left: 1rem !important; padding-right: 1rem !important; max-width: 100% !important; zoom: {ui_scale / 100}; -moz-transform: scale({ui_scale / 100}); -moz-transform-origin: top center; }}
-header {{ visibility: hidden; }}
+/* 強制垂直滾動條，打破縮放發抖迴圈 */
+html, body {{ overflow-y: scroll !important; }}
+
+/* 戰場區塊安全距離 */
+.block-container {{ padding-top: 2rem !important; padding-bottom: 0rem !important; padding-left: 1rem !important; padding-right: 1rem !important; max-width: 100% !important; zoom: {ui_scale / 100}; -moz-transform: scale({ui_scale / 100}); -moz-transform-origin: top center; }}
 div[data-testid="stVerticalBlock"] {{ gap: 0.2rem !important; }}
 div[data-testid="stHorizontalBlock"] {{ gap: 0.5rem !important; }}
 .drop-zone-active {{ outline: 3px dashed #00E5FF !important; outline-offset: -3px; border-radius: 8px; background-color: rgba(0, 229, 255, 0.05); }}
 button[kind="secondary"] {{ padding: 0.2rem 0.5rem !important; min-height: 0 !important; }}
+
+/* 💡 終極幽靈穿透術：不改高度，保留原生 padding，讓 >> 按鈕完美水平對齊 */
+header[data-testid="stHeader"] {{ 
+    background-color: transparent !important; 
+    pointer-events: none !important; /* 讓整條 header 變成幽靈，點擊直接穿透到底下的進階情境 */
+}}
+/* 💡 精準喚醒：只把 header 裡面的「按鈕」(側邊欄展開 >) 救活 */
+header[data-testid="stHeader"] button {{ 
+    pointer-events: auto !important; 
+}}
+/* 💡 斬草除根：徹底殺死右上角所有的 Deploy 與 Menu 區塊 */
+[data-testid="stHeaderActionElements"], .stAppDeployButton, .stDeployButton {{ 
+    display: none !important; 
+}}
+
+@keyframes pulse-border {{
+    0% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7); }}
+    70% {{ box-shadow: 0 0 0 10px rgba(233, 30, 99, 0); }}
+    100% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }}
+}}
+.guide-pulse {{ text-align: center; padding: 10px; background-color: rgba(233, 30, 99, 0.15); border: 2px dashed #E91E63; border-radius: 8px; margin-bottom: 15px; animation: pulse-border 2s infinite; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 全局黑科技：JS 引擎
+# 3. 全局黑科技：JS 引擎
 # ==========================================
 components.html("""
 <script>
@@ -114,7 +215,7 @@ if (!doc.getElementById('custom-dnd')) {
 """, height=0, width=0)
 
 # ==========================================
-# 3. 狀態初始化與資料庫升級
+# 4. 狀態初始化與資料庫升級
 # ==========================================
 for key in ['cards_pool', 'history', 'scenarios', 'db_tw_count', 'db_en_count', 'db_custom_count']:
     if key not in st.session_state: st.session_state[key] = [] if key not in ['db_tw_count', 'db_en_count', 'db_custom_count'] else 0
@@ -201,8 +302,7 @@ def get_card_data(card_key, user_id):
     try:
         conn = sqlite3.connect('custom_cards.db'); c = conn.cursor()
         c.execute("SELECT image_url FROM cards WHERE user_id=? AND api_id=? LIMIT 1", (user_id, card_key))
-        res = c.fetchone()
-        conn.close()
+        res = c.fetchone(); conn.close()
         if res: return {"name": card_key, "img": process_img_url(res[0]) or DEFAULT_CARDBACK}
     except: pass
 
@@ -282,7 +382,7 @@ def get_all_card_names(user_id):
 
 
 # ==========================================
-# 4. 爬蟲與 💡 萬次蒙地卡羅檢索引擎
+# 5. 爬蟲與萬次蒙地卡羅檢索引擎
 # ==========================================
 def fetch_official_deck(deck_code):
     try:
@@ -331,7 +431,6 @@ def fetch_official_deck(deck_code):
         return new_deck, f"✅ 成功載入！共 {sum(info['qty'] for info in new_deck.values())} 張 (已同步至本地)。"
     except Exception as e: return None, f"❌ 發生錯誤: {str(e)}"
 
-# 💡 蒙地卡羅萬次推演引擎 (升級檢索能力)
 def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, is_dilute=False, hand_size=0, iterations=10000):
     if not deck_cards or draw1 <= 0 or not direct_dict: return 0.0
     
@@ -345,11 +444,9 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, is_dilute=False,
         deck = deck[draw1:]
         
         def check_success(current_hand):
-            # 取出目標缺口 (相容舊資料結構)
             missing = {k: v.get('qty', 1) if isinstance(v, dict) else v for k, v in direct_dict.items()}
             search_cards = []
             
-            # 1. 直接用手上有的卡抵銷缺口
             for card in current_hand:
                 if card in missing and missing[card] > 0:
                     missing[card] -= 1
@@ -358,7 +455,6 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, is_dilute=False,
                     
             if sum(missing.values()) <= 0: return True
             
-            # 2. 如果目標沒達成，但手上有「檢索卡」，啟動抵銷
             for s_card in search_cards:
                 s_data = chain_dict[s_card]
                 can_fetch = s_data.get('search_targets', [])
@@ -368,22 +464,16 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, is_dilute=False,
                     best_target = None
                     for t in can_fetch:
                         if t in missing and missing[t] > 0:
-                            best_target = t
-                            break
+                            best_target = t; break
                     if best_target:
-                        missing[best_target] -= 1
-                        fetch_qty -= 1
-                    else:
-                        break # 這張檢索牌找不到能對應的缺口了
-                        
+                        missing[best_target] -= 1; fetch_qty -= 1
+                    else: break 
             return sum(missing.values()) <= 0
 
-        # 第一波驗證
         if check_success(hand):
             success_count += 1
             continue
             
-        # 若失敗，啟動智能連鎖抽牌
         max_supporter = 0
         total_item = 0
         for card in hand:
@@ -400,9 +490,7 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, is_dilute=False,
                 deck.extend(['blank'] * hand_size)
                 random.shuffle(deck)
             hand.extend(deck[:total_draw])
-            # 抽完第二波再次驗證
-            if check_success(hand):
-                success_count += 1
+            if check_success(hand): success_count += 1
 
     return (success_count / iterations) * 100.0
 
@@ -411,7 +499,7 @@ def group_cards(cards_list):
     for c in cards_list: groups.setdefault(c['name'], []).append(c)
     return groups
 
-# --- 視覺排版函數 (修復阿嬤的內褲文字) ---
+# --- 視覺排版函數 ---
 def render_single_card(name, img_url, uid=None):
     uid_attr = f'data-uid="{uid}" draggable="true"' if uid is not None else ''
     cursor = 'cursor: grab;' if uid is not None else 'cursor: pointer;'
@@ -475,7 +563,7 @@ def preview_readonly_dialog(deck_to_show):
             idx += 1
 
 # ==========================================
-# 5. 側邊欄介面設計
+# 6. 側邊欄介面設計 (動態引導)
 # ==========================================
 with st.sidebar:
     st.markdown("### 🗃️ 牌組管理中心")
@@ -483,15 +571,16 @@ with st.sidebar:
     c1, c2 = st.columns([2, 1.2])
     with c1: st.markdown(f"<div style='font-size:12px; color:#888; margin-top:5px;'>🌍 全域: {st.session_state.db_tw_count+st.session_state.db_en_count}<br>🔐 你的自訂: {st.session_state.db_custom_count}</div>", unsafe_allow_html=True)
     with c2:
-        # 💡 修復 2：只清除自定義卡片
-        if st.button("🗑️ 清空我的自定義卡片", help="清除所有您手動新增的未建檔卡片"):
+        if st.button("🗑️ 清空自訂", help="清除所有您手動新增的未建檔卡片"):
             try:
                 conn = sqlite3.connect('custom_cards.db'); c = conn.cursor()
-                c.execute("DROP TABLE IF EXISTS cards")
-                conn.commit(); conn.close()
+                c.execute("DROP TABLE IF EXISTS cards"); conn.commit(); conn.close()
             except: pass
             init_dbs(); get_card_data.clear(); st.rerun()
             
+    if not st.session_state.deck_dict:
+        st.markdown('<div class="guide-pulse"><span style="font-size: 16px; font-weight: bold; color: #FF4081;">👇 請從這裡開始建立您的牌組！</span></div>', unsafe_allow_html=True)
+
     tab_link, tab_import, tab_edit = st.tabs(["🔗 官方代碼", "📝 文字匯入", "🛠️ 編輯"])
     
     with tab_link:
@@ -573,10 +662,8 @@ with st.sidebar:
                                 except: time.sleep(1.0)
                         except: pass 
 
-                    if img_url: 
-                        save_card_to_db(c_key, img_url, lang="en")
-                    else: 
-                        img_url = get_card_data(c_key, st.session_state.user_id)['img']
+                    if img_url: save_card_to_db(c_key, img_url, lang="en")
+                    else: img_url = get_card_data(c_key, st.session_state.user_id)['img']
                         
                     final_deck_dict[c_key] = {'qty': qty, 'img': img_url}
                     
@@ -652,10 +739,10 @@ with st.sidebar:
             st.rerun()
 
 # ==========================================
-# 6. 主視圖 (戰場) 
+# 7. 主視圖 (戰場) 
 # ==========================================
 if not st.session_state.cards_pool:
-    st.info("👈 請在左側載入或編輯牌組，完成 60 張後點擊「鎖定牌組並開局」。\n\n💡 提示：善用左上方的「縮放控制」將戰場完美塞入一頁！")
+    pass # 留白，讓使用者專心看左側引導
 else:
     deck_cards = [c for c in st.session_state.cards_pool if c['zone'] == 'deck']
     hand_cards = [c for c in st.session_state.cards_pool if c['zone'] == 'hand']
@@ -683,9 +770,7 @@ else:
             if st.session_state.direct_targets:
                 st.markdown("<div style='margin-top:5px;'></div>", unsafe_allow_html=True)
                 for t_name, t_data in list(st.session_state.direct_targets.items()):
-                    # 相容舊版資料結構
                     if isinstance(t_data, int): t_data = {'qty': t_data}
-                    
                     t_img = next((c['img'] for c in st.session_state.cards_pool if c['name'] == t_name), DEFAULT_CARDBACK)
                     tc1, tc2 = st.columns([1, 1.5])
                     with tc1: render_single_card(t_name, t_img)
@@ -744,7 +829,6 @@ else:
         with c3:
             st.markdown("**📊 分析結果 (1萬次模擬)**")
             if st.session_state.direct_targets:
-                # 💡 修復 1：修正參數呼叫 is_dilute=is_dilute
                 with st.spinner("正在進行 10,000 次實盤對局推演..."):
                     final_prob = run_monte_carlo(deck_cards, st.session_state.direct_targets, st.session_state.chain_targets, draw1, is_dilute=is_dilute, hand_size=h_size, iterations=10000)
                 
