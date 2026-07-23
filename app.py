@@ -271,7 +271,6 @@ def save_card_to_db(card_key, img_url, lang="tw"):
         parts = bracket_match.group(2).strip().split()
         if len(parts) >= 2: 
             set_code = parts[0]
-            # 💡 修正 BUG：保留如 "H 244/193" 的完整編號，不被空白截斷
             number = " ".join(parts[1:]) 
         elif len(parts) == 1: 
             number = parts[0] 
@@ -386,7 +385,7 @@ def get_all_card_names(user_id):
 
 
 # ==========================================
-# 5. 爬蟲與萬次蒙地卡羅檢索引擎 (Cache-First + Cloudflare Worker 升級版)
+# 5. 爬蟲與萬次蒙地卡羅檢索引擎 (Cache-First + Cloudflare Worker 全域隱形升級版)
 # ==========================================
 def fetch_official_deck(deck_code):
     try:
@@ -455,7 +454,10 @@ def fetch_official_deck(deck_code):
                     api_fetch_count += 1
                     if a_tag and a_tag.get('href'):
                         try:
-                            detail_resp = requests.get("https://asia.pokemon-card.com" + a_tag['href'], headers=headers, timeout=5)
+                            # 💡 升級：連抓單卡圖片的請求，也全面交給 Cloudflare Worker 代理！
+                            worker_detail_url = f"https://ptcgmaster.loganlai0422.workers.dev/?path={a_tag['href']}"
+                            detail_resp = requests.get(worker_detail_url, headers=headers, timeout=10)
+                            
                             all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
                             for src in all_imgs:
                                 src_l = src.lower()
