@@ -7,6 +7,7 @@ import random
 import requests
 import time
 import os
+import base64
 from bs4 import BeautifulSoup
 import streamlit.components.v1 as components
 
@@ -14,13 +15,26 @@ import streamlit.components.v1 as components
 # 0. 頁面初始設定與狀態
 # ==========================================
 st.set_page_config(layout="wide", page_title="PTCG 專業沙盤推演機 (蒙地卡羅商業版)")
-DEFAULT_CARDBACK = "https://tcg.pokemon.com/assets/img/global/tcg-card-back-2x.jpg"
+DEFAULT_CARDBACK = "default_back" 
 
 if 'tutorial_shown' not in st.session_state:
     st.session_state.tutorial_shown = False
+if 'card_back_color' not in st.session_state:
+    st.session_state.card_back_color = "#2B579A" 
+
+# 動態生成合法、安全、可調色的 SVG 向量卡背
+def get_cardback_img():
+    color = st.session_state.card_back_color
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88">
+                <rect width="100%" height="100%" fill="{color}" rx="4" />
+                <rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" />
+                <circle cx="50%" cy="50%" r="15" fill="rgba(255,255,255,0.1)" />
+              </svg>'''
+    b64 = base64.b64encode(svg.encode('utf-8')).decode('utf-8')
+    return f"data:image/svg+xml;base64,{b64}"
 
 # ==========================================
-# 1. 新手教學 Dialog (子資料夾與分頁升級版)
+# 1. 新手教學 Dialog
 # ==========================================
 @st.dialog("📖 PTCG 覆盤工具 (人人都能精準拿捏機率)", width="large")
 def tutorial_modal():
@@ -28,7 +42,6 @@ def tutorial_modal():
     
     tab1, tab2, tab3 = st.tabs(["🛠️ 1. 編輯牌組", "⚔️ 2. 戰場操作", "🎲 3. 機率運算"])
     
-    # 💡 智慧圖片載入：自動導向 tutor_pic 資料夾，並支援寬度約束
     def safe_image(base_name, constrain=False):
         file_path = None
         for ext in ['.jpg', '.png', '.jpeg']:
@@ -38,7 +51,6 @@ def tutorial_modal():
                 
         if file_path:
             if constrain:
-                # 💡 直式圖片極致瘦身：加大兩側空白，讓圖片縮得更精緻
                 col1, col2, col3 = st.columns([2, 1.2, 2])
                 with col2: st.image(file_path, use_container_width=True)
             else:
@@ -50,7 +62,6 @@ def tutorial_modal():
         st.markdown("### 🛠️ 1. 編輯牌組 (所有戰術的起點)")
         st.markdown("建立牌組有三種方式，任君挑選：")
         
-        # 💡 水平切換導覽，消滅垂直滾動條
         edit_mode = st.radio("請選擇建立方式：", ["A. 官方代碼匯入", "B. 文字匯入 (Limitless)", "C. 編輯功能 (自訂卡片)"], horizontal=True, label_visibility="collapsed")
         st.markdown("<hr style='margin: 5px 0 15px 0;'>", unsafe_allow_html=True)
 
@@ -66,7 +77,7 @@ def tutorial_modal():
             
         elif edit_mode == "C. 編輯功能 (自訂卡片)":
             st.markdown("**C. 編輯功能 (彈性 UPUP)**\n不管你是想微調牌組，還是加入未發售的自創卡片，「編輯」區都能讓你自由增減，甚至強制綁定你的專屬 ID 建立自訂卡片！")
-            safe_image("tut_edit", constrain=True) # 💡 啟動直式圖片約束
+            safe_image("tut_edit", constrain=True)
 
     with tab2:
         st.markdown("### ⚔️ 2. 開局並編輯戰場")
@@ -107,35 +118,16 @@ with st.sidebar:
 
 st.markdown(f"""
 <style>
-/* 強制垂直滾動條，打破縮放發抖迴圈 */
 html, body {{ overflow-y: scroll !important; }}
-
-/* 戰場區塊安全距離 */
 .block-container {{ padding-top: 2rem !important; padding-bottom: 0rem !important; padding-left: 1rem !important; padding-right: 1rem !important; max-width: 100% !important; zoom: {ui_scale / 100}; -moz-transform: scale({ui_scale / 100}); -moz-transform-origin: top center; }}
 div[data-testid="stVerticalBlock"] {{ gap: 0.2rem !important; }}
 div[data-testid="stHorizontalBlock"] {{ gap: 0.5rem !important; }}
 .drop-zone-active {{ outline: 3px dashed #00E5FF !important; outline-offset: -3px; border-radius: 8px; background-color: rgba(0, 229, 255, 0.05); }}
 button[kind="secondary"] {{ padding: 0.2rem 0.5rem !important; min-height: 0 !important; }}
-
-/* 💡 終極幽靈穿透術：不改高度，保留原生 padding，讓 >> 按鈕完美水平對齊 */
-header[data-testid="stHeader"] {{ 
-    background-color: transparent !important; 
-    pointer-events: none !important; /* 讓整條 header 變成幽靈，點擊直接穿透到底下的進階情境 */
-}}
-/* 💡 精準喚醒：只把 header 裡面的「按鈕」(側邊欄展開 >) 救活 */
-header[data-testid="stHeader"] button {{ 
-    pointer-events: auto !important; 
-}}
-/* 💡 斬草除根：徹底殺死右上角所有的 Deploy 與 Menu 區塊 */
-[data-testid="stHeaderActionElements"], .stAppDeployButton, .stDeployButton {{ 
-    display: none !important; 
-}}
-
-@keyframes pulse-border {{
-    0% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7); }}
-    70% {{ box-shadow: 0 0 0 10px rgba(233, 30, 99, 0); }}
-    100% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }}
-}}
+header[data-testid="stHeader"] {{ background-color: transparent !important; height: 0px !important; min-height: 0px !important; padding: 0px !important; pointer-events: none !important; }}
+header[data-testid="stHeader"] button {{ pointer-events: auto !important; }}
+[data-testid="stHeaderActionElements"], .stAppDeployButton, .stDeployButton {{ display: none !important; }}
+@keyframes pulse-border {{ 0% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7); }} 70% {{ box-shadow: 0 0 0 10px rgba(233, 30, 99, 0); }} 100% {{ box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }} }}
 .guide-pulse {{ text-align: center; padding: 10px; background-color: rgba(233, 30, 99, 0.15); border: 2px dashed #E91E63; border-radius: 8px; margin-bottom: 15px; animation: pulse-border 2s infinite; }}
 </style>
 """, unsafe_allow_html=True)
@@ -277,7 +269,12 @@ def save_card_to_db(card_key, img_url, lang="tw"):
     if bracket_match: 
         clean_name = bracket_match.group(1).strip()
         parts = bracket_match.group(2).strip().split()
-        if len(parts) >= 2: set_code, number = parts[0], parts[1]
+        if len(parts) >= 2: 
+            set_code = parts[0]
+            # 💡 修正 BUG：保留如 "H 244/193" 的完整編號，不被空白截斷
+            number = " ".join(parts[1:]) 
+        elif len(parts) == 1: 
+            number = parts[0] 
     try:
         conn = sqlite3.connect('ptcg_tw.db' if lang == "tw" else 'ptcg_en.db'); c = conn.cursor()
         c.execute("INSERT OR REPLACE INTO cards (api_id, name, set_code, number, image_url, release_date) VALUES (?, ?, ?, ?, ?, ?)", (card_key, clean_name, set_code, number, img_url, "2099/01/01")) 
@@ -306,6 +303,7 @@ def get_card_data(card_key, user_id):
         if res: return {"name": card_key, "img": process_img_url(res[0]) or DEFAULT_CARDBACK}
     except: pass
 
+    # 1. 嚴格完全匹配 (Exact Match)
     def search_exact(db_name):
         try:
             conn = sqlite3.connect(db_name); c = conn.cursor()
@@ -324,18 +322,24 @@ def get_card_data(card_key, user_id):
     if bracket_match: name = card_key.replace(f"[{bracket_content}]", "").strip()
     alt_name = name.replace("Basic ", "").strip() if name.startswith("Basic ") else name
 
+    # 2. 精準分析與模糊降級 (Smart Fuzzy Match)
     def search_fuzzy(db_name):
         try:
             conn = sqlite3.connect(db_name); c = conn.cursor()
             if bracket_content:
+                c.execute("SELECT image_url FROM cards WHERE (name=? OR name=?) AND (set_code || ' ' || number = ? OR api_id = ?) LIMIT 1", 
+                          (name, alt_name, bracket_content, card_key))
+                res = c.fetchone()
+                if res: return process_img_url(res[0])
+                
                 parts = bracket_content.split()
                 if len(parts) >= 2:
-                    c.execute("SELECT image_url FROM cards WHERE (name=? OR name=?) AND set_code LIKE ? AND number LIKE ? LIMIT 1", (name, alt_name, f"%{parts[0]}%", f"%{parts[1]}%"))
+                    target_tail = parts[-1] 
+                    c.execute("SELECT image_url FROM cards WHERE (name=? OR name=?) AND set_code LIKE ? AND number LIKE ? LIMIT 1", 
+                              (name, alt_name, f"%{parts[0]}%", f"%{target_tail}%"))
                     res = c.fetchone()
                     if res: return process_img_url(res[0])
-                    c.execute("SELECT image_url FROM cards WHERE (name=? OR name=?) AND api_id LIKE ? LIMIT 1", (name, alt_name, f"%{parts[1]}%"))
-                    res = c.fetchone()
-                    if res: return process_img_url(res[0])
+
             c.execute("SELECT image_url FROM cards WHERE name=? OR name=? ORDER BY release_date DESC LIMIT 1", (name, alt_name))
             res = c.fetchone()
             if res: return process_img_url(res[0])
@@ -382,17 +386,21 @@ def get_all_card_names(user_id):
 
 
 # ==========================================
-# 5. 爬蟲與萬次蒙地卡羅檢索引擎
+# 5. 爬蟲與萬次蒙地卡羅檢索引擎 (Cache-First + Cloudflare Worker 升級版)
 # ==========================================
 def fetch_official_deck(deck_code):
     try:
         code = re.search(r'([a-zA-Z0-9]{6}-[a-zA-Z0-9]{6}-[a-zA-Z0-9]{6})', deck_code)
         if not code: return None, "❌ 無效的牌組代碼格式。"
         
-        my_bar = st.progress(0, text="🚀 正在連線解析官方牌組 (100% 網路直抓)...")
+        my_bar = st.progress(0, text="🚀 正在透過 Cloudflare 邊緣節點取得官方牌組清單...")
         headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(f"https://asia.pokemon-card.com/tw/deck-build/recipe/{code.group(1)}/", headers=headers, timeout=10)
-        if response.status_code != 200: my_bar.empty(); return None, "❌ 無法連線至官方網站。"
+        
+        # 💡 Step 1: 透過 Cloudflare Worker 邊緣代理抓取，100% 隱藏本機 IP 防 Ban
+        worker_url = f"https://ptcgmaster.loganlai0422.workers.dev/?code={code.group(1)}"
+        response = requests.get(worker_url, headers=headers, timeout=15)
+        
+        if response.status_code != 200: my_bar.empty(); return None, "❌ 無法連線至官方網站或 Worker 發生錯誤。"
             
         soup = BeautifulSoup(response.text, 'html.parser')
         new_deck = {}
@@ -400,6 +408,11 @@ def fetch_official_deck(deck_code):
         if not card_items: my_bar.empty(); return None, "⚠️ 抓取成功但沒有找到卡片。"
              
         total = len(card_items)
+        
+        # 快取效能監控計數器
+        cache_hit_count = 0
+        api_fetch_count = 0
+        
         for i, item in enumerate(card_items):
             name_tag = item.find('p', class_='cardName')
             qty_tag = item.find('div', class_='cardCount')
@@ -408,27 +421,65 @@ def fetch_official_deck(deck_code):
                 try: qty = int(re.sub(r'\D', '', qty_tag.text)) if re.sub(r'\D', '', qty_tag.text) else 1
                 except: qty = 1 
                 
-                my_bar.progress(30 + int(70 * i / total), text=f"📥 正在配對精準卡圖...")
-                img_url = ""
                 a_tag = name_tag.find('a')
+                unique_id = ""
                 if a_tag and a_tag.get('href'):
-                    try:
-                        detail_resp = requests.get("https://asia.pokemon-card.com" + a_tag['href'], headers=headers, timeout=5)
-                        all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
-                        for src in all_imgs:
-                            src_l = src.lower()
-                            if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
-                                img_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
-                                save_card_to_db(name, img_url, lang="tw"); break
-                    except: pass
+                    href = a_tag.get('href', '')
+                    parts = [p for p in href.split('/') if p]
+                    if parts: unique_id = parts[-1]
+
+                card_key = f"{name} [{unique_id}]" if unique_id else name
+
+                my_bar.progress(30 + int(70 * i / total), text=f"🔍 解析卡片: {card_key}...")
                 
-                if not img_url: img_url = get_card_data(name, st.session_state.user_id)['img']
-                new_deck[name] = {'qty': new_deck.get(name, {}).get('qty', 0) + qty, 'img': img_url}
+                img_url = None
+                for db in ['custom_cards.db', 'ptcg_tw.db', 'ptcg_en.db']:
+                    try:
+                        conn = sqlite3.connect(db); c = conn.cursor()
+                        if db == 'custom_cards.db':
+                            c.execute("SELECT image_url FROM cards WHERE user_id=? AND api_id=?", (st.session_state.user_id, card_key))
+                        else:
+                            c.execute("SELECT image_url FROM cards WHERE api_id=?", (card_key,))
+                        res = c.fetchone(); conn.close()
+                        if res and res[0] and is_valid_img(res[0]):
+                            img_url = res[0]
+                            if not img_url.startswith('http'): img_url = "https://asia.pokemon-card.com" + img_url
+                            break
+                    except: pass
+
+                if img_url:
+                    # ⚡ 快取命中：極速讀取
+                    cache_hit_count += 1
+                else:
+                    # 🐢 快取未命中：觸發官網下載建檔
+                    api_fetch_count += 1
+                    if a_tag and a_tag.get('href'):
+                        try:
+                            detail_resp = requests.get("https://asia.pokemon-card.com" + a_tag['href'], headers=headers, timeout=5)
+                            all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
+                            for src in all_imgs:
+                                src_l = src.lower()
+                                if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
+                                    scraped_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
+                                    save_card_to_db(card_key, scraped_url, lang="tw")
+                                    img_url = scraped_url
+                                    break
+                        except: pass
+                    
+                    if not img_url: 
+                        img_url = get_card_data(card_key, st.session_state.user_id)['img']
+                
+                new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url}
         
         my_bar.empty()
         if sum(info['qty'] for info in new_deck.values()) == 0: return None, "⚠️ 抓取失敗。"
         get_card_data.clear()
-        return new_deck, f"✅ 成功載入！共 {sum(info['qty'] for info in new_deck.values())} 張 (已同步至本地)。"
+        
+        # 組合華麗的監控統計訊息
+        total_cards = sum(info['qty'] for info in new_deck.values())
+        success_msg = f"✅ 成功載入！共 {total_cards} 張。\n\n⚡ 從資料庫秒抓: **{cache_hit_count}** 種 | 🐢 官網下載建檔: **{api_fetch_count}** 種"
+        
+        return new_deck, success_msg
     except Exception as e: return None, f"❌ 發生錯誤: {str(e)}"
 
 def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, is_dilute=False, hand_size=0, iterations=10000):
@@ -501,25 +552,26 @@ def group_cards(cards_list):
 
 # --- 視覺排版函數 ---
 def render_single_card(name, img_url, uid=None):
+    display_img = get_cardback_img() if img_url == DEFAULT_CARDBACK else img_url
     uid_attr = f'data-uid="{uid}" draggable="true"' if uid is not None else ''
     cursor = 'cursor: grab;' if uid is not None else 'cursor: pointer;'
-    brightness = 'filter: brightness(0.4);' if img_url == DEFAULT_CARDBACK else ''
-    name_overlay = f'<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; color: #00E5FF; text-shadow: 2px 2px 4px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-weight: bold; font-size: 13px; line-height: 1.2; z-index: 5; text-align: center; word-wrap: break-word; pointer-events: none;">{name}</div>' if img_url == DEFAULT_CARDBACK else ""
+    
+    name_overlay = f'<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; color: #FFF; text-shadow: 1px 1px 2px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-weight: bold; font-size: 13px; line-height: 1.2; z-index: 5; text-align: center; word-wrap: break-word; pointer-events: none;">{name}</div>' if img_url == DEFAULT_CARDBACK else ""
 
     html = '<div style="position: relative; width: 100%; max-width: 150px; margin: 0 auto 10px auto; aspect-ratio: 63/88;">'
-    html += f'<img src="{img_url}" class="ptcg-card" {uid_attr} style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 5px; transition: transform 0.1s; {cursor} {brightness}" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
+    html += f'<img src="{display_img}" class="ptcg-card" {uid_attr} style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 5px; transition: transform 0.1s; {cursor}" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
     html += name_overlay
     html += '</div>'
     st.markdown(html, unsafe_allow_html=True)
 
 def render_badge_card(name, img_url, count, uid=None):
+    display_img = get_cardback_img() if img_url == DEFAULT_CARDBACK else img_url
     uid_attr = f'data-uid="{uid}" draggable="true"' if uid is not None else ''
     cursor = 'cursor: grab;' if uid is not None else 'cursor: pointer;'
-    brightness = 'filter: brightness(0.4);' if img_url == DEFAULT_CARDBACK else ''
-    name_overlay = f'<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; color: #00E5FF; text-shadow: 2px 2px 4px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-weight: bold; font-size: 13px; line-height: 1.2; z-index: 5; text-align: center; word-wrap: break-word; pointer-events: none;">{name}</div>' if img_url == DEFAULT_CARDBACK else ""
+    name_overlay = f'<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; color: #FFF; text-shadow: 1px 1px 2px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-weight: bold; font-size: 13px; line-height: 1.2; z-index: 5; text-align: center; word-wrap: break-word; pointer-events: none;">{name}</div>' if img_url == DEFAULT_CARDBACK else ""
 
     html = '<div style="position: relative; width: 100%; max-width: 150px; margin: 0 auto 10px auto; aspect-ratio: 63/88;">'
-    html += f'<img src="{img_url}" class="ptcg-card" {uid_attr} style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 5px; transition: transform 0.1s; {cursor} {brightness}" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
+    html += f'<img src="{display_img}" class="ptcg-card" {uid_attr} style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; border-radius: 5px; transition: transform 0.1s; {cursor}" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
     html += name_overlay
     if count > 1: html += f'<div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background-color: #E91E63; color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 12px; z-index: 10; border: 1px solid #0E1117; pointer-events: none;">x{count}</div>'
     html += '</div>'
@@ -535,18 +587,18 @@ def render_offset_stacked(name, img_url, group):
     for i, c in enumerate(group):
         c_name = c.get('name', name)
         c_img = c.get('img', img_url)
+        display_img = get_cardback_img() if c_img == DEFAULT_CARDBACK else c_img
         uid = c.get('uid', None)
         offset_y = i * 15; offset_x = i * 5
         is_top = (i == count - 1)
         uid_attr = f'data-uid="{uid}" draggable="true"' if is_top and uid is not None else ''
         cursor = 'cursor: grab;' if is_top and uid is not None else ''
         shadow = 'box-shadow: 2px 2px 5px rgba(0,0,0,0.5);' if i > 0 else ''
-        brightness = 'filter: brightness(0.4);' if c_img == DEFAULT_CARDBACK else ''
         
-        html += f'<img src="{c_img}" class="ptcg-card" {uid_attr} style="position: absolute; top: {offset_y}px; left: {offset_x}px; width: calc(100% - {(count-1)*5}px); height: 100%; object-fit: contain; border-radius: 5px; z-index: {i}; {shadow} {cursor} {brightness} transition: transform 0.1s;" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
+        html += f'<img src="{display_img}" class="ptcg-card" {uid_attr} style="position: absolute; top: {offset_y}px; left: {offset_x}px; width: calc(100% - {(count-1)*5}px); height: 100%; object-fit: contain; border-radius: 5px; z-index: {i}; {shadow} {cursor} transition: transform 0.1s;" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
         
         if c_img == DEFAULT_CARDBACK and is_top:
-            html += f'<div style="position: absolute; top: calc(50% + {offset_y}px); left: calc(50% + {offset_x - ((count-1)*2.5)}px); transform: translate(-50%, -50%); width: 90%; color: #00E5FF; text-shadow: 2px 2px 4px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-weight: bold; font-size: 13px; line-height: 1.2; z-index: {i+1}; text-align: center; word-wrap: break-word; pointer-events: none;">{c_name}</div>'
+            html += f'<div style="position: absolute; top: calc(50% + {offset_y}px); left: calc(50% + {offset_x - ((count-1)*2.5)}px); transform: translate(-50%, -50%); width: 90%; color: #FFF; text-shadow: 1px 1px 2px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; font-weight: bold; font-size: 13px; line-height: 1.2; z-index: {i+1}; text-align: center; word-wrap: break-word; pointer-events: none;">{c_name}</div>'
     html += '</div>'
     st.markdown(html, unsafe_allow_html=True)
 
@@ -563,7 +615,7 @@ def preview_readonly_dialog(deck_to_show):
             idx += 1
 
 # ==========================================
-# 6. 側邊欄介面設計 (動態引導)
+# 6. 側邊欄介面設計
 # ==========================================
 with st.sidebar:
     st.markdown("### 🗃️ 牌組管理中心")
@@ -615,7 +667,7 @@ with st.sidebar:
                         final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
                         temp_deck[final_card_key] = {'qty': temp_deck.get(final_card_key, {}).get('qty', 0) + qty, 'search_name': search_name, 'target_set': target_set, 'target_number': target_number}
                 
-                my_bar = st.progress(0, text="🚀 正在為英文卡片抓取圖片 (100% 網路直抓中)...")
+                my_bar = st.progress(0, text="🚀 正在啟動 Cache-First 解析引擎...")
                 keys_list = list(temp_deck.keys())
                 total_cards = len(keys_list)
                 final_deck_dict = {}
@@ -625,45 +677,49 @@ with st.sidebar:
                     my_bar.progress((i) / total_cards if total_cards > 0 else 1.0, text=f"正在處理 ({i+1}/{total_cards}): {c_key}")
                     data = temp_deck[c_key]
                     search_name = data['search_name']; target_set = data['target_set']; target_number = data['target_number']; qty = data['qty']
-                    img_url = None
-
-                    if target_set and target_number:
-                        try:
-                            ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
-                            if ll_resp.status_code == 200:
-                                ll_soup = BeautifulSoup(ll_resp.text, 'html.parser')
-                                ll_img = ll_soup.select_one('.card-image-wrapper img') or ll_soup.select_one('.card-img img') or ll_soup.select_one('div.card img')
-                                if ll_img and ll_img.get('src'): img_url = ll_img['src']
-                                if not img_url:
-                                    for img in ll_soup.find_all('img'):
-                                        if target_set.lower() in img.get('src', '').lower() and target_number.lower() in img.get('src', '').lower():
-                                            img_url = img['src']; break
-                        except: pass
                     
-                    if not img_url:
-                        try:
-                            safe_search = search_name.replace('"', '').strip()
-                            if "Energy" in safe_search and safe_search.startswith("Basic "): safe_search = safe_search.replace("Basic ", "").strip()
-                            query = f'name:"{safe_search}"'
-                            if target_number: query += f' number:"{target_number}"'
-                                
-                            for _ in range(3):
-                                time.sleep(0.5) 
-                                try:
-                                    resp = requests.get("https://api.pokemontcg.io/v2/cards", params={"q": query, "orderBy": "-set.releaseDate"}, headers=headers, timeout=10)
-                                    if resp.status_code == 200:
-                                        api_data = resp.json()
-                                        if api_data and api_data.get('data'):
-                                            for card in api_data['data']:
-                                                if str(card.get('number', '')) == target_number:
-                                                    img_url = card['images']['large']; break
-                                            if not img_url: img_url = api_data['data'][0]['images']['large']
-                                        break
-                                except: time.sleep(1.0)
-                        except: pass 
+                    db_data = get_card_data(c_key, st.session_state.user_id)
+                    if db_data and db_data['img'] != DEFAULT_CARDBACK:
+                        img_url = db_data['img']
+                    else:
+                        img_url = None
+                        if target_set and target_number:
+                            try:
+                                ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
+                                if ll_resp.status_code == 200:
+                                    ll_soup = BeautifulSoup(ll_resp.text, 'html.parser')
+                                    ll_img = ll_soup.select_one('.card-image-wrapper img') or ll_soup.select_one('.card-img img') or ll_soup.select_one('div.card img')
+                                    if ll_img and ll_img.get('src'): img_url = ll_img['src']
+                                    if not img_url:
+                                        for img in ll_soup.find_all('img'):
+                                            if target_set.lower() in img.get('src', '').lower() and target_number.lower() in img.get('src', '').lower():
+                                                img_url = img['src']; break
+                            except: pass
+                        
+                        if not img_url:
+                            try:
+                                safe_search = search_name.replace('"', '').strip()
+                                if "Energy" in safe_search and safe_search.startswith("Basic "): safe_search = safe_search.replace("Basic ", "").strip()
+                                query = f'name:"{safe_search}"'
+                                if target_number: query += f' number:"{target_number}"'
+                                    
+                                for _ in range(3):
+                                    time.sleep(0.5) 
+                                    try:
+                                        resp = requests.get("https://api.pokemontcg.io/v2/cards", params={"q": query, "orderBy": "-set.releaseDate"}, headers=headers, timeout=10)
+                                        if resp.status_code == 200:
+                                            api_data = resp.json()
+                                            if api_data and api_data.get('data'):
+                                                for card in api_data['data']:
+                                                    if str(card.get('number', '')) == target_number:
+                                                        img_url = card['images']['large']; break
+                                                if not img_url: img_url = api_data['data'][0]['images']['large']
+                                            break
+                                    except: time.sleep(1.0)
+                            except: pass 
 
-                    if img_url: save_card_to_db(c_key, img_url, lang="en")
-                    else: img_url = get_card_data(c_key, st.session_state.user_id)['img']
+                        if img_url: save_card_to_db(c_key, img_url, lang="en")
+                        else: img_url = DEFAULT_CARDBACK
                         
                     final_deck_dict[c_key] = {'qty': qty, 'img': img_url}
                     
@@ -742,7 +798,7 @@ with st.sidebar:
 # 7. 主視圖 (戰場) 
 # ==========================================
 if not st.session_state.cards_pool:
-    pass # 留白，讓使用者專心看左側引導
+    pass 
 else:
     deck_cards = [c for c in st.session_state.cards_pool if c['zone'] == 'deck']
     hand_cards = [c for c in st.session_state.cards_pool if c['zone'] == 'hand']
@@ -979,10 +1035,27 @@ else:
 
     with col_r:
         st.markdown(f"**🗃️ 牌庫 ({len(deck_cards)}) - 支援拖入**")
-        d_col1, d_col2, d_col3 = st.columns([1, 2, 1])
+        d_col1, d_col2, d_col3 = st.columns([0.5, 3.5, 1]) 
         with d_col2: 
             st.markdown('<div id="marker-deck" data-zone="deck" style="display:none;"></div>', unsafe_allow_html=True)
-            st.image(DEFAULT_CARDBACK, use_container_width=True)
+            st.image(get_cardback_img(), use_container_width=True) 
+        with d_col3:
+            with st.popover("🎨\n換背", use_container_width=True):
+                st.markdown("<div style='font-size:12px; color:#aaa; margin-bottom:5px;'>基礎色系 (Free)</div>", unsafe_allow_html=True)
+                
+                c_opts = {"🔵 湛藍": "#2B579A", "🔴 赤紅": "#D32F2F", "🟢 翠綠": "#388E3C", "🟡 閃黃": "#FBC02D", "🟣 幻紫": "#7B1FA2", "⚫ 漆黑": "#212121"}
+                b1, b2 = st.columns(2)
+                for i, (k, v) in enumerate(c_opts.items()):
+                    target_col = b1 if i % 2 == 0 else b2
+                    if target_col.button(k, use_container_width=True, key=f"color_{i}"):
+                        st.session_state.card_back_color = v
+                        st.rerun()
+                        
+                st.markdown("<hr style='margin:10px 0;'><div style='font-size:12px; color:#FBC02D; margin-bottom:5px;'>✨ 進階調色 (未來 Pro 專屬)</div>", unsafe_allow_html=True)
+                new_color = st.color_picker("自訂 HEX", value=st.session_state.card_back_color, label_visibility="collapsed")
+                if new_color != st.session_state.card_back_color:
+                    st.session_state.card_back_color = new_color
+                    st.rerun()
             
         if st.button("🎴 抽牌", use_container_width=True):
             if deck_cards: save_state(); deck_cards[0]['zone'] = 'hand'; st.rerun()
