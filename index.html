@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PTCG 專業沙盤推演機 (Web 商業版)</title>
+    <title>PTCG 小章魚 - 覆盤最佳工具</title>
+
+    <!-- 🌟 社群分享預覽優化 (LINE / FB / Discord / Threads) -->
+    <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析、Limitless 英文牌組匯入與萬次蒙地卡羅手牌率精確推演。">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ptcg-octoplus.com/">
+    <meta property="og:title" content="PTCG 小章魚 - 覆盤最佳工具">
+    <meta property="og:description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析與萬次蒙地卡羅手牌率精確推演。">
+    <meta property="og:image" content="https://asia.pokemon-card.com/tw/assets/images/card-back.png">
+
+    <!-- Supabase JS 套件 (認證用) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
@@ -191,6 +203,12 @@
             flex-direction: column;
         }
         .tut-img { max-width: 100%; max-height: 48vh; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto 15px auto; border-radius: 8px; border: 1px solid #444; background-color: #0D1117; }
+        
+        .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #30363D; margin-top: 10px; }
+        .login-btn-google { background: #FFFFFF; color: #000000; }
+        .login-btn-google:hover { background: #E6E6E6; }
+        .login-btn-apple { background: #000000; color: #FFFFFF; border-color: #444; }
+        .login-btn-apple:hover { background: #1A1A1A; }
     </style>
 </head>
 <body>
@@ -201,6 +219,25 @@
         </symbol>
     </svg>
 
+    <!-- 🔒 未登入強迫登入護城河 Modal -->
+    <div id="gate-overlay" class="modal-overlay" style="display: flex; z-index: 15000; backdrop-filter: blur(8px);">
+        <div class="modal-card" style="width: 380px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
+            <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
+            <p style="color: #AAA; font-size: 13px; margin-bottom: 20px;">覆盤最佳工具 - 請先登入以解鎖專業功能</p>
+            
+            <button class="login-btn login-btn-google" onclick="loginWithProvider('google')">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                使用 Google 快速登入
+            </button>
+            
+            <button class="login-btn login-btn-apple" onclick="loginWithProvider('apple')">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.16-1.9-14.49-6.08-3.32-2.62-7.23-7.22-11.73-13.8-6.93-10.1-12.28-21.46-16.06-34.08-3.78-12.61-5.67-24.32-5.67-35.13 0-14.02 3.42-25.68 10.26-34.98 6.84-9.3 15.35-14.03 25.52-14.2 4.6 0 9.77 1.22 15.5 3.66 5.73 2.44 9.94 3.66 12.63 3.66 2.39 0 6.64-1.28 12.74-3.84 6.1-2.57 11.25-3.74 15.45-3.52 11.51.65 20.6 4.95 27.27 12.89-10.23 6.18-15.22 14.88-14.97 26.1.26 8.86 3.73 16.27 10.42 22.23 6.69 5.96 14.61 9.29 23.77 9.99-2.2 6.53-5.06 13.11-8.58 19.74zM119.22 31.84c0-6.98 2.51-13.73 7.53-20.25 5.02-6.52 11.39-10.68 19.11-12.48.33 1.13.49 2.12.49 2.97 0 6.87-2.58 13.72-7.75 20.55-5.17 6.83-11.62 10.95-19.38 12.36-.18-.85-.27-1.9-.27-3.15z"/></svg>
+                使用 Apple 帳號登入
+            </button>
+            <p style="font-size: 11px; color: #666; margin-top: 15px;">登入即代表您同意服務條款與隱私政策</p>
+        </div>
+    </div>
+
     <!-- 左側欄 -->
     <div id="sidebar-wrapper">
         <div id="sidebar">
@@ -208,7 +245,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:5px;">
                         <span style="font-size:12px; color:#888;">ID:</span>
-                        <input type="text" id="user-id-input" value="Player1" style="width:80px; padding:4px; font-size:12px; text-align:center;">
+                        <input type="text" id="user-id-input" value="Player1" readonly style="width:110px; padding:4px; font-size:12px; text-align:center; background:#161B22;">
                     </div>
                     <button class="btn-secondary" id="tut-btn" style="width:auto; padding:4px 8px; font-size:11px;" onclick="openTutorial()">❓ 教學</button>
                 </div>
@@ -415,8 +452,10 @@
     <div id="auth-overlay" class="modal-overlay">
         <div class="modal-card" style="width:400px; height:auto; text-align:center;">
             <h2 style="color:#FFF; margin-bottom:15px;" id="modal-auth-title">解鎖專業沙盤功能</h2>
-            <button class="btn btn-trial" style="font-size:16px;" id="btn-activate-trial" onclick="activateTrial()">🎁 啟用 7 天免費試用</button>
-            <button class="btn btn-sub" style="font-size:16px; margin-top:10px;" id="btn-subscribe-pro" onclick="subscribePro()">🌟 升級正式會員 (NT$ 120/月)</button>
+            <div style="margin-bottom: 15px;">
+                <input type="text" id="promo-code-input" placeholder="輸入封測邀請碼 (如 OCTOPLUS60)" style="text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 8px;">
+                <button class="btn" style="background: #00E5FF; color: #000; font-weight: bold;" onclick="redeemPromoCode()">🎁 兌換 Pro 邀請碼</button>
+            </div>
             <button class="btn btn-secondary" style="margin-top:10px;" id="btn-close-auth" onclick="document.getElementById('auth-overlay').style.display='none'">關閉</button>
         </div>
     </div>
@@ -454,7 +493,7 @@
         </div>
     </div>
 
-    <!-- 新手教學 Modal (全語系支援) -->
+    <!-- 新手教學 Modal -->
     <div id="tutorial-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
         <div class="modal-card tutorial-card" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -518,13 +557,14 @@
     </div>
 
     <script>
-        let API_BASE = "http://127.0.0.1:8000";
-        if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-            API_BASE = window.location.origin;
-        }
+        const API_BASE = "https://ptcg-octoplus-api.onrender.com";
+        const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI2MjM2MTMsImV4cCI6MjAzODE5OTYxM30.sb_anon_key_placeholder";
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentUserToken = null;
 
         let currentLang = localStorage.getItem('app_lang') || 'zh';
-        let authToken = ""; 
         let deckDict = {}; 
         let gameCards = []; 
         let lastSimResult = null;
@@ -541,6 +581,64 @@
 
         let historyStates = [];
         let historyPtr = -1;
+
+        // Supabase Auth 驗證與護城河控制
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                handleSession(session);
+            }
+        });
+
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                handleSession(session);
+            } else {
+                document.getElementById('gate-overlay').style.display = 'flex';
+            }
+        });
+
+        function handleSession(session) {
+            currentUserToken = session.access_token;
+            document.getElementById('gate-overlay').style.display = 'none';
+            document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
+            document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
+            document.getElementById('auth-status-bar').style.background = "rgba(35, 134, 54, 0.2)";
+            document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
+        }
+
+        async function loginWithProvider(provider) {
+            await supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: { redirectTo: window.location.origin }
+            });
+        }
+
+        async function redeemPromoCode() {
+            const code = document.getElementById('promo-code-input').value.trim();
+            if (!code) return alert("請輸入邀請碼");
+            if (!currentUserToken) return alert("請先登入帳號");
+
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/redeem_code`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${currentUserToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code: code })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    alert(data.detail);
+                    document.getElementById('auth-overlay').style.display = 'none';
+                } else {
+                    alert(data.detail || "兌換失敗");
+                }
+            } catch (e) {
+                alert("連線發生錯誤");
+            }
+        }
 
         // i18n 完整多語系字典
         const translations = {
@@ -596,8 +694,6 @@
                 btnUndo: "↩ 上一步",
                 btnRedo: "下一步 ↪",
                 modalAuthTitle: "解鎖專業沙盤功能",
-                btnActivateTrial: "🎁 啟用 7 天免費試用",
-                btnSubscribePro: "🌟 升級正式會員 (NT$ 120/月)",
                 btnCloseAuth: "關閉",
                 modalShareTitle: "📤 分享對局",
                 modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！",
@@ -675,8 +771,6 @@
                 btnUndo: "↩ Undo",
                 btnRedo: "Redo ↪",
                 modalAuthTitle: "Unlock Sandbox Pro",
-                btnActivateTrial: "🎁 7-Day Free Trial",
-                btnSubscribePro: "🌟 Upgrade to Pro ($3.99/mo)",
                 btnCloseAuth: "Close",
                 modalShareTitle: "📤 Share Game State",
                 modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!",
@@ -704,7 +798,6 @@
             }
         };
 
-        // 徹底修復：安全更新 element innerText / innerHTML 避免腳本中斷
         function setTxt(id, val, isHTML=false) {
             let el = document.getElementById(id);
             if(el) {
@@ -720,7 +813,7 @@
             let t = translations[lang];
 
             setTxt('tut-btn', t.tutBtn);
-            setTxt('txt-status', t.statusNotLogin);
+            if (!currentUserToken) setTxt('txt-status', t.statusNotLogin);
             setTxt('btn-unlock', t.btnUnlock);
             setTxt('tab-btn-link', t.tabLink);
             setTxt('tab-btn-text', t.tabText);
@@ -747,7 +840,6 @@
             setTxt('txt-disclaimer', t.disclaimer, true);
             setTxt('lbl-zoom', t.lblZoom);
             
-            // 修正蒙地卡羅標題與展開按鈕
             setTxt('summary-prob-title', t.summaryProbTitle);
             setTxt('txt-toggle-badge', t.txtToggleBadge);
             
@@ -781,8 +873,6 @@
             setTxt('btn-redo', t.btnRedo);
             
             setTxt('modal-auth-title', t.modalAuthTitle);
-            setTxt('btn-activate-trial', t.btnActivateTrial);
-            setTxt('btn-subscribe-pro', t.btnSubscribePro);
             setTxt('btn-close-auth', t.btnCloseAuth);
             
             setTxt('modal-share-title', t.modalShareTitle);
@@ -844,7 +934,7 @@
                 })
                 .catch(e => {
                     let el = document.getElementById('marquee-text');
-                    el.innerHTML="💡 歡迎使用 PTCG 專業沙盤推演機！";
+                    el.innerHTML="💡 歡迎使用 PTCG 小章魚覆盤推演機！";
                     el.style.animationName = 'marquee-anim';
                     el.style.animationDuration = '15s';
                     el.style.animationTimingFunction = 'linear';
@@ -852,7 +942,6 @@
                 });
             
             renderBenchSlots();
-            fetchDecksFromDB();
             checkBlink();
             
             let urlParams = new URLSearchParams(window.location.search);
@@ -913,9 +1002,6 @@
             }
         }
 
-        function activateTrial() { authToken = "Bearer trial"; document.getElementById('auth-status-bar').innerHTML = `<span style="color:#00E5FF; font-weight:bold;">🟢 7天試用期</span>`; document.getElementById('auth-overlay').style.display='none'; }
-        function subscribePro() { authToken = "Bearer sub"; document.getElementById('auth-status-bar').innerHTML = `<span style="color:#FFD700; font-weight:bold;">🌟 Pro 會員</span>`; document.getElementById('auth-overlay').style.display='none'; }
-
         function showProgress(id) { document.getElementById('prog-'+id).style.display = 'block'; document.getElementById('bar-'+id).style.width = '70%'; }
         function hideProgress(id) { document.getElementById('bar-'+id).style.width = '100%'; setTimeout(() => { document.getElementById('prog-'+id).style.display = 'none'; document.getElementById('bar-'+id).style.width = '0%'; }, 400); }
 
@@ -957,7 +1043,7 @@
                 if(d.success){ deckDict=d.deck; updateDeckUI(); } 
                 else { alert(d.detail || (currentLang === 'zh' ? "解析失敗。" : "Parse failed.")); }
             })
-            .catch(e => { alert(currentLang === 'zh' ? "連線失敗。請確認 Python 伺服器正在執行。" : "Connection failed. Please ensure Python server is running."); })
+            .catch(e => { alert(currentLang === 'zh' ? "連線失敗。請確認 Python 伺服器正在執行。" : "Connection failed."); })
             .finally(() => hideProgress('link'));
         }
         function parseText() {
@@ -968,7 +1054,7 @@
                 if(d.success){ deckDict=d.deck; updateDeckUI(); document.getElementById('deck-text').value=""; } 
                 else { alert(d.detail || (currentLang === 'zh' ? "解析失敗。" : "Parse failed.")); }
             })
-            .catch(e => { alert(currentLang === 'zh' ? "連線失敗或發生錯誤。請確認 Python 伺服器正在執行。" : "Connection failed or error occurred."); })
+            .catch(e => { alert(currentLang === 'zh' ? "連線失敗或發生錯誤。" : "Connection failed."); })
             .finally(() => { hideProgress('text'); document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; });
         }
         function addCustomCard() {
@@ -984,7 +1070,7 @@
             searchTimeout = setTimeout(() => {
                 fetch(`${API_BASE}/api/v1/search_db?q=${val}`).then(r=>r.json()).then(d=>{
                     let resBox = document.getElementById('search-results'); resBox.innerHTML = "";
-                    if(d.results.length > 0) {
+                    if(d.results && d.results.length > 0) {
                         d.results.forEach(c => {
                             let div = document.createElement('div'); div.className = 'search-result-item';
                             div.innerHTML = `<img src="${c.img}"> <span style="font-size:13px;">${c.name}</span>`;
@@ -999,35 +1085,6 @@
                     } else { resBox.style.display = 'none'; }
                 });
             }, 300);
-        }
-
-        function fetchDecksFromDB() {
-            let uid = document.getElementById('user-id-input').value || "guest";
-            fetch(`${API_BASE}/api/v1/get_decks?user_id=${uid}`).then(r=>r.json()).then(d=>{
-                let sel = document.getElementById('saved-decks-select');
-                sel.innerHTML = `<option value="">${translations[currentLang].optLoadCloud}</option>`;
-                window.cloudDecks = d.decks;
-                d.decks.forEach((dk, i) => sel.innerHTML += `<option value="${i}">${dk.deck_name}</option>`);
-            });
-        }
-        function saveDeckToDB() {
-            if(getDeckTotal() === 0) return alert(currentLang === 'zh' ? "牌組為空，無法紀錄！" : "Deck is empty!");
-            let defaultName = currentLang === 'zh' ? "我的牌組" : "My Deck";
-            let promptMsg = currentLang === 'zh' ? "請為這套牌組命名：" : "Name this deck:";
-            let name = prompt(promptMsg, defaultName);
-            if(!name) return;
-            let uid = document.getElementById('user-id-input').value || "guest";
-            fetch(`${API_BASE}/api/v1/save_deck`, {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({user_id: uid, deck_name: name, deck_data: JSON.stringify(deckDict)})
-            }).then(() => { 
-                alert(currentLang === 'zh' ? "✅ 儲存成功！已綁定至此 ID。" : "✅ Saved successfully!"); 
-                fetchDecksFromDB(); 
-            });
-        }
-        function loadDeckFromDB(idx) {
-            if(idx === "") return;
-            if(window.cloudDecks && window.cloudDecks[idx]) { deckDict = window.cloudDecks[idx].deck_data; updateDeckUI(); }
         }
 
         function changeCardBack(color) {
@@ -1278,14 +1335,14 @@
                     document.getElementById('share-modal').style.display = 'flex';
                 }
             })
-            .catch(e => alert(currentLang === 'zh' ? "分享失敗，請確認後端服務連線。" : "Share failed. Check server connection."));
+            .catch(e => alert(currentLang === 'zh' ? "分享失敗，請確認後端服務連線。" : "Share failed."));
         }
 
         function copyShareCode() {
             let input = document.getElementById('share-code-display');
             input.select();
             navigator.clipboard.writeText(input.value).then(() => {
-                let msg = currentLang === 'zh' ? "📋 短代碼已複製！朋友在任何電腦輸入即可載入戰局。" : "📋 Code copied! Paste on any device to restore.";
+                let msg = currentLang === 'zh' ? "📋 短代碼已複製！朋友在任何電腦輸入即可載入戰局。" : "📋 Code copied!";
                 alert(msg);
                 document.getElementById('share-modal').style.display = 'none';
             });
@@ -1327,11 +1384,11 @@
                         
                         updateDeckUI(); 
                         saveState(); renderBoard();
-                        let successMsg = currentLang === 'zh' ? `✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})` : `✅ Match and deck loaded! (Code: ${code.toUpperCase()})`;
+                        let successMsg = currentLang === 'zh' ? `✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})` : `✅ Match loaded! (Code: ${code.toUpperCase()})`;
                         alert(successMsg);
                     } else { alert(d.detail || (currentLang === 'zh' ? "載入失敗。" : "Load failed.")); }
                 })
-                .catch(e => alert(currentLang === 'zh' ? "❌ 找不到該對局代碼，請確認後端服務狀態。" : "❌ Match code not found."));
+                .catch(e => alert(currentLang === 'zh' ? "❌ 找不到該對局代碼。" : "❌ Match code not found."));
         }
 
         function saveState() {
@@ -1541,7 +1598,10 @@
         }
 
         function runSimulation() {
-            if(!authToken) { document.getElementById('auth-overlay').style.display='flex'; return; }
+            if(!currentUserToken) {
+                document.getElementById('gate-overlay').style.display = 'flex';
+                return alert("請先登入帳號以使用深度推演！");
+            }
             let d1 = parseInt(document.getElementById('draw1-qty').value);
             let targetRule = document.querySelector('input[name="target_rule"]:checked').value;
             let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0;
@@ -1567,10 +1627,17 @@
             document.getElementById('sim-result').innerText = currentLang === 'zh' ? "運算中..." : "Simulating...";
             
             fetch(`${API_BASE}/api/v1/simulate`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authToken },
+                method: 'POST', 
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${currentUserToken}` 
+                },
                 body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand })
             }).then(r => {
-                if(r.status === 403) { document.getElementById('auth-overlay').style.display='flex'; throw new Error("權限不足"); }
+                if(r.status === 401 || r.status === 403) { 
+                    document.getElementById('gate-overlay').style.display='flex'; 
+                    throw new Error("請先登入或升級 Pro"); 
+                }
                 return r.json();
             }).then(d => {
                 if(d.success) {
