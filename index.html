@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PTCG 小章魚 - 覆盤最佳工具</title>
 
-    <!-- 🌟 社群分享預覽優化 -->
+    <!-- 🌟 社群分享預覽優化 (LINE / FB / Discord / Threads) -->
     <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析、Limitless 英文牌組匯入與萬次蒙地卡羅手牌率精確推演。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ptcg-octoplus.com/">
@@ -156,9 +156,11 @@
         .tut-content { height: 100%; display: flex; flex-direction: column; }
         .tut-img { max-width: 100%; max-height: 48vh; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto 15px auto; border-radius: 8px; border: 1px solid #444; background-color: #0D1117; }
         
-        .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #00E5FF; margin-top: 10px; background: #0D1117; color: #00E5FF; }
-        .login-btn:hover { background: #00E5FF; color: #000; }
-        
+        /* 🔒 登入按鈕與停用樣式 */
+        .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #00E5FF; margin-top: 12px; background: #0D1117; color: #00E5FF; }
+        .login-btn:hover:not(:disabled) { background: #00E5FF; color: #000; }
+        .login-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; background: #161B22; }
+
         .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; }
         .legal-link:hover { color: #79C0FF; }
     </style>
@@ -171,28 +173,34 @@
         </symbol>
     </svg>
 
-    <!-- 🔒 未登入強迫登入護城河 Modal (魔法信箱登入版) -->
+    <!-- 🔒 未登入強迫登入護城河 Modal (含倒數冷卻與勾選防護) -->
     <div id="gate-overlay" class="modal-overlay" style="display: flex; z-index: 15000; backdrop-filter: blur(8px);">
-        <div class="modal-card" style="width: 380px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
+        <div class="modal-card" style="width: 400px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
             <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
             <p style="color: #AAA; font-size: 13px; margin-bottom: 20px;">覆盤最佳工具 - 請先登入以解鎖專業功能</p>
             
-            <div style="text-align: left; margin-bottom: 15px;">
+            <div style="text-align: left; margin-bottom: 12px;">
                 <label style="font-size: 12px; color: #888; margin-bottom: 5px; display: block;">使用信箱登入 (無須密碼)：</label>
-                <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 15px; padding: 10px;">
+                <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <button class="login-btn" onclick="loginWithMagicLink()">
-                ✨ 發送魔法登入連結
-            </button>
-            <p id="magic-link-msg" style="color: #00E5FF; font-size: 12px; margin-top: 10px; display: none;">✅ 驗證信已發送！請去信箱點擊連結登入。</p>
+            <!-- ⚖️ 強制閱讀勾選區 -->
+            <div style="display: flex; align-items: center; gap: 8px; text-align: left; font-size: 12px; color: #CCC; margin: 10px 0;">
+                <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" style="width: 16px; height: 16px; accent-color: #00E5FF; cursor: pointer;">
+                <label for="terms-checkbox" style="cursor: pointer;">
+                    我已閱讀並同意 
+                    <span class="legal-link" onclick="openLegalModal('terms')">服務條款</span> 與 
+                    <span class="legal-link" onclick="openLegalModal('privacy')">隱私權政策</span>
+                </label>
+            </div>
 
-            <!-- ⚖️ 法律條款超連結 -->
-            <p style="font-size: 11px; color: #888; margin-top: 18px;">
-                登入即代表您同意 
-                <span class="legal-link" onclick="openLegalModal('terms')">服務條款</span> 與 
-                <span class="legal-link" onclick="openLegalModal('privacy')">隱私權政策</span>
-            </p>
+            <!-- 🚀 發送按鈕 (預設未勾選為按鈕停用 disabled) -->
+            <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>
+                ✨ 發送驗證連結
+            </button>
+
+            <!-- 📢 動態提示訊息欄 -->
+            <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
         </div>
     </div>
 
@@ -418,17 +426,46 @@
         </div>
     </div>
 
-    <!-- ⚖️ 服務條款與隱私權政策法律 Modal -->
-    <div id="legal-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 16000;">
+    <!-- ⚖️ 服務條款 Modal (文字直接寫死，100% 絕不空白) -->
+    <div id="terms-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 16000;">
         <div class="modal-card" style="max-width: 650px; height: 75vh;">
             <div class="modal-header">
-                <h2 id="legal-title" style="color: #FFD700; margin: 0;">服務條款與隱私權政策</h2>
+                <h2 style="color: #FFD700; margin: 0;">📜 PTCG 小章魚 - 服務條款 (Terms of Service)</h2>
             </div>
-            <div id="legal-content" class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6;">
-                <!-- 動態注入法律文字 -->
+            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6;">
+                <h4 style="color:#00E5FF; margin-top:10px;">1. 服務認知與同意</h4>
+                <p>當您存取或使用「PTCG 小章魚」(以下簡稱本服務) 時，即表示您已閱讀、理解並同意受本服務條款之約束。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">2. 智慧財產權與第三方聲明</h4>
+                <p>本服務為第三方實體寶可夢卡牌 (PTCG) 數據分析與模擬工具。本服務非 Nintendo、Creatures、GAME FREAK 或 The Pokémon Company 之官方授權產品。相關卡牌名稱、圖像與著作權均屬於原權利人所有。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">3. 合理使用規範</h4>
+                <p>使用者不得利用本服務進行任何商業轉售、網路攻擊或自動化爬蟲分析等濫用伺服器算力之行為。本團隊保留隨時終止違反規定帳號權限之權利。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">4. 責任限制</h4>
+                <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="document.getElementById('legal-modal').style.display='none'">關閉</button>
+                <button class="btn btn-secondary" style="width: 100px;" onclick="document.getElementById('terms-modal').style.display='none'">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔒 隱私權政策 Modal (文字直接寫死，100% 絕不空白) -->
+    <div id="privacy-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 16000;">
+        <div class="modal-card" style="max-width: 650px; height: 75vh;">
+            <div class="modal-header">
+                <h2 style="color: #FFD700; margin: 0;">🔒 PTCG 小章魚 - 隱私權政策 (Privacy Policy)</h2>
+            </div>
+            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6;">
+                <h4 style="color:#00E5FF; margin-top:10px;">1. 資料收集與範圍</h4>
+                <p>當您透過信箱驗證連結登入本服務時，我們僅收集必要之電子郵件地址 (Email) 與系統產生之識別碼，用於辨識會員資格及記錄每日推演使用額度。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">2. 資料使用用途</h4>
+                <p>收集之個人資料嚴格限制用於提供、改善本服務及會員權限驗證，絕不上傳、出售或轉讓予任何第三方機構。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">3. Cookie 與儲存技術</h4>
+                <p>本服務採用 Supabase 安全認證 Session 及瀏覽器 LocalStorage 技術，以維持您的安全登入狀態與介面語系偏好設定。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">4. 資料刪除權利</h4>
+                <p>使用者隨時可透過客服聯繫申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" style="width: 100px;" onclick="document.getElementById('privacy-modal').style.display='none'">關閉</button>
             </div>
         </div>
     </div>
@@ -510,7 +547,6 @@
     <script>
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
-        // 🔑 改回傳統金鑰，解決 JS 崩潰與條款無法點擊的問題
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
 
         let supabase = null;
@@ -534,7 +570,7 @@
         let historyStates = [];
         let historyPtr = -1;
 
-        // Supabase Auth 驗證
+        // Supabase Auth 驗證與自動解鎖
         window.addEventListener('DOMContentLoaded', async () => {
             if (supabase) {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -558,65 +594,72 @@
             document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
         }
 
-        // 🪄 信箱魔法登入 (Magic Link)
+        // ⚖️ 切換登入按鈕可否點擊 (需先勾選條款)
+        function toggleLoginBtn() {
+            const chk = document.getElementById('terms-checkbox');
+            const btn = document.getElementById('send-verify-btn');
+            btn.disabled = !chk.checked;
+        }
+
+        // 🪄 信箱發送驗證連結 (含 5 秒倒數冷卻機制)
         async function loginWithMagicLink() {
             if (!supabase) return alert("系統初始化失敗");
             const email = document.getElementById('magic-email-input').value.trim();
             if (!email) return alert("請輸入有效的 Email 信箱");
 
-            const btn = document.querySelector('.login-btn');
-            btn.innerText = "發送中...";
+            const btn = document.getElementById('send-verify-btn');
+            const msgEl = document.getElementById('magic-link-msg');
+            
+            btn.innerText = "⏳ 發送中...";
             btn.disabled = true;
+            msgEl.style.display = 'none';
 
             try {
                 const { data, error } = await supabase.auth.signInWithOtp({
                     email: email,
                     options: { emailRedirectTo: window.location.origin }
                 });
+
                 if (error) {
-                    alert("發送失敗：" + error.message);
+                    msgEl.style.color = "#FF5252";
+                    msgEl.innerText = "❌ 發送失敗：" + error.message;
+                    msgEl.style.display = 'block';
+                    btn.innerText = "✨ 發送驗證連結";
+                    btn.disabled = false;
                 } else {
-                    document.getElementById('magic-link-msg').style.display = 'block';
-                    btn.innerText = "✨ 再次發送魔法連結";
+                    msgEl.style.color = "#00E5FF";
+                    msgEl.innerText = "✅ 驗證信已成功發送！請至信箱點擊連結登入。";
+                    msgEl.style.display = 'block';
+                    
+                    // ⏱️ 5 秒倒數冷卻機制
+                    let countdown = 5;
+                    const timer = setInterval(() => {
+                        if (countdown > 0) {
+                            btn.innerText = `✨ 發送驗證連結 (${countdown}s)`;
+                            countdown--;
+                        } else {
+                            clearInterval(timer);
+                            btn.innerText = "✨ 發送驗證連結";
+                            btn.disabled = !document.getElementById('terms-checkbox').checked;
+                        }
+                    }, 1000);
                 }
             } catch (err) {
-                alert("發生例外錯誤");
-            } finally {
+                msgEl.style.color = "#FF5252";
+                msgEl.innerText = "❌ 發生例外錯誤，請重試";
+                msgEl.style.display = 'block';
+                btn.innerText = "✨ 發送驗證連結";
                 btn.disabled = false;
             }
         }
 
-        // ⚖️ 開啟法律條款彈窗
+        // ⚖️ 開啟法律條款 Modal (直接開啟靜態Modal，確保絕不空白)
         function openLegalModal(type) {
-            const titleEl = document.getElementById('legal-title');
-            const contentEl = document.getElementById('legal-content');
-            
             if (type === 'terms') {
-                titleEl.innerText = "📜 PTCG 小章魚 - 服務條款 (Terms of Service)";
-                contentEl.innerHTML = `
-                    <h4 style="color:#00E5FF; margin-top:10px;">1. 服務認知與同意</h4>
-                    <p>當您存取或使用「PTCG 小章魚」(以下簡稱本服務) 時，即表示您已閱讀、理解並同意受本服務條款之約束。</p>
-                    <h4 style="color:#00E5FF; margin-top:10px;">2. 智慧財產權與第三方聲明</h4>
-                    <p>本服務為第三方實體寶可夢卡牌 (PTCG) 數據分析與模擬工具。本服務非 Nintendo、Creatures、GAME FREAK 或 The Pokémon Company 之官方授權產品。相關卡牌名稱、圖像與著作權均屬於原權利人所有。</p>
-                    <h4 style="color:#00E5FF; margin-top:10px;">3. 合理使用規範</h4>
-                    <p>使用者不得利用本服務進行任何商業轉售、網路攻擊或自動化爬蟲分析等濫用伺服器算力之行為。本團隊保留隨時終止違反規定帳號權限之權利。</p>
-                    <h4 style="color:#00E5FF; margin-top:10px;">4. 責任限制</h4>
-                    <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
-                `;
+                document.getElementById('terms-modal').style.display = 'flex';
             } else {
-                titleEl.innerText = "🔒 PTCG 小章魚 - 隱私權政策 (Privacy Policy)";
-                contentEl.innerHTML = `
-                    <h4 style="color:#00E5FF; margin-top:10px;">1. 資料收集與範圍</h4>
-                    <p>當您透過信箱魔法連結登入本服務時，我們僅收集必要之電子郵件地址 (Email) 與系統產生之識別碼，用於辨識會員資格及記錄每日推演使用額度。</p>
-                    <h4 style="color:#00E5FF; margin-top:10px;">2. 資料使用用途</h4>
-                    <p>收集之個人資料嚴格限制用於提供、改善本服務及會員權限驗證，絕不上傳、出售或轉讓予任何第三方機構。</p>
-                    <h4 style="color:#00E5FF; margin-top:10px;">3. Cookie 與儲存技術</h4>
-                    <p>本服務採用 Supabase 安全認證 Session 及瀏覽器 LocalStorage 技術，以維持您的安全登入狀態與介面語系偏好設定。</p>
-                    <h4 style="color:#00E5FF; margin-top:10px;">4. 資料刪除權利</h4>
-                    <p>使用者隨時可透過客服聯繫申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
-                `;
+                document.getElementById('privacy-modal').style.display = 'flex';
             }
-            document.getElementById('legal-modal').style.display = 'flex';
         }
 
         async function redeemPromoCode() {
