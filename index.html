@@ -161,7 +161,7 @@
         .login-btn:hover:not(:disabled) { background: #00E5FF; color: #000; }
         .login-btn:disabled { border-color: #444 !important; color: #666 !important; cursor: not-allowed !important; background: #161B22 !important; }
 
-        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; display: inline-block; padding: 2px; }
+        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; display: inline-block; }
         .legal-link:hover { color: #79C0FF; }
     </style>
 </head>
@@ -184,13 +184,13 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀勾選區 (結構解耦，防止冒泡衝突) -->
-            <div style="display: flex; align-items: center; gap: 8px; text-align: left; font-size: 12px; color: #CCC; margin: 12px 0;">
-                <input type="checkbox" id="terms-checkbox" style="width: 18px; height: 18px; accent-color: #00E5FF; cursor: pointer; flex-shrink: 0;">
-                <div>
-                    我已閱讀並同意 
-                    <span class="legal-link" onclick="openLegalModal(event, 'terms')">服務條款</span> 與 
-                    <span class="legal-link" onclick="openLegalModal(event, 'privacy')">隱私權政策</span>
+            <!-- ⚖️ 強制閱讀勾選區 (結構完全解耦，防止冒泡衝突) -->
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left;">
+                <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; accent-color: #00E5FF;">
+                <div style="line-height: 1.5;">
+                    <label for="terms-checkbox" style="cursor: pointer; margin-right: 4px; font-weight: bold;">我已閱讀並同意</label>
+                    <span class="legal-link" onclick="openTermsModal()">服務條款</span> 與 
+                    <span class="legal-link" onclick="openPrivacyModal()">隱私權政策</span>
                 </div>
             </div>
 
@@ -201,6 +201,50 @@
 
             <!-- 📢 動態提示訊息欄 -->
             <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
+        </div>
+    </div>
+
+    <!-- ⚖️ 服務條款 Modal -->
+    <div id="terms-modal" class="modal-overlay" onclick="if(event.target===this) closeTermsModal()" style="z-index: 16000;">
+        <div class="modal-card" style="max-width: 650px; max-height: 75vh;">
+            <div class="modal-header">
+                <h2 style="color: #FFD700; margin: 0;">📜 PTCG 小章魚 - 服務條款 (Terms of Service)</h2>
+            </div>
+            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6; overflow-y: auto;">
+                <h4 style="color:#00E5FF; margin-top:10px;">1. 服務認知與同意</h4>
+                <p>當您存取或使用「PTCG 小章魚」(以下簡稱本服務) 時，即表示您已閱讀、理解並同意受本服務條款之約束。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">2. 智慧財產權與第三方聲明</h4>
+                <p>本服務為第三方實體寶可夢卡牌 (PTCG) 數據分析與模擬工具。本服務非 Nintendo、Creatures、GAME FREAK 或 The Pokémon Company 之官方授權產品。相關卡牌名稱、圖像與著作權均屬於原權利人所有。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">3. 合理使用規範</h4>
+                <p>使用者不得利用本服務進行任何商業轉售、網路攻擊或自動化爬蟲分析等濫用伺服器算力之行為。本團隊保留隨時終止違反規定帳號權限之權利。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">4. 責任限制</h4>
+                <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" style="width: 100px;" onclick="closeTermsModal()">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔒 隱私權政策 Modal -->
+    <div id="privacy-modal" class="modal-overlay" onclick="if(event.target===this) closePrivacyModal()" style="z-index: 16000;">
+        <div class="modal-card" style="max-width: 650px; max-height: 75vh;">
+            <div class="modal-header">
+                <h2 style="color: #FFD700; margin: 0;">🔒 PTCG 小章魚 - 隱私權政策 (Privacy Policy)</h2>
+            </div>
+            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6; overflow-y: auto;">
+                <h4 style="color:#00E5FF; margin-top:10px;">1. 資料收集與範圍</h4>
+                <p>當您透過信箱驗證連結登入本服務時，我們僅收集必要之電子郵件地址 (Email) 與系統產生之識別碼，用於辨識會員資格及記錄每日推演使用額度。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">2. 資料使用用途</h4>
+                <p>收集之個人資料嚴格限制用於提供、改善本服務及會員權限驗證，絕不上傳、出售或轉讓予任何第三方機構。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">3. Cookie 與儲存技術</h4>
+                <p>本服務採用 Supabase 安全認證 Session 及瀏覽器 LocalStorage 技術，以維持您的安全登入狀態與介面語系偏好設定。</p>
+                <h4 style="color:#00E5FF; margin-top:10px;">4. 資料刪除權利</h4>
+                <p>使用者隨時可透過客服聯繫申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" style="width: 100px;" onclick="closePrivacyModal()">關閉</button>
+            </div>
         </div>
     </div>
 
@@ -426,50 +470,6 @@
         </div>
     </div>
 
-    <!-- ⚖️ 服務條款 Modal (文字直接寫死，100% 絕不空白) -->
-    <div id="terms-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 16000;">
-        <div class="modal-card" style="max-width: 650px; height: 75vh;">
-            <div class="modal-header">
-                <h2 style="color: #FFD700; margin: 0;">📜 PTCG 小章魚 - 服務條款 (Terms of Service)</h2>
-            </div>
-            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6;">
-                <h4 style="color:#00E5FF; margin-top:10px;">1. 服務認知與同意</h4>
-                <p>當您存取或使用「PTCG 小章魚」(以下簡稱本服務) 時，即表示您已閱讀、理解並同意受本服務條款之約束。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">2. 智慧財產權與第三方聲明</h4>
-                <p>本服務為第三方實體寶可夢卡牌 (PTCG) 數據分析與模擬工具。本服務非 Nintendo、Creatures、GAME FREAK 或 The Pokémon Company 之官方授權產品。相關卡牌名稱、圖像與著作權均屬於原權利人所有。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">3. 合理使用規範</h4>
-                <p>使用者不得利用本服務進行任何商業轉售、網路攻擊或自動化爬蟲分析等濫用伺服器算力之行為。本團隊保留隨時終止違反規定帳號權限之權利。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">4. 責任限制</h4>
-                <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="document.getElementById('terms-modal').style.display='none'">關閉</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🔒 隱私權政策 Modal (文字直接寫死，100% 絕不空白) -->
-    <div id="privacy-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 16000;">
-        <div class="modal-card" style="max-width: 650px; height: 75vh;">
-            <div class="modal-header">
-                <h2 style="color: #FFD700; margin: 0;">🔒 PTCG 小章魚 - 隱私權政策 (Privacy Policy)</h2>
-            </div>
-            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6;">
-                <h4 style="color:#00E5FF; margin-top:10px;">1. 資料收集與範圍</h4>
-                <p>當您透過信箱驗證連結登入本服務時，我們僅收集必要之電子郵件地址 (Email) 與系統產生之識別碼，用於辨識會員資格及記錄每日推演使用額度。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">2. 資料使用用途</h4>
-                <p>收集之個人資料嚴格限制用於提供、改善本服務及會員權限驗證，絕不上傳、出售或轉讓予任何第三方機構。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">3. Cookie 與儲存技術</h4>
-                <p>本服務採用 Supabase 安全認證 Session 及瀏覽器 LocalStorage 技術，以維持您的安全登入狀態與介面語系偏好設定。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">4. 資料刪除權利</h4>
-                <p>使用者隨時可透過客服聯繫申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="document.getElementById('privacy-modal').style.display='none'">關閉</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 圖庫 Modal -->
     <div id="gallery-modal" class="modal-overlay" onclick="closeGalleryModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
@@ -575,17 +575,31 @@
         let historyStates = [];
         let historyPtr = -1;
 
-        // 原生 JavaScript 強固監聽條款勾選框 (解鎖按鈕)
-        window.addEventListener('DOMContentLoaded', async () => {
+        // 原生 JavaScript 強固監聽 (確保勾選框100%生效)
+        function toggleLoginBtn() {
             const chk = document.getElementById('terms-checkbox');
             const btn = document.getElementById('send-verify-btn');
-            
-            if(chk && btn) {
-                chk.addEventListener('change', () => {
-                    btn.disabled = !chk.checked;
-                });
+            if (chk && btn) {
+                btn.disabled = !chk.checked;
             }
+        }
 
+        // 開啟與關閉條款 Modal (直接使用原生的 JS 函式控制，絕不報錯)
+        function openTermsModal() {
+            document.getElementById('terms-modal').style.display = 'flex';
+        }
+        function closeTermsModal() {
+            document.getElementById('terms-modal').style.display = 'none';
+        }
+        function openPrivacyModal() {
+            document.getElementById('privacy-modal').style.display = 'flex';
+        }
+        function closePrivacyModal() {
+            document.getElementById('privacy-modal').style.display = 'none';
+        }
+
+        // Supabase Auth 驗證與自動解鎖
+        window.addEventListener('DOMContentLoaded', async () => {
             if (supabase) {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) handleSession(session);
@@ -661,16 +675,6 @@
                 msgEl.style.display = 'block';
                 btn.innerText = "✨ 發送驗證連結";
                 btn.disabled = false;
-            }
-        }
-
-        // ⚖️ 開啟法律條款 Modal (加上 e.stopPropagation 阻擋事件冒泡衝突)
-        function openLegalModal(e, type) {
-            if (e && e.stopPropagation) e.stopPropagation();
-            if (type === 'terms') {
-                document.getElementById('terms-modal').style.display = 'flex';
-            } else {
-                document.getElementById('privacy-modal').style.display = 'flex';
             }
         }
 
