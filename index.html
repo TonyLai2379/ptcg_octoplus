@@ -197,11 +197,7 @@
         .color-dot { width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 1px solid #000; transition: 0.2s; }
         .color-dot:hover { transform: scale(1.3); border-color: #FFF; }
         
-        .tut-content {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
+        .tut-content { height: 100%; display: flex; flex-direction: column; }
         .tut-img { max-width: 100%; max-height: 48vh; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto 15px auto; border-radius: 8px; border: 1px solid #444; background-color: #0D1117; }
         
         .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #30363D; margin-top: 10px; }
@@ -209,6 +205,9 @@
         .login-btn-google:hover { background: #E6E6E6; }
         .login-btn-apple { background: #000000; color: #FFFFFF; border-color: #444; }
         .login-btn-apple:hover { background: #1A1A1A; }
+        
+        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; }
+        .legal-link:hover { color: #79C0FF; }
     </style>
 </head>
 <body>
@@ -234,7 +233,13 @@
                 <svg width="18" height="18" fill="currentColor" viewBox="0 0 170 170"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.16-1.9-14.49-6.08-3.32-2.62-7.23-7.22-11.73-13.8-6.93-10.1-12.28-21.46-16.06-34.08-3.78-12.61-5.67-24.32-5.67-35.13 0-14.02 3.42-25.68 10.26-34.98 6.84-9.3 15.35-14.03 25.52-14.2 4.6 0 9.77 1.22 15.5 3.66 5.73 2.44 9.94 3.66 12.63 3.66 2.39 0 6.64-1.28 12.74-3.84 6.1-2.57 11.25-3.74 15.45-3.52 11.51.65 20.6 4.95 27.27 12.89-10.23 6.18-15.22 14.88-14.97 26.1.26 8.86 3.73 16.27 10.42 22.23 6.69 5.96 14.61 9.29 23.77 9.99-2.2 6.53-5.06 13.11-8.58 19.74zM119.22 31.84c0-6.98 2.51-13.73 7.53-20.25 5.02-6.52 11.39-10.68 19.11-12.48.33 1.13.49 2.12.49 2.97 0 6.87-2.58 13.72-7.75 20.55-5.17 6.83-11.62 10.95-19.38 12.36-.18-.85-.27-1.9-.27-3.15z"/></svg>
                 使用 Apple 帳號登入
             </button>
-            <p style="font-size: 11px; color: #666; margin-top: 15px;">登入即代表您同意服務條款與隱私政策</p>
+
+            <!-- ⚖️ 法律條款超連結 -->
+            <p style="font-size: 11px; color: #888; margin-top: 18px;">
+                登入即代表您同意 
+                <span class="legal-link" onclick="openLegalModal('terms')">服務條款</span> 與 
+                <span class="legal-link" onclick="openLegalModal('privacy')">隱私權政策</span>
+            </p>
         </div>
     </div>
 
@@ -460,19 +465,17 @@
         </div>
     </div>
 
-    <!-- 短代碼分享彈窗 -->
-    <div id="share-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
-        <div class="modal-card" style="width:400px; height:auto; text-align:center;">
-            <div class="modal-header" style="justify-content:center;">
-                <h3 style="color:#00E5FF; margin:0;" id="modal-share-title">📤 分享對局</h3>
+    <!-- ⚖️ 服務條款與隱私權政策法律 Modal -->
+    <div id="legal-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 16000;">
+        <div class="modal-card" style="max-width: 650px; height: 75vh;">
+            <div class="modal-header">
+                <h2 id="legal-title" style="color: #FFD700; margin: 0;">服務條款與隱私權政策</h2>
             </div>
-            <div class="modal-body" style="display:flex; flex-direction:column; gap:15px; padding:10px 0;">
-                <p style="color:#ccc; font-size:13px;" id="modal-share-desc">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！</p>
-                <input type="text" id="share-code-display" readonly style="font-size:32px; font-weight:bold; color:#FFD700; text-align:center; letter-spacing:6px; background:#0D1117; border:1px solid #FFD700; padding:15px; border-radius:8px;" onclick="this.select()">
+            <div id="legal-content" class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6;">
+                <!-- 動態注入法律文字 -->
             </div>
-            <div class="modal-footer" style="justify-content:center;">
-                <button class="btn btn-secondary" style="width:auto;" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
-                <button class="btn" style="width:auto; padding:8px 25px;" id="btn-share-copy" onclick="copyShareCode()">📋 一鍵複製短代碼</button>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" style="width: 100px;" onclick="document.getElementById('legal-modal').style.display='none'">關閉</button>
             </div>
         </div>
     </div>
@@ -559,11 +562,15 @@
     <script>
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI2MjM2MTMsImV4cCI6MjAzODE5OTYxM30.sb_anon_key_placeholder";
+        // 🔑 已填入你的專屬金鑰
+        const SUPABASE_ANON_KEY = "sb_publishable_GDrQ36IUnSJdJaOr4S7YSQ_Tozy3gn4";
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabase = null;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) { console.error("Supabase 初始化失敗"); }
+
         let currentUserToken = null;
-
         let currentLang = localStorage.getItem('app_lang') || 'zh';
         let deckDict = {}; 
         let gameCards = []; 
@@ -584,19 +591,23 @@
 
         // Supabase Auth 驗證與護城河控制
         window.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                handleSession(session);
+            if (supabase) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    handleSession(session);
+                }
             }
         });
 
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                handleSession(session);
-            } else {
-                document.getElementById('gate-overlay').style.display = 'flex';
-            }
-        });
+        if (supabase) {
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    handleSession(session);
+                } else {
+                    document.getElementById('gate-overlay').style.display = 'flex';
+                }
+            });
+        }
 
         function handleSession(session) {
             currentUserToken = session.access_token;
@@ -608,10 +619,52 @@
         }
 
         async function loginWithProvider(provider) {
-            await supabase.auth.signInWithOAuth({
-                provider: provider,
-                options: { redirectTo: window.location.origin }
-            });
+            if (!supabase) {
+                alert("Supabase 套件載入失敗");
+                return;
+            }
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: provider,
+                    options: { redirectTo: window.location.origin }
+                });
+                if (error) alert("登入失敗: " + error.message);
+            } catch (err) {
+                alert("登入發生例外錯誤: " + err.message);
+            }
+        }
+
+        // ⚖️ 開啟法律條款彈窗
+        function openLegalModal(type) {
+            const titleEl = document.getElementById('legal-title');
+            const contentEl = document.getElementById('legal-content');
+            
+            if (type === 'terms') {
+                titleEl.innerText = "📜 PTCG 小章魚 - 服務條款 (Terms of Service)";
+                contentEl.innerHTML = `
+                    <h4 style="color:#00E5FF; margin-top:10px;">1. 服務認知與同意</h4>
+                    <p>當您存取或使用「PTCG 小章魚」(以下簡稱本服務) 時，即表示您已閱讀、理解並同意受本服務條款之約束。</p>
+                    <h4 style="color:#00E5FF; margin-top:10px;">2. 智慧財產權與第三方聲明</h4>
+                    <p>本服務為第三方實體寶可夢卡牌 (PTCG) 數據分析與模擬工具。本服務非 Nintendo、Creatures、GAME FREAK 或 The Pokémon Company 之官方授權產品。相關卡牌名稱、圖像與著作權均屬於原權利人所有。</p>
+                    <h4 style="color:#00E5FF; margin-top:10px;">3. 合理使用規範</h4>
+                    <p>使用者不得利用本服務進行任何商業轉售、網路攻擊或自動化爬蟲分析等濫用伺服器算力之行為。本團隊保留隨時終止違反規定帳號權限之權利。</p>
+                    <h4 style="color:#00E5FF; margin-top:10px;">4. 責任限制</h4>
+                    <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
+                `;
+            } else {
+                titleEl.innerText = "🔒 PTCG 小章魚 - 隱私權政策 (Privacy Policy)";
+                contentEl.innerHTML = `
+                    <h4 style="color:#00E5FF; margin-top:10px;">1. 資料收集與範圍</h4>
+                    <p>當您透過 Google 或 Apple 帳號登入本服務時，我們僅收集必要之用戶識別碼 (UID) 及電子郵件地址 (Email)，用於辨識會員資格及記錄每日推演使用額度。</p>
+                    <h4 style="color:#00E5FF; margin-top:10px;">2. 資料使用用途</h4>
+                    <p>收集之個人資料嚴格限制用於提供、改善本服務及會員權限驗證，絕不上傳、出售或轉讓予任何第三方機構。</p>
+                    <h4 style="color:#00E5FF; margin-top:10px;">3. Cookie 與儲存技術</h4>
+                    <p>本服務採用 Supabase 安全認證 Session 及瀏覽器 LocalStorage 技術，以維持您的安全登入狀態與介面語系偏好設定。</p>
+                    <h4 style="color:#00E5FF; margin-top:10px;">4. 資料刪除權利</h4>
+                    <p>使用者隨時可透過客服電子郵件申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
+                `;
+            }
+            document.getElementById('legal-modal').style.display = 'flex';
         }
 
         async function redeemPromoCode() {
@@ -640,161 +693,10 @@
             }
         }
 
-        // i18n 完整多語系字典
+        // i18n 多語系字典
         const translations = {
             zh: {
-                tutBtn: "❓ 教學",
-                statusNotLogin: "目前狀態：未登入",
-                btnUnlock: "解鎖萬次精算功能",
-                tabLink: "🔗 官方代碼",
-                tabText: "📝 英文匯入",
-                tabEdit: "🛠️ 搜尋編輯",
-                phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)",
-                btnParseOfficial: "🌐 解析官方牌組",
-                phDeckText: "貼上 Limitless 內容...",
-                btnParseText: "📥 解析文字牌組",
-                lblSearchDb: "全圖庫圖文搜尋：",
-                phSearchInput: "輸入卡名即時搜尋...",
-                lblCustomCard: "自訂卡片 (自動套用牌背文字)：",
-                phCustomCard: "自訂卡名稱",
-                btnAddCustom: "➕ 建立專屬卡",
-                deckListTitle: "牌組清單",
-                btnPreviewDeck: "👁️ 預覽卡組",
-                btnStartGame: "🎲 鎖定牌組並開局",
-                btnSaveCloud: "💾 紀錄至雲端",
-                optLoadCloud: "載入雲端牌組...",
-                disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。",
-                lblZoom: "🔍 介面縮放",
-                summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)",
-                txtToggleBadge: "點擊展開/收合",
-                lblStep1: "🔥 1. 直接解牌目標 (可多選)",
-                lblRuleAnd: "條件皆要有 (AND)",
-                lblRuleOr: "任一張達成即可 (OR)",
-                btnSelectDirect: "🖼️ 從牌組多選目標牌",
-                lblDraw1: "第一波抽牌數：",
-                lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：",
-                lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)",
-                btnAddChain: "🖼️ 新增連鎖牌",
-                btnRunSim: "🎲 執行深度推演",
-                btnSaveScenario: "📌 紀錄至比較板",
-                btnClearBoard: "🗑️ 清空比較板",
-                titlePrize: "🏆 獎賞卡 (Prize)",
-                titleStadium: "🟠 場地 (Stadium)",
-                titleActive: "🔴 戰鬥場 (Active)",
-                titleBench: "🔵 備戰區 (Bench)",
-                titleHand: "手牌",
-                txtHandSub: "扇形展開支援自由拖放",
-                btnHandShuffle: "🔄 洗回",
-                btnHandDiscard: "🗑️ 全棄",
-                titleDeck: "🗃️ 牌庫",
-                btnDrawCard: "🎴 抽一張牌",
-                titleDiscard: "🪦 棄牌",
-                btnExportGame: "📤 分享對局",
-                btnImportGame: "📥 載入對局",
-                btnUndo: "↩ 上一步",
-                btnRedo: "下一步 ↪",
-                modalAuthTitle: "解鎖專業沙盤功能",
-                btnCloseAuth: "關閉",
-                modalShareTitle: "📤 分享對局",
-                modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！",
-                btnShareClose: "關閉",
-                btnShareCopy: "📋 一鍵複製短代碼",
-                btnGalleryClose: "關閉",
-                galleryConfirmBtn: "✅ 確定選取",
-                tutMainTitle: "📖 PTCG 覆盤工具教學",
-                btnTut1: "🛠️ 1. 編輯牌組",
-                btnTut2: "⚔️ 2. 戰場操作",
-                btnTut3: "🎲 3. 機率運算",
-                tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：",
-                btnTut1A: "A. 官方代碼匯入",
-                btnTut1B: "B. Limitless 英文匯入",
-                btnTut1C: "C. 搜尋與自訂卡片",
-                tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。",
-                tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。",
-                tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。",
-                tut2H4: "⚔️ 戰場沙盤互動指南：",
-                tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。",
-                tut3H4: "🎲 蒙地卡羅機率算力：",
-                tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！",
-                btnTutReady: "我準備好了！",
-                benchLabel: "格"
-            },
-            en: {
-                tutBtn: "❓ Guide",
-                statusNotLogin: "Status: Guest",
-                btnUnlock: "Unlock Pro Monte Carlo",
-                tabLink: "🔗 Official Code",
-                tabText: "📝 Limitless Text",
-                tabEdit: "🛠️ Search & Edit",
-                phDeckCode: "Enter official deck code (e.g. uCRvSM...)",
-                btnParseOfficial: "🌐 Parse Official Deck",
-                phDeckText: "Paste Limitless deck text...",
-                btnParseText: "📥 Parse Text Deck",
-                lblSearchDb: "Database Search:",
-                phSearchInput: "Type card name to search...",
-                lblCustomCard: "Custom Proxy Card:",
-                phCustomCard: "Proxy Card Name",
-                btnAddCustom: "➕ Create Proxy",
-                deckListTitle: "Deck List",
-                btnPreviewDeck: "👁️ Preview",
-                btnStartGame: "🎲 Lock & Start Game",
-                btnSaveCloud: "💾 Save Cloud",
-                optLoadCloud: "Load Cloud Deck...",
-                disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.",
-                lblZoom: "🔍 UI Zoom",
-                summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)",
-                txtToggleBadge: "Click to Expand/Collapse",
-                lblStep1: "🔥 1. Direct Target Cards (Multi-select)",
-                lblRuleAnd: "Require All (AND)",
-                lblRuleOr: "Require Any (OR)",
-                btnSelectDirect: "🖼️ Select Targets from Deck",
-                lblDraw1: "First Draw Count:",
-                lblDeadHand: "Existing Dead Cards in Hand:",
-                lblStep2: "🔄 2. Chain Resources (Multi-card)",
-                btnAddChain: "🖼️ Add Chain Card",
-                btnRunSim: "🎲 Run Deep Simulation",
-                btnSaveScenario: "📌 Save to Comparison",
-                btnClearBoard: "🗑️ Clear Comparison",
-                titlePrize: "🏆 Prize Cards",
-                titleStadium: "🟠 Stadium",
-                titleActive: "🔴 Active Spot",
-                titleBench: "🔵 Bench",
-                titleHand: "Hand",
-                txtHandSub: "Fan view with drag-and-drop",
-                btnHandShuffle: "🔄 Shuffle Back",
-                btnHandDiscard: "🗑️ Discard All",
-                titleDeck: "🗃️ Deck",
-                btnDrawCard: "🎴 Draw 1 Card",
-                titleDiscard: "🪦 Discard Pile",
-                btnExportGame: "📤 Share Match",
-                btnImportGame: "📥 Load Match",
-                btnUndo: "↩ Undo",
-                btnRedo: "Redo ↪",
-                modalAuthTitle: "Unlock Sandbox Pro",
-                btnCloseAuth: "Close",
-                modalShareTitle: "📤 Share Game State",
-                modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!",
-                btnShareClose: "Close",
-                btnShareCopy: "📋 Copy Short Code",
-                btnGalleryClose: "Close",
-                galleryConfirmBtn: "✅ Confirm Selection",
-                tutMainTitle: "📖 PTCG Sandbox Tutorial",
-                btnTut1: "🛠️ 1. Deck Builder",
-                btnTut2: "⚔️ 2. Battle Board",
-                btnTut3: "🎲 3. Probabilities",
-                tut1Desc: "There are three ways to build/import a deck. Choose one to learn:",
-                btnTut1A: "A. Official Code",
-                btnTut1B: "B. Limitless Export",
-                btnTut1C: "C. Search & Custom",
-                tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.",
-                tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.",
-                tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.",
-                tut2H4: "⚔️ Battle Board Guide:",
-                tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.",
-                tut3H4: "🎲 Monte Carlo Engine:",
-                tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!",
-                btnTutReady: "I'm Ready!",
-                benchLabel: "Slots"
+                tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "解鎖萬次精算功能", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格"
             }
         };
 
@@ -818,20 +720,15 @@
             setTxt('tab-btn-link', t.tabLink);
             setTxt('tab-btn-text', t.tabText);
             setTxt('tab-btn-edit', t.tabEdit);
-            
             let dc = document.getElementById('deck-code'); if(dc) dc.placeholder = t.phDeckCode;
             setTxt('btn-parse-official', t.btnParseOfficial);
-            
             let dt = document.getElementById('deck-text'); if(dt) dt.placeholder = t.phDeckText;
             setTxt('btn-parse-text', t.btnParseText);
-            
             setTxt('lbl-search-db', t.lblSearchDb);
             let si = document.getElementById('search-input'); if(si) si.placeholder = t.phSearchInput;
-            
             setTxt('lbl-custom-card', t.lblCustomCard);
             let ci = document.getElementById('custom-card-input'); if(ci) ci.placeholder = t.phCustomCard;
             setTxt('btn-add-custom', t.btnAddCustom);
-            
             setTxt('txt-deck-list-title', t.deckListTitle);
             setTxt('btn-preview-deck', t.btnPreviewDeck);
             setTxt('btn-start-game', t.btnStartGame);
@@ -839,10 +736,8 @@
             setTxt('opt-load-cloud', t.optLoadCloud);
             setTxt('txt-disclaimer', t.disclaimer, true);
             setTxt('lbl-zoom', t.lblZoom);
-            
             setTxt('summary-prob-title', t.summaryProbTitle);
             setTxt('txt-toggle-badge', t.txtToggleBadge);
-            
             setTxt('lbl-step1', t.lblStep1);
             setTxt('lbl-rule-and', t.lblRuleAnd);
             setTxt('lbl-rule-or', t.lblRuleOr);
@@ -854,7 +749,6 @@
             setTxt('btn-run-sim', t.btnRunSim);
             setTxt('btn-save-scenario', t.btnSaveScenario);
             setTxt('btn-clear-board', t.btnClearBoard);
-            
             setTxt('title-prize', t.titlePrize);
             setTxt('title-stadium', t.titleStadium);
             setTxt('title-active', t.titleActive);
@@ -866,23 +760,18 @@
             setTxt('title-deck', t.titleDeck);
             setTxt('btn-draw-card', t.btnDrawCard);
             setTxt('title-discard', t.titleDiscard);
-            
             setTxt('btn-export-game', t.btnExportGame);
             setTxt('btn-import-game', t.btnImportGame);
             setTxt('btn-undo', t.btnUndo);
             setTxt('btn-redo', t.btnRedo);
-            
             setTxt('modal-auth-title', t.modalAuthTitle);
             setTxt('btn-close-auth', t.btnCloseAuth);
-            
             setTxt('modal-share-title', t.modalShareTitle);
             setTxt('modal-share-desc', t.modalShareDesc);
             setTxt('btn-share-close', t.btnShareClose);
             setTxt('btn-share-copy', t.btnShareCopy);
-            
             setTxt('btn-gallery-close', t.btnGalleryClose);
             setTxt('gallery-confirm-btn', t.galleryConfirmBtn);
-            
             setTxt('tut-main-title', t.tutMainTitle);
             setTxt('btn-tut1', t.btnTut1);
             setTxt('btn-tut2', t.btnTut2);
@@ -899,12 +788,8 @@
             setTxt('tut3-h4', t.tut3H4);
             setTxt('tut3-desc', t.tut3Desc);
             setTxt('btn-tut-ready', t.btnTutReady);
-            
             setTxt('bench-size-label', `${benchSize} ${t.benchLabel}`);
-            
-            renderTargetUI();
-            renderChainUI();
-            renderBoard();
+            renderTargetUI(); renderChainUI(); renderBoard();
         }
 
         function getCardBackSVG(color) {
@@ -940,27 +825,18 @@
                     el.style.animationTimingFunction = 'linear';
                     el.style.animationIterationCount = 'infinite';
                 });
-            
-            renderBenchSlots();
-            checkBlink();
-            
+            renderBenchSlots(); checkBlink();
             let urlParams = new URLSearchParams(window.location.search);
             let shareCode = urlParams.get('share');
-            if (shareCode) {
-                loadSharedGameByCode(shareCode);
-            } else if(localStorage.getItem('tut_shown') !== 'true') {
-                openTutorial(); 
-            }
+            if (shareCode) { loadSharedGameByCode(shareCode); }
+            else if(localStorage.getItem('tut_shown') !== 'true') { openTutorial(); }
         };
 
         function toggleSidebar() {
             const sb = document.getElementById('sidebar');
             const btn = document.getElementById('sidebar-toggle-btn');
-            if(sb.style.width === '0px') {
-                sb.style.width = '360px'; btn.innerText = '«';
-            } else {
-                sb.style.width = '0px'; btn.innerText = '»';
-            }
+            if(sb.style.width === '0px') { sb.style.width = '360px'; btn.innerText = '«'; }
+            else { sb.style.width = '0px'; btn.innerText = '»'; }
         }
 
         function switchTab(tabId) {
@@ -978,20 +854,14 @@
         }
         
         function switchSubTutTab(subId) {
-            document.querySelectorAll('.sub-tab-btn').forEach(b => {
-                b.style.borderColor = '#30363D';
-                b.style.color = '#888';
-            });
+            document.querySelectorAll('.sub-tab-btn').forEach(b => { b.style.borderColor = '#30363D'; b.style.color = '#888'; });
             document.querySelectorAll('.sub-tut-content').forEach(c => c.style.display = 'none');
-            
             let activeBtn = document.getElementById('btn-' + subId);
-            activeBtn.style.borderColor = '#00E5FF';
-            activeBtn.style.color = '#00E5FF';
+            activeBtn.style.borderColor = '#00E5FF'; activeBtn.style.color = '#00E5FF';
             document.getElementById(subId).style.display = 'block';
         }
 
         function openTutorial() { document.getElementById('tutorial-modal').style.display='flex'; }
-        
         function closeTutorial() {
             document.getElementById('tutorial-modal').style.display='none';
             localStorage.setItem('tut_shown', 'true');
@@ -1008,8 +878,7 @@
         function checkBlink() {
             let total = getDeckTotal();
             let el = document.getElementById('import-section');
-            if(total < 60) el.classList.add('blink-yellow');
-            else el.classList.remove('blink-yellow');
+            if(total < 60) el.classList.add('blink-yellow'); else el.classList.remove('blink-yellow');
         }
 
         function getDeckTotal() { return Object.values(deckDict).reduce((sum, c) => sum + c.qty, 0); }
@@ -1041,9 +910,9 @@
             fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) })
             .then(r=>r.json()).then(d=>{ 
                 if(d.success){ deckDict=d.deck; updateDeckUI(); } 
-                else { alert(d.detail || (currentLang === 'zh' ? "解析失敗。" : "Parse failed.")); }
+                else { alert(d.detail || "解析失敗。"); }
             })
-            .catch(e => { alert(currentLang === 'zh' ? "連線失敗。請確認 Python 伺服器正在執行。" : "Connection failed."); })
+            .catch(e => { alert("連線失敗。請確認伺服器正在執行。"); })
             .finally(() => hideProgress('link'));
         }
         function parseText() {
@@ -1052,9 +921,9 @@
             fetch(`${API_BASE}/api/v1/parse_text`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('deck-text').value}) })
             .then(r=>r.json()).then(d=>{ 
                 if(d.success){ deckDict=d.deck; updateDeckUI(); document.getElementById('deck-text').value=""; } 
-                else { alert(d.detail || (currentLang === 'zh' ? "解析失敗。" : "Parse failed.")); }
+                else { alert(d.detail || "解析失敗。"); }
             })
-            .catch(e => { alert(currentLang === 'zh' ? "連線失敗或發生錯誤。" : "Connection failed."); })
+            .catch(e => { alert("連線失敗或發生錯誤。"); })
             .finally(() => { hideProgress('text'); document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; });
         }
         function addCustomCard() {
@@ -1117,7 +986,7 @@
         function openSelector(type) {
             currentModalMode = type;
             tempSelectedKeys = type === 'direct' ? Object.keys(targetList) : [];
-            let tDirect = currentLang === 'zh' ? "🔥 選取目標卡 (可多選)" : "🔥 Select Target Cards (Multi)";
+            let tDirect = currentLang === 'zh' ? "🔥 選取目標卡 (可多選)" : "🔥 Select Target Cards";
             let tChain = currentLang === 'zh' ? "🔄 新增連鎖牌 (單張加入)" : "🔄 Add Chain Card";
             document.getElementById('gallery-title').innerText = type === 'direct' ? tDirect : tChain;
             document.getElementById('gallery-confirm-btn').style.display = 'block';
@@ -1129,27 +998,17 @@
             const container = document.getElementById('gallery-container'); container.innerHTML = "";
             items.forEach(item => {
                 const div = document.createElement('div');
-                
-                let isSelected = false;
-                if(currentModalMode.startsWith('search_multi')) {
-                    isSelected = (searchMultiSelection[item.key] && searchMultiSelection[item.key] > 0);
-                } else {
-                    isSelected = tempSelectedKeys.includes(item.key);
-                }
-                
+                let isSelected = currentModalMode.startsWith('search_multi') ? (searchMultiSelection[item.key] && searchMultiSelection[item.key] > 0) : tempSelectedKeys.includes(item.key);
                 div.className = 'gallery-item' + (isSelected ? ' selected' : '');
-                
                 let inner = `<img src="${item.img === 'default_back' ? DEFAULT_CARDBACK : item.img}">`;
                 if(item.img === 'default_back') inner += `<div class="card-name-overlay" style="font-size:12px;">${item.name}</div>`;
-                
                 if(currentModalMode === 'preview') {
                     inner += `<div class="qty-control" onclick="event.stopPropagation()">
                                 <button class="qty-btn" onclick="modQty('${item.key}', -1)">-</button>
                                 <span style="color:white; font-weight:bold; font-size:14px;">${item.qty}</span>
                                 <button class="qty-btn" onclick="modQty('${item.key}', 1)">+</button>
                               </div>`;
-                } 
-                else if (currentModalMode.startsWith('search_multi')) {
+                } else if (currentModalMode.startsWith('search_multi')) {
                     let currentQty = searchMultiSelection[item.key] || 0;
                     inner += `<div class="badge">x${item.max_qty}</div>`;
                     inner += `<div class="qty-control" onclick="event.stopPropagation()">
@@ -1158,16 +1017,13 @@
                                 <button class="qty-btn" onclick="modifySearchQty('${item.key}', 1, ${item.max_qty})">+</button>
                               </div>`;
                     if(isSelected) inner += `<div class="check-badge" style="bottom: 30px;">✔</div>`;
-                }
-                else {
+                } else {
                     if(item.qty) inner += `<div class="badge">x${item.qty}</div>`;
                     inner += `<div class="check-badge">✔</div>`;
                 }
                 div.innerHTML = inner;
-
                 div.onclick = () => {
                     if(currentModalMode === 'preview' || currentModalMode.startsWith('search_multi')) return handleCardClick(item.img); 
-                    
                     let toggleKey = item.key;
                     if(currentModalMode === 'direct' || currentModalMode.startsWith('chain_target_')) {
                         if(tempSelectedKeys.includes(toggleKey)) { tempSelectedKeys = tempSelectedKeys.filter(k=>k!==toggleKey); div.classList.remove('selected'); }
@@ -1187,7 +1043,6 @@
             searchMultiSelection[key] += delta;
             if(searchMultiSelection[key] < 0) searchMultiSelection[key] = 0;
             if(searchMultiSelection[key] > maxQty) searchMultiSelection[key] = maxQty;
-            
             let zone = currentModalMode.split('_')[2];
             let arr = gameCards.filter(c => c.zone === zone);
             let groups = {};
@@ -1231,11 +1086,7 @@
         function renderTargetUI() {
             const container = document.getElementById('target-display'); container.innerHTML = "";
             let keys = Object.keys(targetList);
-            if(keys.length === 0) { 
-                let emptyMsg = currentLang === 'zh' ? '未選擇任何卡片' : 'No cards selected';
-                container.innerHTML = `<div style="color:#888; text-align:center;">${emptyMsg}</div>`; 
-                return; 
-            }
+            if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; }
             keys.forEach(k => {
                 let c = targetList[k]; let div = document.createElement('div'); div.className = 'target-row';
                 let imgHtml = `<img src="${c.img === 'default_back' ? DEFAULT_CARDBACK : c.img}" style="width:30px;height:42px;margin-right:10px;">`;
@@ -1254,17 +1105,11 @@
         function renderChainUI() {
             const container = document.getElementById('chain-display'); container.innerHTML = "";
             let keys = Object.keys(chainList);
-            if(keys.length === 0) { 
-                let emptyMsg = currentLang === 'zh' ? '未選擇任何卡片' : 'No cards selected';
-                container.innerHTML = `<div style="color:#888; text-align:center;">${emptyMsg}</div>`; 
-                return; 
-            }
+            if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; }
             keys.forEach(k => {
                 let c = chainList[k]; let div = document.createElement('div'); div.className = 'target-row'; div.style.flexDirection = 'column'; div.style.alignItems = 'stretch'; div.style.borderLeftColor = '#FFD700';
-                
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search');
                 let imgHtml = `<img src="${c.img === 'default_back' ? DEFAULT_CARDBACK : c.img}" style="width:24px;height:33px;margin-right:8px;">`;
-                
                 let optsZH = `
                     <option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option>
                     <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option>
@@ -1273,17 +1118,6 @@
                     <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option>
                     <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>
                 `;
-                let optsEN = `
-                    <option value="Item/Ability - Draw" ${c.type.includes('Draw')?'selected':''}>Item/Ability - Draw</option>
-                    <option value="Item/Ability - Search" ${c.type.includes('Search')?'selected':''}>Item/Ability - Search</option>
-                    <option value="Supporter - Shuffle Draw" ${c.type.includes('Shuffle')?'selected':''}>Supporter - Shuffle Draw</option>
-                    <option value="Supporter - Discard Draw" ${c.type.includes('Discard')?'selected':''}>Supporter - Discard Draw</option>
-                    <option value="Supporter - Bottom Draw" ${c.type.includes('Bottom')?'selected':''}>Supporter - Bottom Draw</option>
-                    <option value="Supporter - Search" ${c.type.includes('Supporter - Search')?'selected':''}>Supporter - Search</option>
-                `;
-
-                let txtGuaranteed = currentLang === 'zh' ? '✅ 已在手上或場上 (保證發動)' : '✅ In hand/field (Guaranteed)';
-                
                 let inner = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div>
@@ -1291,18 +1125,17 @@
                     </div>
                     <div style="display:flex; gap:10px; margin-top:8px;">
                         <select style="flex:2; font-size:13px;" onchange="chainList['${k}'].type = this.value; renderChainUI();">
-                            ${currentLang === 'zh' ? optsZH : optsEN}
+                            ${optsZH}
                         </select>
                         <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${k}'].val=parseInt(this.value)">
                     </div>
                     <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;">
                         <input type="checkbox" onchange="chainList['${k}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}>
-                        ${txtGuaranteed}
+                        ✅ 已在手上或場上 (保證發動)
                     </label>
                 `;
                 if(isSearch) {
-                    let defaultPlaceholder = currentLang === 'zh' ? '點擊選取目標...' : 'Select targets...';
-                    let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || defaultPlaceholder;
+                    let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...';
                     inner += `<button class="btn-secondary" style="margin-top:6px; font-size:12px;" onclick="openChainTargetSelector('${k}')">🎯 ${tgNames}</button>`;
                 }
                 div.innerHTML = inner; container.appendChild(div);
@@ -1312,45 +1145,34 @@
         function openChainTargetSelector(parentKey) {
             currentModalMode = 'chain_target_' + parentKey;
             tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : [];
-            let modalTitle = currentLang === 'zh' ? "🎯 選擇檢索目標卡 (可多選)" : "🎯 Select Search Targets (Multi)";
-            document.getElementById('gallery-title').innerText = modalTitle;
+            document.getElementById('gallery-title').innerText = "🎯 選擇檢索目標卡 (可多選)";
             document.getElementById('gallery-confirm-btn').style.display = 'block';
             renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })));
             document.getElementById('gallery-modal').style.display = 'flex';
         }
 
         function exportGameState() {
-            if(gameCards.length === 0) return alert(currentLang === 'zh' ? "尚未開局！" : "Game not started!");
+            if(gameCards.length === 0) return alert("尚未開局！");
             let fullData = gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name }));
-            
-            fetch(`${API_BASE}/api/v1/share_game`, {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ game_data: fullData })
-            })
-            .then(r => r.json())
-            .then(d => {
+            fetch(`${API_BASE}/api/v1/share_game`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ game_data: fullData }) })
+            .then(r => r.json()).then(d => {
                 if(d.success) {
-                    let code = d.share_code;
-                    document.getElementById('share-code-display').value = code;
+                    document.getElementById('share-code-display').value = d.share_code;
                     document.getElementById('share-modal').style.display = 'flex';
                 }
-            })
-            .catch(e => alert(currentLang === 'zh' ? "分享失敗，請確認後端服務連線。" : "Share failed."));
+            });
         }
 
         function copyShareCode() {
-            let input = document.getElementById('share-code-display');
-            input.select();
+            let input = document.getElementById('share-code-display'); input.select();
             navigator.clipboard.writeText(input.value).then(() => {
-                let msg = currentLang === 'zh' ? "📋 短代碼已複製！朋友在任何電腦輸入即可載入戰局。" : "📋 Code copied!";
-                alert(msg);
+                alert("📋 短代碼已複製！朋友在任何電腦輸入即可載入戰局。");
                 document.getElementById('share-modal').style.display = 'none';
             });
         }
 
         function importGameState() {
-            let promptMsg = currentLang === 'zh' ? "請貼上 6 位數對局短代碼：" : "Paste the 6-digit match code:";
-            let input = prompt(promptMsg);
+            let input = prompt("請貼上 6 位數對局短代碼：");
             if(!input) return;
             let code = input.trim();
             if(code.includes('share=')) code = code.split('share=')[1].split('&')[0];
@@ -1359,36 +1181,21 @@
 
         function loadSharedGameByCode(code) {
             fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`)
-                .then(r => r.json())
-                .then(d => {
+                .then(r => r.json()).then(d => {
                     if(d.success) {
                         deckDict = {}; 
                         gameCards = d.game_data.map(item => {
                             let cardKey = item.k;
                             let cardName = item.n || item.k.split(' [')[0];
                             let cardImg = item.i || DEFAULT_CARDBACK;
-                            
-                            if(!deckDict[cardKey]) {
-                                deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName };
-                            }
+                            if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName };
                             deckDict[cardKey].qty++;
-
-                            return {
-                                id: 'c_' + Math.random().toString(36).substr(2, 9),
-                                key: cardKey,
-                                name: cardName,
-                                img: cardImg, 
-                                zone: item.z
-                            };
+                            return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z };
                         });
-                        
-                        updateDeckUI(); 
-                        saveState(); renderBoard();
-                        let successMsg = currentLang === 'zh' ? `✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})` : `✅ Match loaded! (Code: ${code.toUpperCase()})`;
-                        alert(successMsg);
-                    } else { alert(d.detail || (currentLang === 'zh' ? "載入失敗。" : "Load failed.")); }
-                })
-                .catch(e => alert(currentLang === 'zh' ? "❌ 找不到該對局代碼。" : "❌ Match code not found."));
+                        updateDeckUI(); saveState(); renderBoard();
+                        alert(`✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})`);
+                    } else alert("載入失敗。");
+                });
         }
 
         function saveState() {
@@ -1405,58 +1212,38 @@
 
         function changeBenchSize(delta) {
             benchSize = Math.max(5, Math.min(8, benchSize + delta));
-            let unit = translations[currentLang].benchLabel;
-            document.getElementById('bench-size-label').innerText = `${benchSize} ${unit}`;
+            document.getElementById('bench-size-label').innerText = `${benchSize} 格`;
             renderBenchSlots(); renderBoard();
         }
         function renderBenchSlots() {
-            let container = document.getElementById('bench-container');
-            container.innerHTML = "";
+            let container = document.getElementById('bench-container'); container.innerHTML = "";
             for(let i=0; i<benchSize; i++) {
-                let div = document.createElement('div');
-                div.id = `zone-bench-${i}`; div.className = "drop-zone drop-zone-stacked";
-                div.style.width = "150px"; 
-                div.ondrop = drop; div.ondragover = allowDrop;
-                container.appendChild(div);
+                let div = document.createElement('div'); div.id = `zone-bench-${i}`; div.className = "drop-zone drop-zone-stacked";
+                div.style.width = "150px"; div.ondrop = drop; div.ondragover = allowDrop; container.appendChild(div);
             }
         }
 
         function startGame() {
-            if(getDeckTotal() !== 60) { 
-                alert(currentLang === 'zh' ? "⚠️ 牌組必須 60 張！" : "⚠️ Deck must contain 60 cards!"); 
-                return; 
-            }
+            if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
             gameCards = [];
             Object.keys(deckDict).forEach(k => {
-                for(let i=0; i<deckDict[k].qty; i++) {
-                    gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, zone: 'deck' });
-                }
+                for(let i=0; i<deckDict[k].qty; i++) { gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, zone: 'deck' }); }
             });
             gameCards.sort(() => Math.random() - 0.5);
             for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand';
             for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`;
-            
-            historyStates = []; historyPtr = -1;
-            saveState(); renderBoard();
+            historyStates = []; historyPtr = -1; saveState(); renderBoard();
         }
 
         function createCardEl(c, isField=false) {
-            const div = document.createElement('div');
-            div.className = 'card-wrapper'; div.id = c.id; div.draggable = true;
-            
+            const div = document.createElement('div'); div.className = 'card-wrapper'; div.id = c.id; div.draggable = true;
             div.ondragstart = (e) => { isDragging = true; e.dataTransfer.setData("text", c.id); setTimeout(() => div.style.opacity = '0.3', 0); };
             div.ondragend = (e) => { setTimeout(() => { isDragging = false; }, 100); div.style.opacity = '1'; renderBoard(); };
-            
             div.onclick = () => { if(!isDragging) handleCardClick(c.img); };
-            
             let inner = `<img src="${c.img === 'default_back' ? DEFAULT_CARDBACK : c.img}">`;
             if(c.img === 'default_back') inner += `<div class="card-name-overlay">${c.name}</div>`;
-            
             if(isField) {
-                let btnText = currentLang === 'zh' ? "🔼置頂" : "🔼Front";
-                inner += `<div class="card-action-menu">
-                            <button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">${btnText}</button>
-                          </div>`;
+                inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`;
             }
             div.innerHTML = inner; return div;
         }
@@ -1483,20 +1270,12 @@
             let handCenter = (handGroupsKeys.length - 1) / 2;
             
             handGroupsKeys.forEach((k, idx) => {
-                let group = handGroups[k];
-                let topCard = group.cards[0];
+                let group = handGroups[k]; let topCard = group.cards[0];
                 let el = createCardEl(topCard, false);
-                if(group.cards.length > 1) {
-                    el.innerHTML += `<div class="hand-badge">x${group.cards.length}</div>`;
-                }
-                
+                if(group.cards.length > 1) el.innerHTML += `<div class="hand-badge">x${group.cards.length}</div>`;
                 let offset = idx - handCenter;
-                let angle = offset * 4; 
-                let y = Math.abs(offset) * Math.abs(offset) * 1.5; 
-                
-                el.style.setProperty('--fan-rot', `${angle}deg`);
-                el.style.setProperty('--fan-y', `${y}px`);
-                
+                let angle = offset * 4; let y = Math.abs(offset) * Math.abs(offset) * 1.5; 
+                el.style.setProperty('--fan-rot', `${angle}deg`); el.style.setProperty('--fan-y', `${y}px`);
                 document.getElementById('zone-hand').appendChild(el);
             });
             
@@ -1504,19 +1283,12 @@
             for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`);
             
             fieldZones.forEach(zName => {
-                let domId = 'zone-' + zName.replace('_','-');
-                let domEl = document.getElementById(domId);
-                if(!domEl) return;
-                
-                let arr = zones[zName]||[];
-                let centerOffset = (arr.length - 1) / 2;
+                let domId = 'zone-' + zName.replace('_','-'); let domEl = document.getElementById(domId); if(!domEl) return;
+                let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2;
                 arr.forEach((c, idx) => {
-                    let el = createCardEl(c, true);
-                    el.style.position = 'absolute'; 
-                    el.style.top = '50%'; el.style.left = '50%';
+                    let el = createCardEl(c, true); el.style.position = 'absolute'; el.style.top = '50%'; el.style.left = '50%';
                     el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`; 
-                    el.style.zIndex = idx;
-                    domEl.appendChild(el);
+                    el.style.zIndex = idx; domEl.appendChild(el);
                 });
             });
 
@@ -1540,8 +1312,7 @@
                 let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute';
                 let imgHtml = `<img src="${topC.img === 'default_back' ? DEFAULT_CARDBACK : topC.img}" style="pointer-events:none;">`;
                 if(topC.img === 'default_back') imgHtml += `<div class="card-name-overlay">${topC.name}</div>`;
-                el.innerHTML = imgHtml;
-                document.getElementById('zone-discard').appendChild(el);
+                el.innerHTML = imgHtml; document.getElementById('zone-discard').appendChild(el);
             }
             document.getElementById('hand-count').innerText = (zones['hand']||[]).length;
         }
@@ -1552,7 +1323,6 @@
             ev.preventDefault(); ev.currentTarget.classList.remove('dragover');
             let cardId = ev.dataTransfer.getData("text");
             let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_');
-            
             let c = gameCards.find(c => c.id === cardId);
             if(c) {
                 if(targetZone.startsWith('prize_')) {
@@ -1586,11 +1356,9 @@
             if(arr.length === 0) return;
             currentModalMode = 'search_multi_' + zone;
             searchMultiSelection = {}; 
-            let zoneName = zone === 'deck' ? (currentLang === 'zh' ? '牌庫' : 'Deck') : (currentLang === 'zh' ? '棄牌' : 'Discard');
-            let titleText = currentLang === 'zh' ? `🔍 檢索${zoneName} (可多選回手牌)` : `🔍 Search ${zoneName} (Multi-select to Hand)`;
-            document.getElementById('gallery-title').innerText = titleText;
+            let zoneName = zone === 'deck' ? '牌庫' : '棄牌';
+            document.getElementById('gallery-title').innerText = `🔍 檢索${zoneName} (可多選回手牌)`;
             document.getElementById('gallery-confirm-btn').style.display = 'block';
-
             let groups = {};
             arr.forEach(c => { if(!groups[c.key]) groups[c.key] = {max_qty:0, img:c.img, name:c.name, key:c.key}; groups[c.key].max_qty++; });
             renderGalleryItems(Object.values(groups));
@@ -1605,13 +1373,9 @@
             let d1 = parseInt(document.getElementById('draw1-qty').value);
             let targetRule = document.querySelector('input[name="target_rule"]:checked').value;
             let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0;
-            
             let directDict = {};
             Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; });
-            if(Object.keys(directDict).length === 0) { 
-                alert(currentLang === 'zh' ? "請先選取直接解牌目標！" : "Please select target cards first!"); 
-                return; 
-            }
+            if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！");
             
             let formattedChainDict = {};
             Object.keys(chainList).forEach(k => {
@@ -1624,14 +1388,11 @@
             });
 
             let cDeck = gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})); 
-            document.getElementById('sim-result').innerText = currentLang === 'zh' ? "運算中..." : "Simulating...";
+            document.getElementById('sim-result').innerText = "運算中...";
             
             fetch(`${API_BASE}/api/v1/simulate`, {
                 method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${currentUserToken}` 
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentUserToken}` },
                 body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand })
             }).then(r => {
                 if(r.status === 401 || r.status === 403) { 
@@ -1641,11 +1402,9 @@
                 return r.json();
             }).then(d => {
                 if(d.success) {
-                    let joinSymbol = targetRule === 'AND' ? ' + ' : (currentLang === 'zh' ? ' 或 ' : ' OR ');
+                    let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 ';
                     let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol);
-                    let titleText = currentLang === 'zh' ? `首波 ${d1} 抽` : `First ${d1} Draws`;
-                    let descPrefix = currentLang === 'zh' ? "解: " : "Target: ";
-                    lastSimResult = { title: titleText, desc: `${descPrefix}${desc}`, prob: d.prob };
+                    lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob };
                     document.getElementById('sim-result').innerText = `${d.prob.toFixed(1)} %`;
                 }
             }).catch(e => { document.getElementById('sim-result').innerText = "-- %"; });
@@ -1660,12 +1419,7 @@
             div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div>
                 <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div>
                 <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`;
-            
-            let modalTitle = currentLang === 'zh' ? '【對局機率詳細資訊】' : '[Probability Details]';
-            let modalRoute = currentLang === 'zh' ? '🎯 路線：' : '🎯 Scenario: ';
-            let modalCond = currentLang === 'zh' ? '📝 條件：' : '📝 Conditions: ';
-            let modalRate = currentLang === 'zh' ? '📊 成功率：' : '📊 Rate: ';
-            div.onclick = () => alert(`${modalTitle}\n\n${modalRoute}${lastSimResult.title}\n\n${modalCond}\n${lastSimResult.desc}\n\n${modalRate}${lastSimResult.prob.toFixed(1)}%`);
+            div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`);
             b.appendChild(div);
         }
     </script>
