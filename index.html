@@ -159,9 +159,9 @@
         /* 🔒 登入按鈕與停用樣式 */
         .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #00E5FF; margin-top: 12px; background: #0D1117; color: #00E5FF; }
         .login-btn:hover:not(:disabled) { background: #00E5FF; color: #000; }
-        .login-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; background: #161B22; }
+        .login-btn:disabled { border-color: #444 !important; color: #666 !important; cursor: not-allowed !important; background: #161B22 !important; }
 
-        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; }
+        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; display: inline-block; padding: 2px; }
         .legal-link:hover { color: #79C0FF; }
     </style>
 </head>
@@ -173,7 +173,7 @@
         </symbol>
     </svg>
 
-    <!-- 🔒 未登入強迫登入護城河 Modal (含倒數冷卻與勾選防護) -->
+    <!-- 🔒 未登入強迫登入護城河 Modal -->
     <div id="gate-overlay" class="modal-overlay" style="display: flex; z-index: 15000; backdrop-filter: blur(8px);">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
             <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
@@ -184,17 +184,17 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀勾選區 -->
-            <div style="display: flex; align-items: center; gap: 8px; text-align: left; font-size: 12px; color: #CCC; margin: 10px 0;">
-                <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" style="width: 16px; height: 16px; accent-color: #00E5FF; cursor: pointer;">
-                <label for="terms-checkbox" style="cursor: pointer;">
+            <!-- ⚖️ 強制閱讀勾選區 (結構解耦，防止冒泡衝突) -->
+            <div style="display: flex; align-items: center; gap: 8px; text-align: left; font-size: 12px; color: #CCC; margin: 12px 0;">
+                <input type="checkbox" id="terms-checkbox" style="width: 18px; height: 18px; accent-color: #00E5FF; cursor: pointer; flex-shrink: 0;">
+                <div>
                     我已閱讀並同意 
-                    <span class="legal-link" onclick="openLegalModal('terms')">服務條款</span> 與 
-                    <span class="legal-link" onclick="openLegalModal('privacy')">隱私權政策</span>
-                </label>
+                    <span class="legal-link" onclick="openLegalModal(event, 'terms')">服務條款</span> 與 
+                    <span class="legal-link" onclick="openLegalModal(event, 'privacy')">隱私權政策</span>
+                </div>
             </div>
 
-            <!-- 🚀 發送按鈕 (預設未勾選為按鈕停用 disabled) -->
+            <!-- 🚀 發送按鈕 (預設停用 disabled) -->
             <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>
                 ✨ 發送驗證連結
             </button>
@@ -544,6 +544,11 @@
         </div>
     </div>
 
+    <!-- Lightbox -->
+    <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10000;">
+        <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
+    </div>
+
     <script>
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
@@ -570,8 +575,17 @@
         let historyStates = [];
         let historyPtr = -1;
 
-        // Supabase Auth 驗證與自動解鎖
+        // 原生 JavaScript 強固監聽條款勾選框 (解鎖按鈕)
         window.addEventListener('DOMContentLoaded', async () => {
+            const chk = document.getElementById('terms-checkbox');
+            const btn = document.getElementById('send-verify-btn');
+            
+            if(chk && btn) {
+                chk.addEventListener('change', () => {
+                    btn.disabled = !chk.checked;
+                });
+            }
+
             if (supabase) {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) handleSession(session);
@@ -594,17 +608,14 @@
             document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
         }
 
-        // ⚖️ 切換登入按鈕可否點擊 (需先勾選條款)
-        function toggleLoginBtn() {
-            const chk = document.getElementById('terms-checkbox');
-            const btn = document.getElementById('send-verify-btn');
-            btn.disabled = !chk.checked;
-        }
-
         // 🪄 信箱發送驗證連結 (含 5 秒倒數冷卻機制)
         async function loginWithMagicLink() {
-            if (!supabase) return alert("系統初始化失敗");
-            const email = document.getElementById('magic-email-input').value.trim();
+            const chk = document.getElementById('terms-checkbox');
+            if (!chk || !chk.checked) return alert("請先勾選同意服務條款與隱私權政策！");
+            if (!supabase) return alert("系統初始化失敗，請重新整理網頁");
+            
+            const emailInput = document.getElementById('magic-email-input');
+            const email = emailInput ? emailInput.value.trim() : "";
             if (!email) return alert("請輸入有效的 Email 信箱");
 
             const btn = document.getElementById('send-verify-btn');
@@ -640,7 +651,7 @@
                         } else {
                             clearInterval(timer);
                             btn.innerText = "✨ 發送驗證連結";
-                            btn.disabled = !document.getElementById('terms-checkbox').checked;
+                            btn.disabled = !chk.checked;
                         }
                     }, 1000);
                 }
@@ -653,8 +664,9 @@
             }
         }
 
-        // ⚖️ 開啟法律條款 Modal (直接開啟靜態Modal，確保絕不空白)
-        function openLegalModal(type) {
+        // ⚖️ 開啟法律條款 Modal (加上 e.stopPropagation 阻擋事件冒泡衝突)
+        function openLegalModal(e, type) {
+            if (e && e.stopPropagation) e.stopPropagation();
             if (type === 'terms') {
                 document.getElementById('terms-modal').style.display = 'flex';
             } else {
@@ -759,7 +771,7 @@
         function renderBenchSlots() { let container = document.getElementById('bench-container'); container.innerHTML = ""; for(let i=0; i<benchSize; i++) { let div = document.createElement('div'); div.id = `zone-bench-${i}`; div.className = "drop-zone drop-zone-stacked"; div.style.width = "150px"; div.ondrop = drop; div.ondragover = allowDrop; container.appendChild(div); } }
         function startGame() { if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！"); gameCards = []; Object.keys(deckDict).forEach(k => { for(let i=0; i<deckDict[k].qty; i++) { gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, zone: 'deck' }); } }); gameCards.sort(() => Math.random() - 0.5); for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; historyStates = []; historyPtr = -1; saveState(); renderBoard(); }
         function createCardEl(c, isField=false) { const div = document.createElement('div'); div.className = 'card-wrapper'; div.id = c.id; div.draggable = true; div.ondragstart = (e) => { isDragging = true; e.dataTransfer.setData("text", c.id); setTimeout(() => div.style.opacity = '0.3', 0); }; div.ondragend = (e) => { setTimeout(() => { isDragging = false; }, 100); div.style.opacity = '1'; renderBoard(); }; div.onclick = () => { if(!isDragging) handleCardClick(c.img); }; let inner = `<img src="${c.img === 'default_back' ? DEFAULT_CARDBACK : c.img}">`; if(c.img === 'default_back') inner += `<div class="card-name-overlay">${c.name}</div>`; if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } div.innerHTML = inner; return div; }
-        function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(idx, 1)[0]); saveState(); renderBoard(); } }
+        function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); renderBoard(); } }
         function renderBoard() { let zList = ['zone-hand', 'zone-stadium', 'zone-active', 'zone-deck', 'zone-discard']; for(let i=0; i<8; i++) zList.push(`zone-bench-${i}`); for(let i=0; i<6; i++) zList.push(`zone-prize-${i}`); zList.forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = ""; }); let zones = {}; gameCards.forEach(c => { if(!zones[c.zone]) zones[c.zone]=[]; zones[c.zone].push(c); }); let handGroups = {}; (zones['hand']||[]).forEach(c => { if(!handGroups[c.key]) handGroups[c.key] = { cards: [] }; handGroups[c.key].cards.push(c); }); let handGroupsKeys = Object.keys(handGroups); let handCenter = (handGroupsKeys.length - 1) / 2; handGroupsKeys.forEach((k, idx) => { let group = handGroups[k]; let topCard = group.cards[0]; let el = createCardEl(topCard, false); if(group.cards.length > 1) el.innerHTML += `<div class="hand-badge">x${group.cards.length}</div>`; let offset = idx - handCenter; let angle = offset * 4; let y = Math.abs(offset) * Math.abs(offset) * 1.5; el.style.setProperty('--fan-rot', `${angle}deg`); el.style.setProperty('--fan-y', `${y}px`); document.getElementById('zone-hand').appendChild(el); }); let fieldZones = ['active', 'stadium']; for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`); fieldZones.forEach(zName => { let domId = 'zone-' + zName.replace('_','-'); let domEl = document.getElementById(domId); if(!domEl) return; let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2; arr.forEach((c, idx) => { let el = createCardEl(c, true); el.style.position = 'absolute'; el.style.top = '50%'; el.style.left = '50%'; el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`; el.style.zIndex = idx; domEl.appendChild(el); }); }); for(let i=0; i<6; i++) { let arr = zones['prize_'+i]||[]; if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false)); } let deckArr = zones['deck']||[]; document.getElementById('deck-count').innerText = deckArr.length; if(deckArr.length > 0) { let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; el.innerHTML = `<img src="${DEFAULT_CARDBACK}" style="pointer-events:none;">`; document.getElementById('zone-deck').appendChild(el); } let discArr = zones['discard']||[]; document.getElementById('discard-count').innerText = discArr.length; if(discArr.length > 0) { let topC = discArr[discArr.length-1]; let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; let imgHtml = `<img src="${topC.img === 'default_back' ? DEFAULT_CARDBACK : topC.img}" style="pointer-events:none;">`; if(topC.img === 'default_back') imgHtml += `<div class="card-name-overlay">${topC.name}</div>`; el.innerHTML = imgHtml; document.getElementById('zone-discard').appendChild(el); } document.getElementById('hand-count').innerText = (zones['hand']||[]).length; }
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('dragover'); }
         function drop(ev) { ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); let cardId = ev.dataTransfer.getData("text"); let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_'); let c = gameCards.find(c => c.id === cardId); if(c) { if(targetZone.startsWith('prize_')) { let occupier = gameCards.find(card => card.zone === targetZone); if(occupier) occupier.zone = c.zone; } c.zone = targetZone; gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); setTimeout(() => renderBoard(), 10); } }
