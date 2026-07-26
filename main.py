@@ -10,13 +10,14 @@ import os
 import time
 import uuid
 import json
+from datetime import datetime
 from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="7.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="7.2.0")
 
-# 🔒 跨域資源共享限制
+# 🔒 跨域資源共享限制 (CORS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,13 +26,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 靜態圖片資料夾掛載
+# 靜態教學圖片資料夾
 if os.path.exists("tutor_pic"):
     app.mount("/tutor_pic", StaticFiles(directory="tutor_pic"), name="tutor_pic")
 
-# 🔑 Supabase 設定 (優先從系統環境變數讀取，預設為備用金鑰)
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://cnjajimwpuuhkdxelgwg.supabase.co")
-SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "sb_secret_rQ9BehEwCzjbAF5oRDNzYw_l1cXhpbC")
+# 🔑 Supabase 設定 (優先讀取系統環境變數，並自動自動清除多餘字串與斜線)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://cnjajimwpuuhkdxelgwg.supabase.co").strip().rstrip("/")
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "sb_secret_rQ9BehEwCzjbAF5oRDNzYw_l1cXhpbC").strip()
+
+if SUPABASE_URL.endswith("/rest/v1"):
+    SUPABASE_URL = SUPABASE_URL.replace("/rest/v1", "")
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
@@ -45,7 +50,6 @@ def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
     
     token = authorization.split(" ")[1]
     try:
-        # 使用 Supabase 驗證 JWT Token 取得用戶 UID
         user_res = supabase.auth.get_user(token)
         if not user_res or not user_res.user:
             raise HTTPException(status_code=401, detail="無效的登入 Token，請重新登入")
@@ -60,11 +64,11 @@ def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
         profile = profile_res.data[0]
         is_pro = profile.get("is_pro", False)
         
-        # 若為 Pro 會員，直接放行 (無限次數)
+        # 若為 Pro 會員直接放行
         if is_pro:
             return {"user_id": user_id, "is_pro": True, "remaining_today": 9999}
             
-        # 2. 普通/試用用戶：每日限制 30 次
+        # 2. 免費用戶：每日限制 30 次
         sim_res = supabase.table("daily_simulations") \
             .select("count") \
             .eq("user_id", user_id) \
@@ -106,7 +110,6 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
         hand = deck[:draw1]
         deck = deck[draw1:]
         
-        # 保證發動卡片處理
         for k, v in chain_dict.items():
             if v.get('guaranteed') and k not in hand: hand.append(k)
 
@@ -152,12 +155,11 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
     return (success_count / iterations) * 100.0
 
 # ==========================================
-# 3. Pydantic Models
+# 3. Pydantic Models & API
 # ==========================================
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
-class SaveDeckReq(BaseModel): deck_name: str; deck_data: str
 class ShareGameReq(BaseModel): game_data: List[Dict[str, Any]]
 class MonteCarloReq(BaseModel):
     deck_cards: List[Dict[str, Any]]
@@ -167,13 +169,10 @@ class MonteCarloReq(BaseModel):
     target_rule: str = "AND"
     dead_hand_size: int = 0
 
-# ==========================================
-# 4. API Endpoints
-# ==========================================
 @app.get("/")
 def serve_index():
     if os.path.exists("index.html"): return FileResponse("index.html")
-    return {"message": "找不到 index.html"}
+    return {"message": "PTCG Octoplus API is running successfully."}
 
 @app.get("/api/v1/marquee")
 def api_get_marquee():
@@ -190,11 +189,17 @@ def api_get_marquee():
     except Exception:
         return {"marquee": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🎁 測試者 60 天邀請碼兌換 API
+# 🎁 邀請碼兌換 API (效期統一至 2026/09/30 23:59:59)
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None)):
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="請先登入帳號")
+    
+    # 截止日期檢查：2026/09/30 23:59:59
+    deadline = datetime(2026, 9, 30, 23, 59, 59)
+    if datetime.now() > deadline:
+        raise HTTPException(status_code=400, detail="❌ 此封測兌換碼活動已於 2026 年 9 月 30 日截止失效。")
+
     token = auth_header.split(" ")[1]
     user_res = supabase.auth.get_user(token)
     if not user_res or not user_res.user:
@@ -210,21 +215,19 @@ def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None
     promo = code_res.data[0]
     if promo["used_count"] >= promo["max_uses"]:
         raise HTTPException(status_code=400, detail="❌ 此兌換碼已被領取完畢")
-        
-    days = promo["days_valid"]
     
-    # 升級 Pro 權限並設定過期天數
+    # 強制將權限截止時間設定為 2026-09-30 23:59:59
     supabase.table("profiles").update({
         "is_pro": True,
-        "pro_expires_at": f"now() + interval '{days} days'"
+        "pro_expires_at": "2026-09-30T23:59:59Z"
     }).eq("id", user_id).execute()
     
-    # 使用次數 +1
+    # 兌換次數 +1
     supabase.table("promo_codes").update({
         "used_count": promo["used_count"] + 1
     }).eq("code", code).execute()
     
-    return {"success": True, "detail": f"🎉 成功兌換！已為你開通 {days} 天 Pro 專業無限推演權限。"}
+    return {"success": True, "detail": "🎉 成功兌換！已為你升級 Pro 權限，免費暢享無限次推演至 2026 年 9 月 30 日。"}
 
 # 🌐 解析官方牌組代碼
 @app.post("/api/v1/parse_official")
