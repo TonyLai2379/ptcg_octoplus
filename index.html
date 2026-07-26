@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PTCG 小章魚 - 覆盤最佳工具</title>
 
-    <!-- 🌟 社群分享預覽優化 (LINE / FB / Discord / Threads) -->
+    <!-- 🌟 社群分享預覽優化 -->
     <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析、Limitless 英文牌組匯入與萬次蒙地卡羅手牌率精確推演。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ptcg-octoplus.com/">
@@ -157,7 +157,7 @@
         .tut-img { max-width: 100%; max-height: 48vh; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto 15px auto; border-radius: 8px; border: 1px solid #444; background-color: #0D1117; }
         
         /* 🔒 登入按鈕與停用樣式 */
-        .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #00E5FF; margin-top: 12px; background: #0D1117; color: #00E5FF; }
+        .login-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; border: 1px solid #00E5FF; margin-top: 8px; background: #0D1117; color: #00E5FF; }
         .login-btn:hover:not(:disabled) { background: #00E5FF; color: #000; }
         .login-btn:disabled { border-color: #444 !important; color: #666 !important; cursor: not-allowed !important; background: #161B22 !important; }
 
@@ -184,13 +184,19 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀勾選區 (結構完全解耦，防止冒泡衝突) -->
-            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left;">
-                <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; accent-color: #00E5FF;">
+            <!-- ⚖️ 強制閱讀勾選區 (先點擊條款才能解鎖勾選) -->
+            <div style="display: flex; align-items: flex-start; justify-content: flex-start; gap: 10px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left;">
+                <!-- Checkbox 預設為 disabled 且變灰 -->
+                <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" disabled style="width: 20px; height: 20px; cursor: not-allowed; flex-shrink: 0; accent-color: #00E5FF; filter: grayscale(1);">
                 <div style="line-height: 1.5;">
-                    <label for="terms-checkbox" style="cursor: pointer; margin-right: 4px; font-weight: bold;">我已閱讀並同意</label>
-                    <span class="legal-link" onclick="openTermsModal()">服務條款</span> 與 
-                    <span class="legal-link" onclick="openPrivacyModal()">隱私權政策</span>
+                    <label id="terms-label" for="terms-checkbox" style="cursor: not-allowed; margin-right: 4px; font-weight: bold; color: #666;">我已閱讀並同意</label>
+                    <span class="legal-link" onclick="openLegalModal('terms')">服務條款</span> 與 
+                    <span class="legal-link" onclick="openLegalModal('privacy')">隱私權政策</span>
+                    
+                    <!-- 提示文字 -->
+                    <div id="read-reminder" style="color: #FF5252; font-size: 12px; margin-top: 4px; font-weight: bold;">
+                        ⚠️ 請先點擊閱讀上述兩項條款，才能勾選
+                    </div>
                 </div>
             </div>
 
@@ -205,7 +211,7 @@
     </div>
 
     <!-- ⚖️ 服務條款 Modal -->
-    <div id="terms-modal" class="modal-overlay" onclick="if(event.target===this) closeTermsModal()" style="z-index: 16000;">
+    <div id="terms-modal" class="modal-overlay" style="z-index: 16000;">
         <div class="modal-card" style="max-width: 650px; max-height: 75vh;">
             <div class="modal-header">
                 <h2 style="color: #FFD700; margin: 0;">📜 PTCG 小章魚 - 服務條款 (Terms of Service)</h2>
@@ -221,13 +227,13 @@
                 <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="closeTermsModal()">關閉</button>
+                <button class="btn btn-secondary" style="width: 100px;" onclick="closeLegalModal('terms')">關閉</button>
             </div>
         </div>
     </div>
 
     <!-- 🔒 隱私權政策 Modal -->
-    <div id="privacy-modal" class="modal-overlay" onclick="if(event.target===this) closePrivacyModal()" style="z-index: 16000;">
+    <div id="privacy-modal" class="modal-overlay" style="z-index: 16000;">
         <div class="modal-card" style="max-width: 650px; max-height: 75vh;">
             <div class="modal-header">
                 <h2 style="color: #FFD700; margin: 0;">🔒 PTCG 小章魚 - 隱私權政策 (Privacy Policy)</h2>
@@ -243,7 +249,7 @@
                 <p>使用者隨時可透過客服聯繫申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="closePrivacyModal()">關閉</button>
+                <button class="btn btn-secondary" style="width: 100px;" onclick="closeLegalModal('privacy')">關閉</button>
             </div>
         </div>
     </div>
@@ -549,7 +555,63 @@
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
+    <!-- 📜 核心 JavaScript -->
     <script>
+        // 🔒 閱讀條款解鎖機制 (Forced Acknowledgment)
+        let hasReadTerms = false;
+        let hasReadPrivacy = false;
+
+        function openLegalModal(type) {
+            if (type === 'terms') {
+                document.getElementById('terms-modal').style.display = 'flex';
+                hasReadTerms = true;
+            } else if (type === 'privacy') {
+                document.getElementById('privacy-modal').style.display = 'flex';
+                hasReadPrivacy = true;
+            }
+            checkUnlockCheckbox();
+        }
+
+        function closeLegalModal(type) {
+            if (type === 'terms') {
+                document.getElementById('terms-modal').style.display = 'none';
+            } else if (type === 'privacy') {
+                document.getElementById('privacy-modal').style.display = 'none';
+            }
+        }
+
+        function checkUnlockCheckbox() {
+            if (hasReadTerms && hasReadPrivacy) {
+                const chk = document.getElementById('terms-checkbox');
+                const lbl = document.getElementById('terms-label');
+                const rem = document.getElementById('read-reminder');
+                
+                // 解鎖 Checkbox
+                chk.disabled = false;
+                chk.style.cursor = 'pointer';
+                chk.style.filter = 'none'; // 移除灰色濾鏡
+                
+                // 改變文字樣式
+                lbl.style.cursor = 'pointer';
+                lbl.style.color = '#FFF';
+                
+                // 更新提示訊息
+                rem.style.color = '#00E5FF';
+                rem.innerText = '✅ 您現在可以勾選同意並發送了';
+            }
+        }
+
+        function toggleLoginBtn() {
+            const chk = document.getElementById('terms-checkbox');
+            const btn = document.getElementById('send-verify-btn');
+            if (chk && btn) {
+                btn.disabled = !chk.checked;
+            }
+        }
+
+        // ==========================================
+        // 🚀 核心邏輯與 Supabase Auth
+        // ==========================================
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
@@ -575,30 +637,6 @@
         let historyStates = [];
         let historyPtr = -1;
 
-        // 原生 JavaScript 強固監聽 (確保勾選框100%生效)
-        function toggleLoginBtn() {
-            const chk = document.getElementById('terms-checkbox');
-            const btn = document.getElementById('send-verify-btn');
-            if (chk && btn) {
-                btn.disabled = !chk.checked;
-            }
-        }
-
-        // 開啟與關閉條款 Modal (直接使用原生的 JS 函式控制，絕不報錯)
-        function openTermsModal() {
-            document.getElementById('terms-modal').style.display = 'flex';
-        }
-        function closeTermsModal() {
-            document.getElementById('terms-modal').style.display = 'none';
-        }
-        function openPrivacyModal() {
-            document.getElementById('privacy-modal').style.display = 'flex';
-        }
-        function closePrivacyModal() {
-            document.getElementById('privacy-modal').style.display = 'none';
-        }
-
-        // Supabase Auth 驗證與自動解鎖
         window.addEventListener('DOMContentLoaded', async () => {
             if (supabase) {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -622,7 +660,6 @@
             document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
         }
 
-        // 🪄 信箱發送驗證連結 (含 5 秒倒數冷卻機制)
         async function loginWithMagicLink() {
             const chk = document.getElementById('terms-checkbox');
             if (!chk || !chk.checked) return alert("請先勾選同意服務條款與隱私權政策！");
@@ -656,7 +693,6 @@
                     msgEl.innerText = "✅ 驗證信已成功發送！請至信箱點擊連結登入。";
                     msgEl.style.display = 'block';
                     
-                    // ⏱️ 5 秒倒數冷卻機制
                     let countdown = 5;
                     const timer = setInterval(() => {
                         if (countdown > 0) {
