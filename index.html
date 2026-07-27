@@ -611,15 +611,15 @@
         window.addEventListener('focus', checkAgreements);
 
         // ==========================================
-        // 2. Supabase 與全域變數宣告
+        // 2. Supabase 與全域變數宣告 (絕對不重複)
         // ==========================================
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
 
-        let supabase = null;
+        let supabaseClient = null;
         try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (e) { console.error("Supabase 初始化失敗", e); }
 
         let currentUserToken = null;
@@ -642,14 +642,14 @@
         // 3. 認證登入邏輯
         // ==========================================
         window.addEventListener('DOMContentLoaded', async () => {
-            if (supabase) {
-                const { data: { session } } = await supabase.auth.getSession();
+            if (supabaseClient) {
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) handleSession(session);
             }
         });
 
-        if (supabase) {
-            supabase.auth.onAuthStateChange((event, session) => {
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange((event, session) => {
                 if (session) handleSession(session);
                 else document.getElementById('gate-overlay').style.display = 'flex';
             });
@@ -669,7 +669,7 @@
             let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
             
             if (!termsAgreed || !privacyAgreed) return alert("請先閱讀並同意服務條款與隱私權政策！");
-            if (!supabase) return alert("系統初始化失敗，請重新整理網頁");
+            if (!supabaseClient) return alert("系統初始化失敗，請重新整理網頁");
             
             const emailInput = document.getElementById('magic-email-input');
             const email = emailInput ? emailInput.value.trim() : "";
@@ -683,7 +683,7 @@
             msgEl.style.display = 'none';
 
             try {
-                const { data, error } = await supabase.auth.signInWithOtp({
+                const { data, error } = await supabaseClient.auth.signInWithOtp({
                     email: email,
                     options: { emailRedirectTo: window.location.origin }
                 });
