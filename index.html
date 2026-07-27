@@ -514,20 +514,35 @@
             let btn = document.getElementById('send-verify-btn');
             let rem = document.getElementById('read-reminder');
 
-            if (termsAgreed && tStatus) {
-                tStatus.innerHTML = '✅ 已同意';
-                tStatus.style.color = '#00E5FF';
+            if (tStatus) {
+                if (termsAgreed) {
+                    tStatus.innerHTML = '✅ 已同意';
+                    tStatus.style.color = '#34A853'; // 綠色
+                } else {
+                    tStatus.innerHTML = '❌ 尚未同意';
+                    tStatus.style.color = '#FF5252'; // 紅色
+                }
             }
-            if (privacyAgreed && pStatus) {
-                pStatus.innerHTML = '✅ 已同意';
-                pStatus.style.color = '#00E5FF';
+            
+            if (pStatus) {
+                if (privacyAgreed) {
+                    pStatus.innerHTML = '✅ 已同意';
+                    pStatus.style.color = '#34A853'; // 綠色
+                } else {
+                    pStatus.innerHTML = '❌ 尚未同意';
+                    pStatus.style.color = '#FF5252'; // 紅色
+                }
             }
 
-            if (termsAgreed && privacyAgreed && btn) {
-                btn.disabled = false;
-                if (rem) {
-                    rem.style.color = '#00E5FF';
+            if (btn && rem) {
+                if (termsAgreed && privacyAgreed) {
+                    btn.disabled = false;
+                    rem.style.color = '#34A853';
                     rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！';
+                } else {
+                    btn.disabled = true;
+                    rem.style.color = '#FF5252';
+                    rem.innerText = '⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送';
                 }
             }
         }
@@ -536,7 +551,6 @@
         setInterval(checkAgreements, 1000);
         window.addEventListener('focus', checkAgreements);
         window.addEventListener('load', checkAgreements);
-
 
         // ==========================================
         // 🚀 核心邏輯與 Supabase Auth
