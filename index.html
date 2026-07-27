@@ -940,8 +940,50 @@
             if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！"); 
             let formattedChainDict = {}; Object.keys(chainList).forEach(k => { formattedChainDict[k] = { type: chainList[k].type, val: chainList[k].val, search_targets: Object.keys(chainList[k].targets), guaranteed: chainList[k].guaranteed || false }; }); 
             let cDeck = gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})); 
-            document.getElementById('sim-result').innerText = "運算中..."; 
-            fetch(`${API_BASE}/api/v1/simulate`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentUserToken}` }, body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) }).then(r => { if(r.status === 401 || r.status === 403) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入或升級 Pro"); } return r.json(); }).then(d => { if(d.success) { let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; document.getElementById('sim-result').innerText = `${d.prob.toFixed(1)} %`; } }).catch(e => { document.getElementById('sim-result').innerText = "-- %"; }); 
+            
+            let resultEl = document.getElementById('sim-result');
+            resultEl.innerText = "運算中..."; 
+            resultEl.style.color = "#FFD700"; // 運算中變成黃色提示
+            resultEl.style.fontSize = "32px";
+
+            fetch(`${API_BASE}/api/v1/simulate`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentUserToken}` }, 
+                body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) 
+            }).then(r => { 
+                if(r.status === 401 || r.status === 403) { 
+                    document.getElementById('gate-overlay').style.display='flex'; 
+                    throw new Error("請先登入或升級 Pro"); 
+                }
+                if(!r.ok) {
+                    throw new Error(`伺服器錯誤 (${r.status})`); // 捕捉 500 錯誤
+                }
+                return r.json(); 
+            }).then(d => { 
+                if(d.success) { 
+                    let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; 
+                    let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); 
+                    lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; 
+                    
+                    resultEl.innerText = `${d.prob.toFixed(1)} %`; 
+                    resultEl.style.color = "#00E5FF"; // 成功恢復藍色
+                    resultEl.style.fontSize = "46px";
+                } else {
+                    throw new Error(d.detail || "運算失敗");
+                }
+            }).catch(e => { 
+                console.error(e);
+                resultEl.innerText = "❌ 伺服器錯誤"; 
+                resultEl.style.color = "#FF5252"; // 失敗變成紅色
+                resultEl.style.fontSize = "28px";
+                
+                // 3 秒後恢復原狀
+                setTimeout(() => {
+                    resultEl.innerText = "0.0 %";
+                    resultEl.style.color = "#00E5FF";
+                    resultEl.style.fontSize = "46px";
+                }, 3000);
+            }); 
         }
         
         function saveScenario() { if(!lastSimResult) return; const b = document.getElementById('ab-board'); let maxProb = Math.max(...Array.from(b.children).map(c => parseFloat(c.dataset.prob)||0), lastSimResult.prob); let div = document.createElement('div'); div.className = 'ab-item'; div.dataset.prob = lastSimResult.prob; div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444'; div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`; div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`); b.appendChild(div); }
