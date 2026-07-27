@@ -178,7 +178,7 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀解鎖區 -->
+            <!-- ⚖️ 強制閱讀解鎖區 (狀態顯示) -->
             <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left; line-height: 1.8; border: 1px solid #30363D;">
                 <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">點此閱讀服務條款</a></div>
                 <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">點此閱讀隱私權政策</a></div>
@@ -611,7 +611,7 @@
         window.addEventListener('focus', checkAgreements);
 
         // ==========================================
-        // 2. Supabase 與全域變數宣告 (絕對不重複)
+        // 2. Supabase 與全域變數宣告
         // ==========================================
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
