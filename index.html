@@ -603,15 +603,8 @@
             }, 1000);
         }
 
-        window.addEventListener('load', () => {
-            checkAgreements();
-            checkCooldownOnLoad();
-        });
-        setInterval(checkAgreements, 1000);
-        window.addEventListener('focus', checkAgreements);
-
         // ==========================================
-        // 2. Supabase 與全域變數宣告 (絕對不重複)
+        // 2. Supabase 與全域變數宣告
         // ==========================================
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
@@ -662,6 +655,9 @@
             document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
             document.getElementById('auth-status-bar').style.background = "rgba(35, 134, 54, 0.2)";
             document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
+            
+            // 登入後自動抓取使用者的牌組清單
+            fetchSavedDecks(); 
         }
 
         async function loginWithMagicLink() {
@@ -699,12 +695,11 @@
                     msgEl.innerText = "✅ 驗證信已成功發送！請至信箱點擊連結登入。";
                     msgEl.style.display = 'block';
                     
-                    // 智慧階梯式防刷冷卻機制
                     let now = new Date().getTime();
                     let lastSend = parseInt(localStorage.getItem('magic_link_last_send')) || 0;
                     let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
                     
-                    if (now - lastSend > 60 * 60 * 1000) { count = 0; } // 超過1小時重置
+                    if (now - lastSend > 60 * 60 * 1000) { count = 0; }
                     count++;
                     
                     localStorage.setItem('octoplus_send_count', count);
@@ -943,7 +938,7 @@
             
             let resultEl = document.getElementById('sim-result');
             resultEl.innerText = "運算中..."; 
-            resultEl.style.color = "#FFD700"; // 運算中變成黃色提示
+            resultEl.style.color = "#FFD700"; 
             resultEl.style.fontSize = "32px";
 
             fetch(`${API_BASE}/api/v1/simulate`, { 
@@ -956,7 +951,7 @@
                     throw new Error("請先登入或升級 Pro"); 
                 }
                 if(!r.ok) {
-                    throw new Error(`伺服器錯誤 (${r.status})`); // 捕捉 500 錯誤
+                    throw new Error(`伺服器錯誤 (${r.status})`); 
                 }
                 return r.json(); 
             }).then(d => { 
@@ -966,7 +961,7 @@
                     lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; 
                     
                     resultEl.innerText = `${d.prob.toFixed(1)} %`; 
-                    resultEl.style.color = "#00E5FF"; // 成功恢復藍色
+                    resultEl.style.color = "#00E5FF"; 
                     resultEl.style.fontSize = "46px";
                 } else {
                     throw new Error(d.detail || "運算失敗");
@@ -974,10 +969,9 @@
             }).catch(e => { 
                 console.error(e);
                 resultEl.innerText = "❌ 伺服器錯誤"; 
-                resultEl.style.color = "#FF5252"; // 失敗變成紅色
+                resultEl.style.color = "#FF5252"; 
                 resultEl.style.fontSize = "28px";
                 
-                // 3 秒後恢復原狀
                 setTimeout(() => {
                     resultEl.innerText = "0.0 %";
                     resultEl.style.color = "#00E5FF";
@@ -987,6 +981,102 @@
         }
         
         function saveScenario() { if(!lastSimResult) return; const b = document.getElementById('ab-board'); let maxProb = Math.max(...Array.from(b.children).map(c => parseFloat(c.dataset.prob)||0), lastSimResult.prob); let div = document.createElement('div'); div.className = 'ab-item'; div.dataset.prob = lastSimResult.prob; div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444'; div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`; div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`); b.appendChild(div); }
+
+        // ==========================================
+        // 💾 雲端牌組存取功能
+        // ==========================================
+        async function saveDeckToDB() {
+            if (!supabaseClient) return alert("系統未初始化");
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                document.getElementById('gate-overlay').style.display = 'flex';
+                return alert("請先登入帳號！");
+            }
+            if (Object.keys(deckDict).length === 0) return alert("牌組是空的，無法儲存！");
+            
+            let deckName = prompt("請為這副牌組取個名字：", "我的強力牌組");
+            if (!deckName) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_decks')
+                    .insert([
+                        { user_id: session.user.id, deck_name: deckName, deck_data: deckDict }
+                    ]);
+                
+                if (error) throw error;
+                alert("💾 牌組儲存成功！");
+                fetchSavedDecks(); 
+            } catch (err) {
+                alert("儲存失敗：" + err.message);
+            }
+        }
+
+        async function fetchSavedDecks() {
+            if (!supabaseClient) return;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_decks')
+                    .select('id, deck_name')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                let select = document.getElementById('saved-decks-select');
+                let optCloud = currentLang === 'zh' ? '載入雲端牌組...' : 'Load Cloud Deck...';
+                select.innerHTML = `<option value="">${optCloud}</option>`;
+                
+                data.forEach(deck => {
+                    let opt = document.createElement('option');
+                    opt.value = deck.id;
+                    opt.innerText = deck.deck_name;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("讀取牌組清單失敗", err);
+            }
+        }
+
+        async function loadDeckFromDB(deckId) {
+            if (!deckId || !supabaseClient) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('user_decks')
+                    .select('deck_data')
+                    .eq('id', deckId)
+                    .single();
+                
+                if (error) throw error;
+                
+                deckDict = data.deck_data;
+                updateDeckUI();
+                alert("📥 牌組載入成功！");
+                document.getElementById('saved-decks-select').value = ""; 
+            } catch (err) {
+                alert("載入失敗：" + err.message);
+            }
+        }
+
+        // ==========================================
+        // 💬 跑馬燈功能
+        // ==========================================
+        async function fetchMarquee() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/marquee`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    document.getElementById('marquee-text').innerText = data.text || "歡迎使用 PTCG 小章魚";
+                }
+            } catch (e) {
+                document.getElementById('marquee-text').innerText = "歡迎使用 PTCG 小章魚";
+            }
+        }
+        
+        window.addEventListener('load', fetchMarquee);
     </script>
 </body>
 </html>
