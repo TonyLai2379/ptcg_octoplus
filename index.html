@@ -178,7 +178,7 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀解鎖區 (狀態顯示) -->
+            <!-- ⚖️ 強制閱讀解鎖區 -->
             <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left; line-height: 1.8; border: 1px solid #30363D;">
                 <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">點此閱讀服務條款</a></div>
                 <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">點此閱讀隱私權政策</a></div>
@@ -502,7 +502,7 @@
     <!-- 📜 核心 JavaScript -->
     <script>
         // ==========================================
-        // 🔒 強制閱讀條款解鎖機制 (跨分頁輪詢自動解鎖)
+        // 1. UI 狀態與防呆機制 (跨分頁輪詢 + 防刷冷卻)
         // ==========================================
         function checkAgreements() {
             let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
@@ -536,16 +536,26 @@
             if (btn && rem) {
                 // 檢查是否處於倒數計時防刷狀態
                 let lastSend = localStorage.getItem('magic_link_last_send');
+                let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
                 let inCooldown = false;
+                
                 if (lastSend) {
-                    let diff = Math.floor((new Date().getTime() - parseInt(lastSend)) / 1000);
-                    if (diff < 60) inCooldown = true;
+                    let now = new Date().getTime();
+                    let diff = Math.floor((now - parseInt(lastSend)) / 1000);
+                    let targetCooldown = 5;
+                    if (count === 1) targetCooldown = 5;
+                    else if (count === 2) targetCooldown = 30;
+                    else if (count >= 3) targetCooldown = 300;
+
+                    if (diff < targetCooldown) {
+                        inCooldown = true;
+                    }
                 }
 
                 if (termsAgreed && privacyAgreed) {
                     rem.style.color = '#34A853';
                     rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！';
-                    if (!inCooldown) btn.disabled = false; // 解鎖按鈕
+                    if (!inCooldown) btn.disabled = false; // 未在冷卻中才解鎖
                 } else {
                     btn.disabled = true; // 鎖死按鈕
                     rem.style.color = '#FF5252';
@@ -554,23 +564,21 @@
             }
         }
 
-        // 初始化與輪詢機制
-        window.addEventListener('load', () => {
-            checkAgreements();
-            checkCooldownOnLoad();
-        });
-        setInterval(checkAgreements, 1000);
-        window.addEventListener('focus', checkAgreements);
-
-        // ==========================================
-        // 🛡️ 60 秒防狂點防刷機制 (存入 localStorage)
-        // ==========================================
         function checkCooldownOnLoad() {
             let lastSend = localStorage.getItem('magic_link_last_send');
+            let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
+            
             if (lastSend) {
-                let diff = Math.floor((new Date().getTime() - parseInt(lastSend)) / 1000);
-                if (diff < 60) {
-                    startCooldownTimer(60 - diff);
+                let now = new Date().getTime();
+                let diff = Math.floor((now - parseInt(lastSend)) / 1000);
+                
+                let targetCooldown = 5;
+                if (count === 1) targetCooldown = 5;
+                else if (count === 2) targetCooldown = 30;
+                else if (count >= 3) targetCooldown = 300;
+
+                if (diff < targetCooldown) {
+                    startCooldownTimer(targetCooldown - diff);
                 }
             }
         }
@@ -581,22 +589,29 @@
             
             btn.disabled = true;
             let countdown = seconds;
-            btn.innerText = `⏳ 重新發送 (${countdown}s)`;
+            btn.innerText = `⏳ 冷卻中 (${countdown}s)`;
 
             const timer = setInterval(() => {
                 countdown--;
                 if (countdown > 0) {
-                    btn.innerText = `⏳ 重新發送 (${countdown}s)`;
+                    btn.innerText = `⏳ 冷卻中 (${countdown}s)`;
                 } else {
                     clearInterval(timer);
                     btn.innerText = "✨ 發送驗證連結";
-                    checkAgreements(); // 時間到後，重新檢查條款狀態來決定要不要亮起按鈕
+                    checkAgreements(); // 時間到後重新檢查條款狀態
                 }
             }, 1000);
         }
 
+        window.addEventListener('load', () => {
+            checkAgreements();
+            checkCooldownOnLoad();
+        });
+        setInterval(checkAgreements, 1000);
+        window.addEventListener('focus', checkAgreements);
+
         // ==========================================
-        // 🚀 核心邏輯與 Supabase Auth
+        // 2. Supabase 與全域變數宣告 (絕對不重複)
         // ==========================================
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
@@ -623,6 +638,9 @@
         let historyStates = [];
         let historyPtr = -1;
 
+        // ==========================================
+        // 3. 認證登入邏輯
+        // ==========================================
         window.addEventListener('DOMContentLoaded', async () => {
             if (supabase) {
                 const { data: { session } } = await supabase.auth.getSession();
@@ -681,9 +699,23 @@
                     msgEl.innerText = "✅ 驗證信已成功發送！請至信箱點擊連結登入。";
                     msgEl.style.display = 'block';
                     
-                    // 發送成功後，寫入 60 秒防刷鎖定時間
-                    localStorage.setItem('magic_link_last_send', new Date().getTime());
-                    startCooldownTimer(60);
+                    // 智慧階梯式防刷冷卻機制
+                    let now = new Date().getTime();
+                    let lastSend = parseInt(localStorage.getItem('magic_link_last_send')) || 0;
+                    let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
+                    
+                    if (now - lastSend > 60 * 60 * 1000) { count = 0; } // 超過1小時重置
+                    count++;
+                    
+                    localStorage.setItem('octoplus_send_count', count);
+                    localStorage.setItem('magic_link_last_send', now);
+
+                    let targetCooldown = 5;
+                    if (count === 1) targetCooldown = 5;
+                    else if (count === 2) targetCooldown = 30;
+                    else targetCooldown = 300;
+
+                    startCooldownTimer(targetCooldown);
                 }
             } catch (err) {
                 msgEl.style.color = "#FF5252";
@@ -716,7 +748,7 @@
         }
 
         // ==========================================
-        // 🎮 遊戲核心邏輯 (已展開)
+        // 4. PTCG 核心業務邏輯
         // ==========================================
         const translations = {
             zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "解鎖萬次精算功能", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
