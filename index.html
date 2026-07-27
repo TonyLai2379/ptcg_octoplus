@@ -184,13 +184,13 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀解鎖區 (使用 a 標籤保證 100% 可點擊) -->
+            <!-- ⚖️ 強制閱讀解鎖區 (外連開啟新分頁，絕對不會失效) -->
             <div style="display: flex; align-items: flex-start; justify-content: flex-start; gap: 10px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left;">
                 <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" disabled style="width: 20px; height: 20px; cursor: not-allowed; flex-shrink: 0; accent-color: #00E5FF; filter: grayscale(1);">
                 <div style="line-height: 1.5;">
                     <label id="terms-label" for="terms-checkbox" style="cursor: not-allowed; margin-right: 4px; font-weight: bold; color: #666;">我已閱讀並同意</label>
-                    <a href="#" onclick="openLegalModal('terms'); return false;" class="legal-link">服務條款</a> 與 
-                    <a href="#" onclick="openLegalModal('privacy'); return false;" class="legal-link">隱私權政策</a>
+                    <a href="terms.html" target="_blank" onclick="checkUnlock('terms')" class="legal-link">服務條款</a> 與 
+                    <a href="privacy.html" target="_blank" onclick="checkUnlock('privacy')" class="legal-link">隱私權政策</a>
                     
                     <!-- 提示文字 -->
                     <div id="read-reminder" style="color: #FF5252; font-size: 12px; margin-top: 4px; font-weight: bold;">
@@ -206,50 +206,6 @@
 
             <!-- 📢 動態提示訊息欄 -->
             <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
-        </div>
-    </div>
-
-    <!-- ⚖️ 服務條款 Modal (確認有寫入) -->
-    <div id="terms-modal" class="modal-overlay" onclick="if(event.target===this) closeLegalModal('terms')" style="z-index: 16000;">
-        <div class="modal-card" style="max-width: 650px; max-height: 75vh;">
-            <div class="modal-header">
-                <h2 style="color: #FFD700; margin: 0;">📜 PTCG 小章魚 - 服務條款</h2>
-            </div>
-            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6; overflow-y: auto; text-align: left;">
-                <h4 style="color:#00E5FF; margin-top:10px;">1. 服務認知與同意</h4>
-                <p>當您存取或使用「PTCG 小章魚」(以下簡稱本服務) 時，即表示您已閱讀、理解並同意受本服務條款之約束。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">2. 智慧財產權與第三方聲明</h4>
-                <p>本服務為第三方實體寶可夢卡牌 (PTCG) 數據分析與模擬工具。本服務非 Nintendo、Creatures、GAME FREAK 或 The Pokémon Company 之官方授權產品。相關卡牌名稱、圖像與著作權均屬於原權利人所有。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">3. 合理使用規範</h4>
-                <p>使用者不得利用本服務進行任何商業轉售、網路攻擊或自動化爬蟲分析等濫用伺服器算力之行為。本團隊保留隨時終止違反規定帳號權限之權利。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">4. 責任限制</h4>
-                <p>本服務提供之蒙地卡羅機率模擬結果僅供數據戰術參考，團隊不保證任何對局之絕對勝率與結果。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="closeLegalModal('terms')">關閉閱讀</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🔒 隱私權政策 Modal (確認有寫入) -->
-    <div id="privacy-modal" class="modal-overlay" onclick="if(event.target===this) closeLegalModal('privacy')" style="z-index: 16000;">
-        <div class="modal-card" style="max-width: 650px; max-height: 75vh;">
-            <div class="modal-header">
-                <h2 style="color: #FFD700; margin: 0;">🔒 PTCG 小章魚 - 隱私權政策</h2>
-            </div>
-            <div class="modal-body" style="font-size: 13px; color: #CCC; line-height: 1.6; overflow-y: auto; text-align: left;">
-                <h4 style="color:#00E5FF; margin-top:10px;">1. 資料收集與範圍</h4>
-                <p>當您透過信箱驗證連結登入本服務時，我們僅收集必要之電子郵件地址 (Email) 與系統產生之識別碼，用於辨識會員資格及記錄每日推演使用額度。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">2. 資料使用用途</h4>
-                <p>收集之個人資料嚴格限制用於提供、改善本服務及會員權限驗證，絕不上傳、出售或轉讓予任何第三方機構。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">3. Cookie 與儲存技術</h4>
-                <p>本服務採用 Supabase 安全認證 Session 及瀏覽器 LocalStorage 技術，以維持您的安全登入狀態與介面語系偏好設定。</p>
-                <h4 style="color:#00E5FF; margin-top:10px;">4. 資料刪除權利</h4>
-                <p>使用者隨時可透過客服聯繫申請刪除其綁定之帳號紀錄與雲端牌組數據。</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" style="width: 100px;" onclick="closeLegalModal('privacy')">關閉閱讀</button>
-            </div>
         </div>
     </div>
 
@@ -557,31 +513,15 @@
     <!-- 📜 核心 JavaScript -->
     <script>
         // ==========================================
-        // 🔒 強制閱讀條款解鎖機制 (Forced Acknowledgment)
+        // 🔒 強制閱讀條款解鎖機制 (點開新分頁解鎖)
         // ==========================================
         let hasReadTerms = false;
         let hasReadPrivacy = false;
 
-        function openLegalModal(type) {
-            if (type === 'terms') {
-                document.getElementById('terms-modal').style.display = 'flex';
-                hasReadTerms = true;
-            } else if (type === 'privacy') {
-                document.getElementById('privacy-modal').style.display = 'flex';
-                hasReadPrivacy = true;
-            }
-            checkUnlockCheckbox();
-        }
+        function checkUnlock(type) {
+            if (type === 'terms') hasReadTerms = true;
+            if (type === 'privacy') hasReadPrivacy = true;
 
-        function closeLegalModal(type) {
-            if (type === 'terms') {
-                document.getElementById('terms-modal').style.display = 'none';
-            } else if (type === 'privacy') {
-                document.getElementById('privacy-modal').style.display = 'none';
-            }
-        }
-
-        function checkUnlockCheckbox() {
             if (hasReadTerms && hasReadPrivacy) {
                 const chk = document.getElementById('terms-checkbox');
                 const lbl = document.getElementById('terms-label');
@@ -590,7 +530,7 @@
                 if (chk) {
                     chk.disabled = false;
                     chk.style.cursor = 'pointer';
-                    chk.style.filter = 'none';
+                    chk.style.filter = 'none'; // 移除灰色濾鏡
                 }
                 if (lbl) {
                     lbl.style.cursor = 'pointer';
@@ -716,8 +656,29 @@
             }
         }
 
+        async function redeemPromoCode() {
+            const code = document.getElementById('promo-code-input').value.trim();
+            if (!code) return alert("請輸入邀請碼");
+            if (!currentUserToken) return alert("請先登入帳號");
+
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/redeem_code`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${currentUserToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    alert(data.detail);
+                    document.getElementById('auth-overlay').style.display = 'none';
+                } else {
+                    alert(data.detail || "兌換失敗");
+                }
+            } catch (e) { alert("連線發生錯誤"); }
+        }
+
         // ==========================================
-        // 🎮 遊戲核心邏輯 (已展開，確保語法絕對安全)
+        // 🎮 遊戲核心邏輯 (已展開)
         // ==========================================
         const translations = {
             zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "解鎖萬次精算功能", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
