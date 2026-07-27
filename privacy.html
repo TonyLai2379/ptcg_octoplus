@@ -31,17 +31,16 @@
     <!-- 底部同意按鈕 -->
     <div class="agree-container">
         <button class="btn-agree" onclick="agreeAndClose()">✅ 我已閱讀並同意隱私權政策</button>
-        <p style="font-size: 12px; color: #888; margin-top: 10px;">點擊後此視窗將自動關閉，並為您解鎖主畫面權限</p>
+        <p style="font-size: 13px; color: #888; margin-top: 15px;" id="close-msg">點擊後此視窗將自動關閉，並為您更新主畫面狀態</p>
     </div>
 
     <script>
         function agreeAndClose() {
-            localStorage.setItem('octoplus_privacy_read', 'true');
-            window.close(); // 自動關閉分頁
-            // 防呆：若瀏覽器阻擋 window.close()，則提示玩家手動關閉
-            setTimeout(() => {
-                alert("狀態已記錄！請手動關閉此分頁並回到主網頁。");
-            }, 500);
+            // 寫入同意狀態為 Y
+            localStorage.setItem('octoplus_privacy_agreed', 'Y');
+            document.getElementById('close-msg').style.color = '#00E5FF';
+            document.getElementById('close-msg').innerText = "✅ 狀態已記錄！請直接關閉此分頁並回到主網頁。";
+            window.close(); // 嘗試自動關閉分頁
         }
     </script>
 </body>
