@@ -156,7 +156,6 @@
         .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; font-weight: bold; }
         .legal-link:hover { color: #79C0FF; }
         
-        /* 狀態標籤樣式 */
         .status-badge { display: inline-block; width: 85px; font-weight: bold; }
     </style>
 </head>
@@ -179,7 +178,7 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀解鎖區 (徹底移除多餘的 Checkbox，改為狀態顯示) -->
+            <!-- ⚖️ 強制閱讀解鎖區 (狀態顯示) -->
             <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left; line-height: 1.8; border: 1px solid #30363D;">
                 <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">點此閱讀服務條款</a></div>
                 <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">點此閱讀隱私權政策</a></div>
@@ -535,22 +534,66 @@
             }
 
             if (btn && rem) {
+                // 檢查是否處於倒數計時防刷狀態
+                let lastSend = localStorage.getItem('magic_link_last_send');
+                let inCooldown = false;
+                if (lastSend) {
+                    let diff = Math.floor((new Date().getTime() - parseInt(lastSend)) / 1000);
+                    if (diff < 60) inCooldown = true;
+                }
+
                 if (termsAgreed && privacyAgreed) {
-                    btn.disabled = false;
                     rem.style.color = '#34A853';
                     rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！';
+                    if (!inCooldown) btn.disabled = false; // 解鎖按鈕
                 } else {
-                    btn.disabled = true;
+                    btn.disabled = true; // 鎖死按鈕
                     rem.style.color = '#FF5252';
                     rem.innerText = '⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送';
                 }
             }
         }
 
-        // 每 1 秒自動檢查一次 localStorage (確保不管從哪切回來都能抓到狀態)
+        // 初始化與輪詢機制
+        window.addEventListener('load', () => {
+            checkAgreements();
+            checkCooldownOnLoad();
+        });
         setInterval(checkAgreements, 1000);
         window.addEventListener('focus', checkAgreements);
-        window.addEventListener('load', checkAgreements);
+
+        // ==========================================
+        // 🛡️ 60 秒防狂點防刷機制 (存入 localStorage)
+        // ==========================================
+        function checkCooldownOnLoad() {
+            let lastSend = localStorage.getItem('magic_link_last_send');
+            if (lastSend) {
+                let diff = Math.floor((new Date().getTime() - parseInt(lastSend)) / 1000);
+                if (diff < 60) {
+                    startCooldownTimer(60 - diff);
+                }
+            }
+        }
+
+        function startCooldownTimer(seconds) {
+            const btn = document.getElementById('send-verify-btn');
+            if (!btn) return;
+            
+            btn.disabled = true;
+            let countdown = seconds;
+            btn.innerText = `⏳ 重新發送 (${countdown}s)`;
+
+            const timer = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    btn.innerText = `⏳ 重新發送 (${countdown}s)`;
+                } else {
+                    clearInterval(timer);
+                    btn.innerText = "✨ 發送驗證連結";
+                    checkAgreements(); // 時間到後，重新檢查條款狀態來決定要不要亮起按鈕
+                }
+            }, 1000);
+        }
 
         // ==========================================
         // 🚀 核心邏輯與 Supabase Auth
@@ -638,17 +681,9 @@
                     msgEl.innerText = "✅ 驗證信已成功發送！請至信箱點擊連結登入。";
                     msgEl.style.display = 'block';
                     
-                    let countdown = 5;
-                    const timer = setInterval(() => {
-                        if (countdown > 0) {
-                            btn.innerText = `✨ 發送驗證連結 (${countdown}s)`;
-                            countdown--;
-                        } else {
-                            clearInterval(timer);
-                            btn.innerText = "✨ 發送驗證連結";
-                            btn.disabled = false;
-                        }
-                    }, 1000);
+                    // 發送成功後，寫入 60 秒防刷鎖定時間
+                    localStorage.setItem('magic_link_last_send', new Date().getTime());
+                    startCooldownTimer(60);
                 }
             } catch (err) {
                 msgEl.style.color = "#FF5252";
