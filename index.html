@@ -153,8 +153,11 @@
         .login-btn:hover:not(:disabled) { background: #00E5FF; color: #000; }
         .login-btn:disabled { border-color: #444 !important; color: #666 !important; cursor: not-allowed !important; background: #161B22 !important; }
 
-        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; display: inline-block; font-weight: bold; }
+        .legal-link { color: #58A6FF; text-decoration: underline; cursor: pointer; font-weight: bold; }
         .legal-link:hover { color: #79C0FF; }
+        
+        /* 狀態標籤樣式 */
+        .status-badge { display: inline-block; width: 85px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -176,18 +179,13 @@
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
 
-            <!-- ⚖️ 強制閱讀解鎖區 (外連開啟新分頁，絕對不會失效) -->
-            <div style="display: flex; align-items: flex-start; justify-content: flex-start; gap: 10px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left;">
-                <input type="checkbox" id="terms-checkbox" onchange="toggleLoginBtn()" disabled style="width: 20px; height: 20px; cursor: not-allowed; flex-shrink: 0; accent-color: #00E5FF; filter: grayscale(1);">
-                <div style="line-height: 1.5;">
-                    <label id="terms-label" for="terms-checkbox" style="cursor: not-allowed; margin-right: 4px; font-weight: bold; color: #666;">我已閱讀並同意</label>
-                    <a href="terms.html" target="_blank" class="legal-link">服務條款</a> 與 
-                    <a href="privacy.html" target="_blank" class="legal-link">隱私權政策</a>
-                    
-                    <!-- 提示文字 -->
-                    <div id="read-reminder" style="color: #FF5252; font-size: 12px; margin-top: 4px; font-weight: bold;">
-                        ⚠️ 請先點擊閱讀上述兩項條款，才能勾選
-                    </div>
+            <!-- ⚖️ 強制閱讀解鎖區 (徹底移除多餘的 Checkbox，改為狀態顯示) -->
+            <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left; line-height: 1.8; border: 1px solid #30363D;">
+                <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">點此閱讀服務條款</a></div>
+                <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">點此閱讀隱私權政策</a></div>
+                
+                <div id="read-reminder" style="color: #FF5252; font-size: 12px; margin-top: 10px; font-weight: bold; text-align: center; border-top: 1px dashed #444; padding-top: 8px;">
+                    ⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送
                 </div>
             </div>
 
@@ -505,53 +503,40 @@
     <!-- 📜 核心 JavaScript -->
     <script>
         // ==========================================
-        // 🔒 強制閱讀條款解鎖機制 (跨分頁自動解鎖)
+        // 🔒 強制閱讀條款解鎖機制 (跨分頁輪詢自動解鎖)
         // ==========================================
-        
-        function checkUnlockStatus() {
-            let readTerms = localStorage.getItem('octoplus_terms_read') === 'true';
-            let readPrivacy = localStorage.getItem('octoplus_privacy_read') === 'true';
+        function checkAgreements() {
+            let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
+            let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
+            
+            let tStatus = document.getElementById('terms-status');
+            let pStatus = document.getElementById('privacy-status');
+            let btn = document.getElementById('send-verify-btn');
+            let rem = document.getElementById('read-reminder');
 
-            if (readTerms && readPrivacy) {
-                const chk = document.getElementById('terms-checkbox');
-                const lbl = document.getElementById('terms-label');
-                const rem = document.getElementById('read-reminder');
-                const btn = document.getElementById('send-verify-btn');
-                
-                if (chk) {
-                    chk.disabled = false;
-                    chk.style.cursor = 'pointer';
-                    chk.style.filter = 'none'; // 移除灰色濾鏡
-                    chk.checked = true; // 直接幫玩家自動打勾
-                }
-                if (lbl) {
-                    lbl.style.cursor = 'pointer';
-                    lbl.style.color = '#FFF';
-                }
+            if (termsAgreed && tStatus) {
+                tStatus.innerHTML = '✅ 已同意';
+                tStatus.style.color = '#00E5FF';
+            }
+            if (privacyAgreed && pStatus) {
+                pStatus.innerHTML = '✅ 已同意';
+                pStatus.style.color = '#00E5FF';
+            }
+
+            if (termsAgreed && privacyAgreed && btn) {
+                btn.disabled = false;
                 if (rem) {
                     rem.style.color = '#00E5FF';
-                    rem.innerText = '✅ 您已閱讀條款，系統已自動為您勾選同意';
-                }
-                if (btn) {
-                    btn.disabled = false;
+                    rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！';
                 }
             }
         }
 
-        // 頁面載入時檢查一次狀態
-        window.addEventListener('load', checkUnlockStatus);
-        
-        // 使用者從別的分頁（看完條款後）切換回來時，自動檢查並解鎖
-        window.addEventListener('focus', checkUnlockStatus);
-        window.addEventListener('storage', checkUnlockStatus);
+        // 每 1 秒自動檢查一次 localStorage (確保不管從哪切回來都能抓到狀態)
+        setInterval(checkAgreements, 1000);
+        window.addEventListener('focus', checkAgreements);
+        window.addEventListener('load', checkAgreements);
 
-        function toggleLoginBtn() {
-            const chk = document.getElementById('terms-checkbox');
-            const btn = document.getElementById('send-verify-btn');
-            if (chk && btn) {
-                btn.disabled = !chk.checked;
-            }
-        }
 
         // ==========================================
         // 🚀 核心邏輯與 Supabase Auth
@@ -605,8 +590,10 @@
         }
 
         async function loginWithMagicLink() {
-            const chk = document.getElementById('terms-checkbox');
-            if (!chk || !chk.checked) return alert("請先閱讀並勾選同意服務條款與隱私權政策！");
+            let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
+            let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
+            
+            if (!termsAgreed || !privacyAgreed) return alert("請先閱讀並同意服務條款與隱私權政策！");
             if (!supabase) return alert("系統初始化失敗，請重新整理網頁");
             
             const emailInput = document.getElementById('magic-email-input');
@@ -645,7 +632,7 @@
                         } else {
                             clearInterval(timer);
                             btn.innerText = "✨ 發送驗證連結";
-                            btn.disabled = !chk.checked;
+                            btn.disabled = false;
                         }
                     }, 1000);
                 }
