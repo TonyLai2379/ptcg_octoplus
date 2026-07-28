@@ -1274,13 +1274,13 @@
                 let text = data.text || "歡迎使用 PTCG 小章魚";
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = text;
-                // 加快速度：字數 * 0.45秒，最低 20秒 
-                let duration = Math.max(text.length * 0.45, 20);
+                // 加快速度：字數 * 0.4秒，最低 16秒 
+                let duration = Math.max(text.length * 0.4, 16);
                 el.style.animationDuration = duration + 's';
             } catch (e) {
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = "歡迎使用 PTCG 小章魚";
-                el.style.animationDuration = '20s';
+                el.style.animationDuration = '16s';
             }
         }
         
