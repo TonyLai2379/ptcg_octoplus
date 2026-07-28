@@ -55,7 +55,7 @@
         .search-result-item img { width: 35px; height: 50px; object-fit: contain; border-radius: 3px; }
 
         .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; background: rgba(255, 152, 0, 0.08); border: 1px solid #FF9800; border-radius: 6px; padding: 8px; margin-top: 10px; color: #FFB74D; font-size: 13px; }
-        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee-anim 15s linear infinite; } 
+        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee-anim 35s linear infinite; } 
         @keyframes marquee-anim { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
         .disclaimer-box { margin-top: 5px; padding: 8px; background-color: rgba(0, 0, 0, 0.4); border-left: 3px solid #E53935; border-radius: 4px; font-size: 11px; color: #999; line-height: 1.4; }
 
@@ -420,6 +420,17 @@
         </div>
     </div>
 
+    <!-- 分享對局 Modal -->
+    <div id="share-modal" class="modal-overlay">
+        <div class="modal-card" style="width: 400px; height: auto; text-align: center;">
+            <h2 style="color: #00E5FF; margin-bottom: 15px;" id="modal-share-title">📤 分享對局</h2>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;" id="modal-share-desc">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！</p>
+            <input type="text" id="share-code-display" readonly style="text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; padding: 15px; margin-bottom: 15px; background: #0D1117; color: #FFD700; border: 2px dashed #30363D;">
+            <button class="btn" style="background: #238636; font-size: 16px; padding: 12px; margin-bottom: 10px;" id="btn-share-copy" onclick="copyShareCode()">📋 一鍵複製短代碼</button>
+            <button class="btn btn-secondary" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
+        </div>
+    </div>
+
     <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
@@ -534,20 +545,20 @@
             if (tStatus) {
                 if (termsAgreed) {
                     tStatus.innerHTML = '✅ 已同意';
-                    tStatus.style.color = '#34A853'; // 綠色
+                    tStatus.style.color = '#34A853'; 
                 } else {
                     tStatus.innerHTML = '❌ 尚未同意';
-                    tStatus.style.color = '#FF5252'; // 紅色
+                    tStatus.style.color = '#FF5252'; 
                 }
             }
             
             if (pStatus) {
                 if (privacyAgreed) {
                     pStatus.innerHTML = '✅ 已同意';
-                    pStatus.style.color = '#34A853'; // 綠色
+                    pStatus.style.color = '#34A853'; 
                 } else {
                     pStatus.innerHTML = '❌ 尚未同意';
-                    pStatus.style.color = '#FF5252'; // 紅色
+                    pStatus.style.color = '#FF5252'; 
                 }
             }
 
@@ -927,11 +938,57 @@
         function removeChain(k) { delete chainList[k]; renderChainUI(); }
         function openChainTargetSelector(parentKey) { currentModalMode = 'chain_target_' + parentKey; tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : []; document.getElementById('gallery-title').innerText = "🎯 選擇檢索目標卡 (可多選)"; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
-        function exportGameState() { if(gameCards.length === 0) return alert("尚未開局！"); let fullData = gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name })); fetch(`${API_BASE}/api/v1/share_game`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ game_data: fullData }) }).then(r => r.json()).then(d => { if(d.success) { document.getElementById('share-code-display').value = d.share_code; document.getElementById('share-modal').style.display = 'flex'; } }); }
+        function exportGameState() { 
+            if(gameCards.length === 0) return alert("尚未開局！"); 
+            let fullData = gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name })); 
+            fetch(`${API_BASE}/api/v1/share_game`, { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify({ game_data: fullData }) 
+            }).then(r => r.json()).then(d => { 
+                if(d.success) { 
+                    document.getElementById('share-code-display').value = d.share_code; 
+                    document.getElementById('share-modal').style.display = 'flex'; 
+                } else {
+                    alert("分享失敗：" + d.detail);
+                }
+            }).catch(e => {
+                console.error(e);
+                alert("分享發生錯誤，請稍後再試");
+            }); 
+        }
+
         function copyShareCode() { let input = document.getElementById('share-code-display'); input.select(); navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可載入戰局。"); document.getElementById('share-modal').style.display = 'none'; }); }
-        function importGameState() { let input = prompt("請貼上 6 位數對局短代碼："); if(!input) return; let code = input.trim(); if(code.includes('share=')) code = code.split('share=')[1].split('&')[0]; loadSharedGameByCode(code); }
         
-        function loadSharedGameByCode(code) { fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => { if(d.success) { deckDict = {}; gameCards = d.game_data.map(item => { let cardKey = item.k; let cardName = item.n || item.k.split(' [')[0]; let cardImg = item.i || DEFAULT_CARDBACK; if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName }; deckDict[cardKey].qty++; return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; }); updateDeckUI(); saveState(); renderBoard(); alert(`✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})`); } else alert("載入失敗。"); }); }
+        function importGameState() { 
+            let input = prompt("請貼上 6 位數對局短代碼："); 
+            if(!input) return; 
+            let code = input.trim(); 
+            if(code.includes('share=')) code = code.split('share=')[1].split('&')[0]; 
+            loadSharedGameByCode(code); 
+        }
+        
+        function loadSharedGameByCode(code) { 
+            fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => { 
+                if(d.success) { 
+                    deckDict = {}; 
+                    gameCards = d.game_data.map(item => { 
+                        let cardKey = item.k; 
+                        let cardName = item.n || item.k.split(' [')[0]; 
+                        let cardImg = item.i || DEFAULT_CARDBACK; 
+                        if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName }; 
+                        deckDict[cardKey].qty++; 
+                        return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; 
+                    }); 
+                    updateDeckUI(); 
+                    saveState(); 
+                    renderBoard(); 
+                    alert(`✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})`); 
+                } else {
+                    alert("載入失敗: " + (d.detail || "未知錯誤"));
+                } 
+            }).catch(e => alert("連線錯誤")); 
+        }
         
         function saveState() { let snapshot = JSON.parse(JSON.stringify(gameCards)); if(historyPtr < historyStates.length - 1) historyStates = historyStates.slice(0, historyPtr + 1); historyStates.push(snapshot); historyPtr++; updateHistoryBtns(); }
         function undo() { if(historyPtr > 0) { historyPtr--; gameCards = JSON.parse(JSON.stringify(historyStates[historyPtr])); renderBoard(); } updateHistoryBtns(); }
@@ -1015,7 +1072,10 @@
                         throw new Error("額度用盡");
                     }
                 }
-                if(!r.ok) throw new Error(`伺服器錯誤 (${r.status})`); 
+                if(!r.ok) {
+                    const errData = await r.json().catch(() => ({}));
+                    throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); 
+                }
                 return r.json(); 
             }).then(d => { 
                 if(d.success) { 
@@ -1031,15 +1091,15 @@
             }).catch(e => { 
                 console.error(e);
                 if(e.message !== "額度用盡" && e.message !== "請先登入") {
-                    resultEl.innerText = "❌ 伺服器錯誤"; 
+                    resultEl.innerText = "❌ " + e.message; 
                     resultEl.style.color = "#FF5252"; 
-                    resultEl.style.fontSize = "28px";
+                    resultEl.style.fontSize = "20px";
                     
                     setTimeout(() => {
                         resultEl.innerText = "0.0 %";
                         resultEl.style.color = "#00E5FF";
                         resultEl.style.fontSize = "46px";
-                    }, 3000);
+                    }, 4000);
                 } else {
                     resultEl.innerText = "0.0 %";
                     resultEl.style.color = "#00E5FF";
