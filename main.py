@@ -7,14 +7,14 @@ import re
 import random
 import requests
 import os
-import datetime
+import time
+import uuid
 import json
-import traceback
 from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="11.5.0")
+app = FastAPI(title="PTCG Octoplus API", version="12.0.0")
 
 # 🔒 跨域資源共享限制
 app.add_middleware(
@@ -63,58 +63,49 @@ def load_global_cards_to_cache():
 
 load_global_cards_to_cache()
 
+# 英文賽事代號翻譯地圖
+LL_SET_MAP = {
+    "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
+    "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
+    "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
+    "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
+    "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
+    "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
+    "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
+    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "sve", "PR-SW": "swshp"
+}
+
 # ==========================================
-# 1. 權限分流與 30 次額度檢查
+# 1. 驗證權限與每日限制
 # ==========================================
-def get_user_from_token(auth_header: str):
-    if not auth_header or not auth_header.startswith("Bearer "): 
-        raise HTTPException(status_code=401, detail="請先登入帳號")
-    token = auth_header.split(" ")[1]
+def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "): raise HTTPException(status_code=401, detail="請先登入帳號以使用推演功能")
+    token = authorization.split(" ")[1]
     try:
         user_res = supabase.auth.get_user(token)
-        if not user_res or not user_res.user: raise Exception()
-        return user_res.user.id
-    except Exception:
-        raise HTTPException(status_code=401, detail="登入憑證已過期，請重新發送驗證信登入")
-
-def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
-    user_id = get_user_from_token(authorization)
-    try:
-        today_str = str(datetime.date.today())
-        profile_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
-        if not profile_res.data:
-            supabase.table("profiles").insert({"id": user_id, "is_pro": False, "trial_used": False}).execute()
-            is_pro = False; expires_at = None
-        else:
-            profile = profile_res.data[0]
-            is_pro = profile.get("is_pro", False)
-            expires_at = profile.get("pro_expires_at")
+        if not user_res or not user_res.user: raise HTTPException(status_code=401, detail="無效的登入 Token，請重新登入")
+        user_id = user_res.user.id
         
-        has_active_sub = False
-        if expires_at:
-            exp_str = expires_at.replace("Z", "+00:00")
-            exp_date = datetime.datetime.fromisoformat(exp_str)
-            if datetime.datetime.now(datetime.timezone.utc) < exp_date:
-                has_active_sub = True
-
-        if not has_active_sub: raise HTTPException(status_code=403, detail="LIMIT_REACHED")
+        profile_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        if not profile_res.data: raise HTTPException(status_code=404, detail="找不到帳號資料")
+            
+        profile = profile_res.data[0]
+        is_pro = profile.get("is_pro", False)
+        
         if is_pro: return {"user_id": user_id, "is_pro": True, "remaining_today": 9999}
             
-        sim_res = supabase.table("daily_simulations").select("count").eq("user_id", user_id).eq("usage_date", today_str).execute()
+        sim_res = supabase.table("daily_simulations").select("count").eq("user_id", user_id).eq("usage_date", "now()").execute()
         used_today = sim_res.data[0]["count"] if sim_res.data else 0
         
-        if used_today >= 30: raise HTTPException(status_code=403, detail="LIMIT_REACHED")
+        if used_today >= 30: raise HTTPException(status_code=403, detail="今日 30 次免費推演額度已用完！升級 Pro 或輸入兌換碼解鎖無限次推演。")
             
-        supabase.table("daily_simulations").upsert({"user_id": user_id, "usage_date": today_str, "count": used_today + 1}).execute()
+        supabase.table("daily_simulations").upsert({"user_id": user_id, "usage_date": "now()", "count": used_today + 1}).execute()
         return {"user_id": user_id, "is_pro": False, "remaining_today": 30 - (used_today + 1)}
-        
     except HTTPException: raise
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"權限驗證失敗: {str(e)}")
+    except Exception as e: raise HTTPException(status_code=500, detail=f"權限驗證失敗: {str(e)}")
 
 # ==========================================
-# 2. 蒙地卡羅引擎
+# 2. 蒙地卡羅核心運算引擎
 # ==========================================
 def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND", dead_hand_size=0, iterations=10000):
     if not deck_cards or draw1 <= 0 or not direct_dict: return 0.0
@@ -175,6 +166,7 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
+class SaveDeckReq(BaseModel): deck_name: str; deck_data: str
 class ShareGameReq(BaseModel): game_data: List[Dict[str, Any]]
 class MonteCarloReq(BaseModel):
     deck_cards: List[Dict[str, Any]]; direct_targets: Dict[str, Any]; chain_targets: Dict[str, Any]; draw1: int; target_rule: str = "AND"; dead_hand_size: int = 0
@@ -197,7 +189,7 @@ def api_get_marquee():
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🔍 圖庫搜尋功能
+# 🔍 補回的全圖庫搜尋 API
 @app.get("/api/v1/search_db")
 def api_search_db(q: str = ""):
     results = []
@@ -215,63 +207,61 @@ def api_search_db(q: str = ""):
 
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None)):
-    user_id = get_user_from_token(auth_header)
+    if not auth_header or not auth_header.startswith("Bearer "): raise HTTPException(status_code=401, detail="請先登入帳號")
+    token = auth_header.split(" ")[1]
+    user_res = supabase.auth.get_user(token)
+    if not user_res or not user_res.user: raise HTTPException(status_code=401, detail="驗證失敗，請重新登入")
+    user_id = user_res.user.id
     code = req.code.strip().upper()
+    
     code_res = supabase.table("promo_codes").select("*").eq("code", code).execute()
     if not code_res.data: raise HTTPException(status_code=400, detail="❌ 無效的兌換碼")
     promo = code_res.data[0]
     if promo["used_count"] >= promo["max_uses"]: raise HTTPException(status_code=400, detail="❌ 此兌換碼已被領取完畢")
     days = promo["days_valid"]
-    p_res = supabase.table("profiles").select("id").eq("id", user_id).execute()
-    if not p_res.data: supabase.table("profiles").insert({"id": user_id}).execute()
-    exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)).isoformat()
-    supabase.table("profiles").update({"is_pro": True, "pro_expires_at": exp_time}).eq("id", user_id).execute()
+    
+    supabase.table("profiles").update({"is_pro": True, "pro_expires_at": f"now() + interval '{days} days'"}).eq("id", user_id).execute()
     supabase.table("promo_codes").update({"used_count": promo["used_count"] + 1}).eq("code", code).execute()
-    return {"success": True, "detail": f"🎉 成功兌換！已為你開通 {days} 天專業無限推演權限。"}
-
-@app.post("/api/v1/activate_trial")
-def api_activate_trial(auth_header: Optional[str] = Header(None)):
-    user_id = get_user_from_token(auth_header)
-    p_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if not p_res.data:
-        supabase.table("profiles").insert({"id": user_id, "trial_used": False}).execute()
-        trial_used = False
-    else:
-        trial_used = p_res.data[0].get("trial_used", False)
-    if trial_used: raise HTTPException(status_code=400, detail="您已經使用過 7 天免費體驗囉！")
-    exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
-    supabase.table("profiles").update({"is_pro": False, "trial_used": True, "pro_expires_at": exp_time}).eq("id", user_id).execute()
-    return {"success": True, "detail": "🎉 體驗開通成功！接下來 7 天每日可使用 30 次深度推演。"}
+    return {"success": True, "detail": f"🎉 成功兌換！已為你開通 {days} 天 Pro 專業無限推演權限。"}
 
 @app.post("/api/v1/parse_official")
 def api_parse_official(req: ParseOfficialReq):
     code_match = re.search(r'([a-zA-Z0-9]{6}-[a-zA-Z0-9]{6}-[a-zA-Z0-9]{6})', req.deck_code)
-    if not code_match: return {"success": False, "detail": "❌ 無效的代碼。"}
+    if not code_match: return {"success": False, "detail": "❌ 無效的牌組代碼格式。"}
     try:
         headers = {'User-Agent': 'Mozilla/5.0'}
         worker_url = f"https://ptcgmaster.loganlai0422.workers.dev/?code={code_match.group(1)}"
         response = requests.get(worker_url, headers=headers, timeout=15)
+        if response.status_code != 200: return {"success": False, "detail": "❌ 無法連線至官方網站或 Worker 發生錯誤。"}
+            
         soup = BeautifulSoup(response.text, 'html.parser')
         new_deck = {}
-        for item in soup.find_all('li', class_='card'):
-            name_tag = item.find('p', class_='cardName'); qty_tag = item.find('div', class_='cardCount')
+        card_items = soup.find_all('li', class_='card')
+        if not card_items: return {"success": False, "detail": "⚠️ 抓取成功但沒有找到卡片。"}
+
+        for item in card_items:
+            name_tag = item.find('p', class_='cardName')
+            qty_tag = item.find('div', class_='cardCount')
             if name_tag and qty_tag:
                 name = re.sub(r'\s+', ' ', name_tag.text.strip()).strip()
                 try: qty = int(re.sub(r'\D', '', qty_tag.text)) if re.sub(r'\D', '', qty_tag.text) else 1
                 except: qty = 1
+
                 a_tag = name_tag.find('a'); unique_id = ""
                 if a_tag and a_tag.get('href'):
                     parts = [p for p in a_tag.get('href', '').split('/') if p]
                     if parts: unique_id = parts[-1]
+
                 card_key = f"{name} [{unique_id}]" if unique_id else name
                 img_url = LOCAL_CARD_DB.get(card_key)
                 if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name)
+
                 if not is_valid_url(img_url):
                     img_url = DEFAULT_CARDBACK
                     if a_tag and a_tag.get('href'):
                         try:
                             worker_detail_url = f"https://ptcgmaster.loganlai0422.workers.dev/?path={a_tag['href']}"
-                            detail_resp = requests.get(worker_detail_url, headers=headers, timeout=5)
+                            detail_resp = requests.get(worker_detail_url, headers=headers, timeout=10)
                             all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
                             for src in all_imgs:
                                 src_l = src.lower()
@@ -284,14 +274,15 @@ def api_parse_official(req: ParseOfficialReq):
                                         except: pass
                                     break
                         except: pass
+
                 new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name}
         return {"success": True, "deck": new_deck}
-    except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
+    except Exception as e: return {"success": False, "detail": f"發生例外錯誤: {str(e)}"}
 
-# 🤖 回歸初心：完全採用你備份的 Limitless 爬蟲邏輯，輔以本地快取
+# 🛡️ 終極防禦版：Limitless 英文解析 (完全繞過 Cloudflare 爬蟲)
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
-    lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
+    lines = req.text.split('\n'); new_deck = {}
     for line in lines:
         try:
             line = line.strip()
@@ -305,59 +296,59 @@ def api_parse_text(req: ParseTextReq):
                 target_number = parse_match.group(3) if parse_match and parse_match.group(3) else None
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
-                img_url = None
                 
-                # 1. 優先從快取找
+                img_url = None
+                fallback_url = DEFAULT_CARDBACK
+                
                 if target_set and target_number:
-                    en_card_key = f"{target_set.lower()}-{target_number}"
-                    img_url = LOCAL_CARD_DB.get(en_card_key)
+                    clean_num = target_number.lstrip('0')
+                    set_low = target_set.lower()
+                    set_up = target_set.upper()
+                    mapped_set = LL_SET_MAP.get(set_up, set_low)
+                    
+                    en_card_key_1 = f"{set_low}-{target_number}"
+                    en_card_key_2 = f"{mapped_set}-{clean_num}"
+                    
+                    img_url = LOCAL_CARD_DB.get(en_card_key_1)
+                    if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(en_card_key_2)
                     if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(final_card_key)
+                    
+                    # 🚀 無敵直連法：不爬網頁了，直接給你真實 CDN 網址與官方備用網址
+                    if not is_valid_url(img_url):
+                        img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
+                        fallback_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_num}_hires.png"
                 else:
                     img_url = LOCAL_CARD_DB.get(search_name)
-                
-                # 2. 若快取沒有，直接執行你備份的 Limitless 爬蟲
-                if not is_valid_url(img_url):
-                    img_url = DEFAULT_CARDBACK
-                    if target_set and target_number:
-                        try:
-                            ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
-                            if ll_resp.status_code == 200:
-                                soup = BeautifulSoup(ll_resp.text, 'html.parser')
-                                ll_img = soup.select_one('.card-image-wrapper img') or soup.select_one('.card-img img') or soup.select_one('div.card img')
-                                if ll_img and ll_img.get('src'): 
-                                    img_url = ll_img['src']
-                                    # 成功抓取，存入快取與資料庫
-                                    LOCAL_CARD_DB[en_card_key] = img_url
-                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key, "name": search_name, "img_url": img_url, "metadata": {"source": "limitless-scraped"}}).execute()
-                                    except: pass
-                        except: pass
+                    
+                if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
 
-                new_deck[final_card_key] = {'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': search_name}
+                # 將 fallback_img 一併送給前端處理
+                new_deck[final_card_key] = {
+                    'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 
+                    'img': img_url, 
+                    'name': search_name,
+                    'fallback_img': fallback_url
+                }
         except: continue
+        
+    if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
     return {"success": True, "deck": new_deck}
 
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
-    try:
-        code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
-        supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
-        return {"success": True, "share_code": code}
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"儲存對局失敗: {str(e)}")
+    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    code = "".join(random.choices(chars, k=6))
+    supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
+    return {"success": True, "share_code": code}
 
 @app.get("/api/v1/get_shared_game")
 def api_get_shared_game(code: str):
     res = supabase.table("game_shares").select("game_data").eq("share_code", code.strip().upper()).execute()
     if res.data: return {"success": True, "game_data": json.loads(res.data[0]["game_data"])}
-    raise HTTPException(status_code=404, detail="找不到該對局代碼")
+    raise HTTPException(status_code=404, detail="找不到該對局代碼，請確認代碼是否正確。")
 
 @app.post("/api/v1/simulate")
 def api_simulate(req: MonteCarloReq, user_info: dict = Depends(verify_user_and_check_limit)):
-    try:
-        iterations = 10000 
-        prob = run_monte_carlo(req.deck_cards, req.direct_targets, req.chain_targets, req.draw1, req.target_rule, req.dead_hand_size, iterations)
-        return {"success": True, "prob": prob, "remaining_today": user_info["remaining_today"], "is_pro": user_info["is_pro"]}
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"計算錯誤: {str(e)}")
+    iterations = 10000 
+    prob = run_monte_carlo(req.deck_cards, req.direct_targets, req.chain_targets, req.draw1, req.target_rule, req.dead_hand_size, iterations)
+    return {"success": True, "prob": prob, "iterations": iterations, "remaining_today": user_info["remaining_today"], "is_pro": user_info["is_pro"]}
