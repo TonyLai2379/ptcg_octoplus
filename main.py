@@ -14,8 +14,9 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="10.5.0")
+app = FastAPI(title="PTCG Octoplus API", version="11.0.0")
 
+# 🔒 跨域資源共享限制
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,7 +35,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
 # ==========================================
-# ⚡ 混合式快取機制 (過濾無效網址)
+# ⚡ 混合式快取機制
 # ==========================================
 LOCAL_CARD_DB = {}
 
@@ -196,6 +197,26 @@ def api_get_marquee():
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
+# 🔍 補回遺失的圖庫搜尋功能
+@app.get("/api/v1/search_db")
+def api_search_db(q: str = ""):
+    results = []
+    if not q: return {"results": results}
+    q_lower = q.lower()
+    seen_imgs = set()
+    
+    # 0 延遲記憶體快取搜尋
+    for k, img in LOCAL_CARD_DB.items():
+        if q_lower in k.lower():
+            if img not in seen_imgs and is_valid_url(img):
+                seen_imgs.add(img)
+                # 清除顯示名稱中的 [ID] 標記
+                clean_name = k.split(" [")[0] if " [" in k else k
+                results.append({"key": k, "name": clean_name, "img": img})
+                if len(results) >= 50: # 最多回傳 50 筆
+                    break
+    return {"results": results}
+
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None)):
     user_id = get_user_from_token(auth_header)
@@ -280,10 +301,9 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🌐 Limitless 英文匯入 (改為直連超快 CDN，0延遲)
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
-    lines = req.text.split('\n'); new_deck = {}
+    lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
     for line in lines:
         try:
             line = line.strip()
@@ -297,18 +317,27 @@ def api_parse_text(req: ParseTextReq):
                 target_number = parse_match.group(3) if parse_match else ""
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
-                img_url = None
+                en_card_key = f"{target_set.upper()}-{target_number}" if target_set and target_number else ""
                 
-                if target_set and target_number:
-                    # 優先從快取找
-                    en_card_key = f"{target_set.upper()}-{target_number}"
+                img_url = None
+                if en_card_key:
                     img_url = LOCAL_CARD_DB.get(en_card_key)
                     if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(final_card_key)
                     
-                    # 找不到？直接套用 Limitless S3 CDN 公式 (快狠準，完全不需爬蟲)
-                    if not is_valid_url(img_url):
-                        clean_number = target_number.lstrip('0')
-                        img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{target_set.lower()}/{clean_number}.png"
+                    # 🤖 回歸初心：Limitless 網頁爬蟲 (正確率 100%)
+                    if not is_valid_url(img_url) and target_set and target_number:
+                        img_url = DEFAULT_CARDBACK
+                        try:
+                            ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
+                            if ll_resp.status_code == 200:
+                                soup = BeautifulSoup(ll_resp.text, 'html.parser')
+                                ll_img = soup.select_one('.card-image-wrapper img') or soup.select_one('.card-img img') or soup.select_one('div.card img')
+                                if ll_img and ll_img.get('src'):
+                                    img_url = ll_img['src']
+                                    LOCAL_CARD_DB[en_card_key] = img_url
+                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key, "name": search_name, "img_url": img_url, "metadata": {"source": "limitless-scraped"}}).execute()
+                                    except: pass
+                        except: pass
                 else:
                     img_url = LOCAL_CARD_DB.get(search_name)
                     
