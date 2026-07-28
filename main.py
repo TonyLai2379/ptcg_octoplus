@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="11.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="11.5.0")
 
 # 🔒 跨域資源共享限制
 app.add_middleware(
@@ -35,7 +35,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
 # ==========================================
-# ⚡ 混合式快取機制
+# ⚡ 混合式快取機制 (強制小寫比對防呆)
 # ==========================================
 LOCAL_CARD_DB = {}
 
@@ -51,10 +51,14 @@ def load_global_cards_to_cache():
             res = supabase.table("global_cards").select("card_key, name, img_url").range(page * page_size, (page + 1) * page_size - 1).execute()
             if not res.data: break
             for row in res.data:
-                c_key = row.get('card_key'); c_name = row.get('name'); c_img = row.get('img_url')
+                c_key = row.get('card_key')
+                c_name = row.get('name')
+                c_img = row.get('img_url')
                 if is_valid_url(c_img):
-                    if c_key: LOCAL_CARD_DB[c_key] = c_img
-                    if c_name: LOCAL_CARD_DB[c_name] = c_img
+                    # 將資料打包，並用「全小寫」作為字典的 Key 以解決大小寫衝突
+                    data_dict = {'img': c_img, 'name': c_name, 'key': c_key}
+                    if c_key: LOCAL_CARD_DB[str(c_key).lower()] = data_dict
+                    if c_name: LOCAL_CARD_DB[str(c_name).lower()] = data_dict
             total_loaded += len(res.data)
             if len(res.data) < page_size: break
             page += 1
@@ -197,7 +201,7 @@ def api_get_marquee():
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🔍 補回遺失的圖庫搜尋功能
+# 🔍 圖庫即時搜尋功能 (無視大小寫)
 @app.get("/api/v1/search_db")
 def api_search_db(q: str = ""):
     results = []
@@ -205,16 +209,15 @@ def api_search_db(q: str = ""):
     q_lower = q.lower()
     seen_imgs = set()
     
-    # 0 延遲記憶體快取搜尋
-    for k, img in LOCAL_CARD_DB.items():
-        if q_lower in k.lower():
+    for k, data in LOCAL_CARD_DB.items():
+        if q_lower in k:
+            img = data['img']
             if img not in seen_imgs and is_valid_url(img):
                 seen_imgs.add(img)
-                # 清除顯示名稱中的 [ID] 標記
-                clean_name = k.split(" [")[0] if " [" in k else k
-                results.append({"key": k, "name": clean_name, "img": img})
-                if len(results) >= 50: # 最多回傳 50 筆
-                    break
+                orig_key = data['key'] or data['name']
+                clean_name = orig_key.split(" [")[0] if " [" in orig_key else data['name']
+                results.append({"key": orig_key, "name": clean_name, "img": img})
+                if len(results) >= 50: break
     return {"results": results}
 
 @app.post("/api/v1/redeem_code")
@@ -276,34 +279,20 @@ def api_parse_official(req: ParseOfficialReq):
                     if parts: unique_id = parts[-1]
 
                 card_key = f"{name} [{unique_id}]" if unique_id else name
-                img_url = LOCAL_CARD_DB.get(card_key)
-                if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name)
                 
-                if not is_valid_url(img_url):
-                    img_url = DEFAULT_CARDBACK
-                    if a_tag and a_tag.get('href'):
-                        try:
-                            worker_detail_url = f"https://ptcgmaster.loganlai0422.workers.dev/?path={a_tag['href']}"
-                            detail_resp = requests.get(worker_detail_url, headers=headers, timeout=5)
-                            all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
-                            for src in all_imgs:
-                                src_l = src.lower()
-                                if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
-                                    found_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
-                                    if is_valid_url(found_url):
-                                        img_url = found_url
-                                        LOCAL_CARD_DB[card_key] = img_url
-                                        try: supabase.table("global_cards").upsert({"card_key": card_key, "name": name, "img_url": img_url}).execute()
-                                        except: pass
-                                    break
-                        except: pass
+                # ⚡ 轉換為小寫去快取字典找
+                card_data = LOCAL_CARD_DB.get(card_key.lower())
+                if not card_data: card_data = LOCAL_CARD_DB.get(name.lower())
+                
+                img_url = card_data['img'] if card_data else DEFAULT_CARDBACK
+                
                 new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name}
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
-    lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
+    lines = req.text.split('\n'); new_deck = {}
     for line in lines:
         try:
             line = line.strip()
@@ -317,32 +306,17 @@ def api_parse_text(req: ParseTextReq):
                 target_number = parse_match.group(3) if parse_match else ""
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
-                en_card_key = f"{target_set.upper()}-{target_number}" if target_set and target_number else ""
+                en_card_key = f"{target_set.lower()}-{target_number}" if target_set and target_number else ""
                 
-                img_url = None
+                # ⚡ 從 CSV 轉換過來的無敵小寫快取庫精準比對
+                card_data = None
                 if en_card_key:
-                    img_url = LOCAL_CARD_DB.get(en_card_key)
-                    if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(final_card_key)
-                    
-                    # 🤖 回歸初心：Limitless 網頁爬蟲 (正確率 100%)
-                    if not is_valid_url(img_url) and target_set and target_number:
-                        img_url = DEFAULT_CARDBACK
-                        try:
-                            ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
-                            if ll_resp.status_code == 200:
-                                soup = BeautifulSoup(ll_resp.text, 'html.parser')
-                                ll_img = soup.select_one('.card-image-wrapper img') or soup.select_one('.card-img img') or soup.select_one('div.card img')
-                                if ll_img and ll_img.get('src'):
-                                    img_url = ll_img['src']
-                                    LOCAL_CARD_DB[en_card_key] = img_url
-                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key, "name": search_name, "img_url": img_url, "metadata": {"source": "limitless-scraped"}}).execute()
-                                    except: pass
-                        except: pass
+                    card_data = LOCAL_CARD_DB.get(en_card_key)
+                    if not card_data: card_data = LOCAL_CARD_DB.get(final_card_key.lower())
                 else:
-                    img_url = LOCAL_CARD_DB.get(search_name)
+                    card_data = LOCAL_CARD_DB.get(search_name.lower())
                     
-                if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
-
+                img_url = card_data['img'] if card_data else DEFAULT_CARDBACK
                 new_deck[final_card_key] = {'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': search_name}
         except: continue
     return {"success": True, "deck": new_deck}
