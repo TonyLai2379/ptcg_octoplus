@@ -14,9 +14,8 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="10.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="10.5.0")
 
-# 🔒 跨域資源共享限制
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -52,7 +51,6 @@ def load_global_cards_to_cache():
             if not res.data: break
             for row in res.data:
                 c_key = row.get('card_key'); c_name = row.get('name'); c_img = row.get('img_url')
-                # 嚴格驗證網址，排除 NaN 或空字串
                 if is_valid_url(c_img):
                     if c_key: LOCAL_CARD_DB[c_key] = c_img
                     if c_name: LOCAL_CARD_DB[c_name] = c_img
@@ -63,17 +61,6 @@ def load_global_cards_to_cache():
     except Exception as e: print(f"❌ 載入快取失敗: {e}")
 
 load_global_cards_to_cache()
-
-LL_SET_MAP = {
-    "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
-    "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
-    "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
-    "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
-    "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
-    "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
-    "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
-    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "sve", "PR-SW": "swshp"
-}
 
 # ==========================================
 # 1. 權限分流與 30 次額度檢查
@@ -293,9 +280,10 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
+# 🌐 Limitless 英文匯入 (改為直連超快 CDN，0延遲)
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
-    lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
+    lines = req.text.split('\n'); new_deck = {}
     for line in lines:
         try:
             line = line.strip()
@@ -309,18 +297,18 @@ def api_parse_text(req: ParseTextReq):
                 target_number = parse_match.group(3) if parse_match else ""
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
-                en_card_key = f"{target_set.upper()}-{target_number}" if target_set and target_number else ""
-                
                 img_url = None
-                if en_card_key:
+                
+                if target_set and target_number:
+                    # 優先從快取找
+                    en_card_key = f"{target_set.upper()}-{target_number}"
                     img_url = LOCAL_CARD_DB.get(en_card_key)
                     if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(final_card_key)
+                    
+                    # 找不到？直接套用 Limitless S3 CDN 公式 (快狠準，完全不需爬蟲)
                     if not is_valid_url(img_url):
-                        # 啟動終極雙重防護網：Limitless 爬蟲 -> 國際官方圖庫
-                        mapped_set = LL_SET_MAP.get(target_set.upper(), target_set.lower())
                         clean_number = target_number.lstrip('0')
-                        # 直接產生國際官方網址交給前端，前端載入失敗會自動觸發 onerror 變卡背
-                        img_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_number}_hires.png"
+                        img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{target_set.lower()}/{clean_number}.png"
                 else:
                     img_url = LOCAL_CARD_DB.get(search_name)
                     
