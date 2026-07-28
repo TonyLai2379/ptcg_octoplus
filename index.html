@@ -55,8 +55,7 @@
         .search-result-item img { width: 35px; height: 50px; object-fit: contain; border-radius: 3px; }
 
         .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; background: rgba(255, 152, 0, 0.08); border: 1px solid #FF9800; border-radius: 6px; padding: 8px; margin-top: 10px; color: #FFB74D; font-size: 13px; }
-        /* 🐌 跑馬燈速度放慢：時間從 35s 拉長到 85s */
-        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee-anim 85s linear infinite; } 
+        .marquee-content { display: inline-block; padding-left: 100%; animation-name: marquee-anim; animation-timing-function: linear; animation-iteration-count: infinite; } 
         @keyframes marquee-anim { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
         .disclaimer-box { margin-top: 5px; padding: 8px; background-color: rgba(0, 0, 0, 0.4); border-left: 3px solid #E53935; border-radius: 4px; font-size: 11px; color: #999; line-height: 1.4; }
 
@@ -435,14 +434,14 @@
     <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
-            <h2 style="color: #FFD700; margin-bottom: 10px;">⚠️ 尚未訂閱或額度用盡</h2>
+            <h2 style="color: #FFD700; margin-bottom: 10px;">⚠️ 尚未訂閱</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">請選擇以下方案解鎖「萬次深度推演」：</p>
             
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-                <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用 7 天 (每日限額 30 次)</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">💎 2. 訂閱 1 個月 / 99 元 (無限制)</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">👑 3. 訂閱 3 個月 / 250 元 (無限制)</button>
-                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;">🏆 4. 訂閱 1 年 / 599 元 (無限制)</button>
+                <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用七天 (每日額度限制 30 次)</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">💎 2. 訂閱 1 個月 / 99 元</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">👑 3. 訂閱 3 個月 / 250 元</button>
+                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;">🏆 4. 訂閱一年 / 599 元</button>
                 <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入會員邀請碼</button>
             </div>
             
@@ -651,7 +650,6 @@
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch (e) { console.error("Supabase 初始化失敗", e); }
 
-        let currentUserToken = null;
         let currentLang = localStorage.getItem('app_lang') || 'zh';
         let deckDict = {}; 
         let gameCards = []; 
@@ -668,8 +666,14 @@
         let historyPtr = -1;
 
         // ==========================================
-        // 3. 認證登入邏輯
+        // 3. 認證登入邏輯 (動態 Token 抓取防呆)
         // ==========================================
+        async function getFreshToken() {
+            if (!supabaseClient) return null;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            return session ? session.access_token : null;
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             if (supabaseClient) {
                 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -685,7 +689,6 @@
         }
 
         function handleSession(session) {
-            currentUserToken = session.access_token;
             document.getElementById('gate-overlay').style.display = 'none';
             document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
             document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
@@ -759,12 +762,14 @@
         async function redeemPromoCode() {
             const code = document.getElementById('promo-code-input').value.trim();
             if (!code) return alert("請輸入邀請碼");
-            if (!currentUserToken) return alert("請先登入帳號");
+            
+            const token = await getFreshToken();
+            if (!token) return alert("請先登入帳號");
 
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/redeem_code`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${currentUserToken}`, 'Content-Type': 'application/json' },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code: code })
                 });
                 const data = await resp.json();
@@ -778,10 +783,12 @@
         }
 
         async function activateTrial() {
-            if (!currentUserToken) return alert("請先登入帳號");
+            const token = await getFreshToken();
+            if (!token) return alert("請先登入帳號");
+
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/activate_trial`, {
-                    method: 'POST', headers: { 'Authorization': `Bearer ${currentUserToken}` }
+                    method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await resp.json();
                 if (resp.ok) {
@@ -811,7 +818,11 @@
 
         function changeLanguage(lang) {
             currentLang = lang; localStorage.setItem('app_lang', lang); document.getElementById('lang-select').value = lang; let t = translations[lang];
-            setTxt('tut-btn', t.tutBtn); if (!currentUserToken) setTxt('txt-status', t.statusNotLogin); setTxt('btn-unlock', t.btnUnlock); setTxt('tab-btn-link', t.tabLink); setTxt('tab-btn-text', t.tabText); setTxt('tab-btn-edit', t.tabEdit);
+            setTxt('tut-btn', t.tutBtn); 
+            // 避免覆蓋登入狀態的顯示
+            const statusEl = document.getElementById('txt-status');
+            if (statusEl && statusEl.innerText.includes("未登入")) setTxt('txt-status', t.statusNotLogin); 
+            setTxt('btn-unlock', t.btnUnlock); setTxt('tab-btn-link', t.tabLink); setTxt('tab-btn-text', t.tabText); setTxt('tab-btn-edit', t.tabEdit);
             let dc = document.getElementById('deck-code'); if(dc) dc.placeholder = t.phDeckCode;
             setTxt('btn-parse-official', t.btnParseOfficial);
             let dt = document.getElementById('deck-text'); if(dt) dt.placeholder = t.phDeckText;
@@ -1048,65 +1059,67 @@
         function openSearchModal(zone) { let arr = gameCards.filter(c => c.zone === zone); if(arr.length === 0) return; currentModalMode = 'search_multi_' + zone; searchMultiSelection = {}; let zoneName = zone === 'deck' ? '牌庫' : '棄牌'; document.getElementById('gallery-title').innerText = `🔍 檢索${zoneName} (可多選回手牌)`; document.getElementById('gallery-confirm-btn').style.display = 'block'; let groups = {}; arr.forEach(c => { if(!groups[c.key]) groups[c.key] = {max_qty:0, img:c.img, name:c.name, key:c.key}; groups[c.key].max_qty++; }); renderGalleryItems(Object.values(groups)); document.getElementById('gallery-modal').style.display = 'flex'; }
         
         function runSimulation() { 
-            if(!currentUserToken) { document.getElementById('gate-overlay').style.display = 'flex'; return alert("請先登入帳號以使用深度推演！"); } 
-            let d1 = parseInt(document.getElementById('draw1-qty').value); let targetRule = document.querySelector('input[name="target_rule"]:checked').value; let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0; 
-            let directDict = {}; Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; }); 
-            if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！"); 
-            let formattedChainDict = {}; Object.keys(chainList).forEach(k => { formattedChainDict[k] = { type: chainList[k].type, val: chainList[k].val, search_targets: Object.keys(chainList[k].targets), guaranteed: chainList[k].guaranteed || false }; }); 
-            let cDeck = gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})); 
-            
-            let resultEl = document.getElementById('sim-result');
-            resultEl.innerText = "運算中..."; 
-            resultEl.style.color = "#FFD700"; 
-            resultEl.style.fontSize = "32px";
+            getFreshToken().then(token => {
+                if(!token) { document.getElementById('gate-overlay').style.display = 'flex'; return alert("請先登入帳號以使用深度推演！"); } 
+                let d1 = parseInt(document.getElementById('draw1-qty').value); let targetRule = document.querySelector('input[name="target_rule"]:checked').value; let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0; 
+                let directDict = {}; Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; }); 
+                if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！"); 
+                let formattedChainDict = {}; Object.keys(chainList).forEach(k => { formattedChainDict[k] = { type: chainList[k].type, val: chainList[k].val, search_targets: Object.keys(chainList[k].targets), guaranteed: chainList[k].guaranteed || false }; }); 
+                let cDeck = gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})); 
+                
+                let resultEl = document.getElementById('sim-result');
+                resultEl.innerText = "運算中..."; 
+                resultEl.style.color = "#FFD700"; 
+                resultEl.style.fontSize = "32px";
 
-            fetch(`${API_BASE}/api/v1/simulate`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentUserToken}` }, 
-                body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) 
-            }).then(async r => { 
-                if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
-                if(r.status === 403) { 
-                    const d = await r.json();
-                    if(d.detail === "LIMIT_REACHED") {
-                        document.getElementById('sub-modal').style.display='flex';
-                        throw new Error("額度用盡");
+                fetch(`${API_BASE}/api/v1/simulate`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+                    body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) 
+                }).then(async r => { 
+                    if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
+                    if(r.status === 403) { 
+                        const d = await r.json();
+                        if(d.detail === "LIMIT_REACHED") {
+                            document.getElementById('sub-modal').style.display='flex';
+                            throw new Error("額度用盡");
+                        }
                     }
-                }
-                if(!r.ok) {
-                    const errData = await r.json().catch(() => ({}));
-                    throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); 
-                }
-                return r.json(); 
-            }).then(d => { 
-                if(d.success) { 
-                    let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; 
-                    let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); 
-                    lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; 
-                    resultEl.innerText = `${d.prob.toFixed(1)} %`; 
-                    resultEl.style.color = "#00E5FF"; 
-                    resultEl.style.fontSize = "46px";
-                } else {
-                    throw new Error(d.detail || "運算失敗");
-                }
-            }).catch(e => { 
-                console.error(e);
-                if(e.message !== "額度用盡" && e.message !== "請先登入") {
-                    resultEl.innerText = "❌ " + e.message; 
-                    resultEl.style.color = "#FF5252"; 
-                    resultEl.style.fontSize = "20px";
-                    
-                    setTimeout(() => {
+                    if(!r.ok) {
+                        const errData = await r.json().catch(() => ({}));
+                        throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); 
+                    }
+                    return r.json(); 
+                }).then(d => { 
+                    if(d.success) { 
+                        let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; 
+                        let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); 
+                        lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; 
+                        resultEl.innerText = `${d.prob.toFixed(1)} %`; 
+                        resultEl.style.color = "#00E5FF"; 
+                        resultEl.style.fontSize = "46px";
+                    } else {
+                        throw new Error(d.detail || "運算失敗");
+                    }
+                }).catch(e => { 
+                    console.error(e);
+                    if(e.message !== "額度用盡" && e.message !== "請先登入") {
+                        resultEl.innerText = "❌ " + e.message; 
+                        resultEl.style.color = "#FF5252"; 
+                        resultEl.style.fontSize = "20px";
+                        
+                        setTimeout(() => {
+                            resultEl.innerText = "0.0 %";
+                            resultEl.style.color = "#00E5FF";
+                            resultEl.style.fontSize = "46px";
+                        }, 4000);
+                    } else {
                         resultEl.innerText = "0.0 %";
                         resultEl.style.color = "#00E5FF";
                         resultEl.style.fontSize = "46px";
-                    }, 4000);
-                } else {
-                    resultEl.innerText = "0.0 %";
-                    resultEl.style.color = "#00E5FF";
-                    resultEl.style.fontSize = "46px";
-                }
-            }); 
+                    }
+                }); 
+            });
         }
         
         function saveScenario() { if(!lastSimResult) return; const b = document.getElementById('ab-board'); let maxProb = Math.max(...Array.from(b.children).map(c => parseFloat(c.dataset.prob)||0), lastSimResult.prob); let div = document.createElement('div'); div.className = 'ab-item'; div.dataset.prob = lastSimResult.prob; div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444'; div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`; div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`); b.appendChild(div); }
@@ -1191,17 +1204,22 @@
         }
 
         // ==========================================
-        // 💬 跑馬燈功能
+        // 💬 跑馬燈功能 (動態字數運算時間)
         // ==========================================
         async function fetchMarquee() {
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/marquee`);
-                if (resp.ok) {
-                    const data = await resp.json();
-                    document.getElementById('marquee-text').innerHTML = data.text || "歡迎使用 PTCG 小章魚";
-                }
+                const data = await resp.json();
+                let text = data.text || "歡迎使用 PTCG 小章魚";
+                let el = document.getElementById('marquee-text');
+                el.innerHTML = text;
+                // 字數 * 0.4秒，並設定最低底線 15秒 避免太快
+                let duration = Math.max(text.length * 0.4, 15);
+                el.style.animationDuration = duration + 's';
             } catch (e) {
-                document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚";
+                let el = document.getElementById('marquee-text');
+                el.innerHTML = "歡迎使用 PTCG 小章魚";
+                el.style.animationDuration = '15s';
             }
         }
         
