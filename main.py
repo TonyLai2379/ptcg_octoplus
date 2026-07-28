@@ -9,11 +9,12 @@ import requests
 import os
 import datetime
 import json
+import traceback
 from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="8.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="8.5.0")
 
 # 🔒 跨域資源共享限制
 app.add_middleware(
@@ -39,89 +40,57 @@ DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png
 LOCAL_CARD_DB = {}
 
 def load_global_cards_to_cache():
-    """伺服器啟動時，從 Supabase 批次拉取全域卡庫至記憶體，實現 0 延遲查詢"""
     global LOCAL_CARD_DB
     print("⏳ 正在從 Supabase 載入全域卡庫至記憶體...")
     try:
-        page = 0
-        page_size = 1000
-        total_loaded = 0
+        page = 0; page_size = 1000; total_loaded = 0
         while True:
-            # 透過分頁抓取避免超過 API 單次限制
             res = supabase.table("global_cards").select("card_key, name, img_url").range(page * page_size, (page + 1) * page_size - 1).execute()
-            if not res.data:
-                break
-            
+            if not res.data: break
             for row in res.data:
-                c_key = row.get('card_key')
-                c_name = row.get('name')
-                c_img = row.get('img_url')
-                
-                if c_key and c_img:
-                    LOCAL_CARD_DB[c_key] = c_img
-                # 如果純卡名還沒被註冊，也建一份純卡名的捷徑
-                if c_name and c_name not in LOCAL_CARD_DB and c_img:
-                    LOCAL_CARD_DB[c_name] = c_img
-                    
+                c_key = row.get('card_key'); c_name = row.get('name'); c_img = row.get('img_url')
+                if c_key and c_img: LOCAL_CARD_DB[c_key] = c_img
+                if c_name and c_name not in LOCAL_CARD_DB and c_img: LOCAL_CARD_DB[c_name] = c_img
             total_loaded += len(res.data)
-            if len(res.data) < page_size:
-                break
+            if len(res.data) < page_size: break
             page += 1
-            
         print(f"✅ 成功載入 {total_loaded} 筆卡片資料至記憶體快取！")
-    except Exception as e:
-        print(f"❌ 載入快取失敗: {e}")
+    except Exception as e: print(f"❌ 載入快取失敗: {e}")
 
-# 伺服器啟動時自動執行載入
 load_global_cards_to_cache()
 
 # ==========================================
 # 1. 驗證權限與每日 30 次限制
 # ==========================================
 def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="請先登入帳號以使用推演功能")
-    
+    if not authorization or not authorization.startswith("Bearer "): raise HTTPException(status_code=401, detail="請先登入帳號以使用推演功能")
     token = authorization.split(" ")[1]
     try:
         user_res = supabase.auth.get_user(token)
-        if not user_res or not user_res.user:
-            raise HTTPException(status_code=401, detail="無效的登入 Token，請重新登入")
-        
+        if not user_res or not user_res.user: raise HTTPException(status_code=401, detail="無效的登入 Token，請重新登入")
         user_id = user_res.user.id
         today_str = str(datetime.date.today())
         
-        # 1. 檢查用戶 Profile (若無則自動建立)
         profile_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
         if not profile_res.data:
             supabase.table("profiles").insert({"id": user_id, "is_pro": False, "trial_used": False}).execute()
             is_pro = False
         else:
-            profile = profile_res.data[0]
-            is_pro = profile.get("is_pro", False)
+            is_pro = profile_res.data[0].get("is_pro", False)
         
-        if is_pro:
-            return {"user_id": user_id, "is_pro": True, "remaining_today": 9999}
+        if is_pro: return {"user_id": user_id, "is_pro": True, "remaining_today": 9999}
             
-        # 2. 普通用戶：每日限制 30 次
         sim_res = supabase.table("daily_simulations").select("count").eq("user_id", user_id).eq("usage_date", today_str).execute()
         used_today = sim_res.data[0]["count"] if sim_res.data else 0
         
-        if used_today >= 30:
-            raise HTTPException(status_code=403, detail="LIMIT_REACHED")
+        if used_today >= 30: raise HTTPException(status_code=403, detail="LIMIT_REACHED")
             
-        # 用量 +1
-        supabase.table("daily_simulations").upsert({
-            "user_id": user_id,
-            "usage_date": today_str,
-            "count": used_today + 1
-        }).execute()
-        
+        supabase.table("daily_simulations").upsert({"user_id": user_id, "usage_date": today_str, "count": used_today + 1}).execute()
         return {"user_id": user_id, "is_pro": False, "remaining_today": 30 - (used_today + 1)}
         
-    except HTTPException:
-        raise
+    except HTTPException: raise
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"權限驗證失敗: {str(e)}")
 
 # ==========================================
@@ -150,7 +119,6 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
             def is_satisfied(m_dict):
                 if target_rule == "AND": return sum(m_dict.values()) <= 0
                 else: return any(m_dict[k] < direct_dict[k]['qty'] for k in direct_dict)
-            
             if is_satisfied(missing): return True
             
             for s_card in search_cards:
@@ -187,15 +155,9 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
-class SaveDeckReq(BaseModel): deck_name: str; deck_data: str
 class ShareGameReq(BaseModel): game_data: List[Dict[str, Any]]
 class MonteCarloReq(BaseModel):
-    deck_cards: List[Dict[str, Any]]
-    direct_targets: Dict[str, Any]
-    chain_targets: Dict[str, Any]
-    draw1: int
-    target_rule: str = "AND"
-    dead_hand_size: int = 0
+    deck_cards: List[Dict[str, Any]]; direct_targets: Dict[str, Any]; chain_targets: Dict[str, Any]; draw1: int; target_rule: str = "AND"; dead_hand_size: int = 0
 
 # ==========================================
 # 4. API Endpoints
@@ -208,8 +170,7 @@ def serve_index():
 @app.get("/api/v1/marquee")
 def api_get_marquee():
     file_path = "dialogue.txt"
-    if not os.path.exists(file_path):
-        return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
+    if not os.path.exists(file_path): return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             lines = [l.strip() for l in f.readlines() if l.strip()]
@@ -217,10 +178,8 @@ def api_get_marquee():
                 random.shuffle(lines)
                 return {"text": " &nbsp;&nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp;&nbsp; ".join(lines)}
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
-    except Exception:
-        return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
+    except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🎁 兌換碼 API
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None)):
     if not auth_header: raise HTTPException(status_code=401, detail="請先登入帳號")
@@ -235,23 +194,16 @@ def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None
     if not code_res.data: raise HTTPException(status_code=400, detail="❌ 無效的兌換碼")
         
     promo = code_res.data[0]
-    if promo["used_count"] >= promo["max_uses"]:
-        raise HTTPException(status_code=400, detail="❌ 此兌換碼已被領取完畢")
+    if promo["used_count"] >= promo["max_uses"]: raise HTTPException(status_code=400, detail="❌ 此兌換碼已被領取完畢")
         
     days = promo["days_valid"]
-    
     p_res = supabase.table("profiles").select("id").eq("id", user_id).execute()
     if not p_res.data: supabase.table("profiles").insert({"id": user_id}).execute()
 
-    supabase.table("profiles").update({
-        "is_pro": True,
-        "pro_expires_at": f"now() + interval '{days} days'"
-    }).eq("id", user_id).execute()
-    
+    supabase.table("profiles").update({"is_pro": True, "pro_expires_at": f"now() + interval '{days} days'"}).eq("id", user_id).execute()
     supabase.table("promo_codes").update({"used_count": promo["used_count"] + 1}).eq("code", code).execute()
     return {"success": True, "detail": f"🎉 成功兌換！已為你開通 {days} 天 Pro 專業無限推演權限。"}
 
-# 🎁 免費體驗 7 天 API
 @app.post("/api/v1/activate_trial")
 def api_activate_trial(auth_header: Optional[str] = Header(None)):
     if not auth_header: raise HTTPException(status_code=401, detail="請先登入帳號")
@@ -261,25 +213,17 @@ def api_activate_trial(auth_header: Optional[str] = Header(None)):
     
     user_id = user_res.user.id
     p_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    
     if not p_res.data:
         supabase.table("profiles").insert({"id": user_id, "trial_used": False}).execute()
         trial_used = False
     else:
         trial_used = p_res.data[0].get("trial_used", False)
         
-    if trial_used:
-        raise HTTPException(status_code=400, detail="您已經使用過 7 天免費體驗囉！")
+    if trial_used: raise HTTPException(status_code=400, detail="您已經使用過 7 天免費體驗囉！")
         
-    supabase.table("profiles").update({
-        "is_pro": True,
-        "trial_used": True,
-        "pro_expires_at": "now() + interval '7 days'"
-    }).eq("id", user_id).execute()
-    
+    supabase.table("profiles").update({"is_pro": True, "trial_used": True, "pro_expires_at": "now() + interval '7 days'"}).eq("id", user_id).execute()
     return {"success": True, "detail": "🎉 體驗開通成功！接下來 7 天可無限制使用所有專業功能。"}
 
-# 🌐 解析官方牌組代碼 (結合快取與自動抓取更新)
 @app.post("/api/v1/parse_official")
 def api_parse_official(req: ParseOfficialReq):
     code_match = re.search(r'([a-zA-Z0-9]{6}-[a-zA-Z0-9]{6}-[a-zA-Z0-9]{6})', req.deck_code)
@@ -290,28 +234,21 @@ def api_parse_official(req: ParseOfficialReq):
         response = requests.get(worker_url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
         new_deck = {}
-        card_items = soup.find_all('li', class_='card')
-
-        for item in card_items:
-            name_tag = item.find('p', class_='cardName')
-            qty_tag = item.find('div', class_='cardCount')
+        for item in soup.find_all('li', class_='card'):
+            name_tag = item.find('p', class_='cardName'); qty_tag = item.find('div', class_='cardCount')
             if name_tag and qty_tag:
                 name = re.sub(r'\s+', ' ', name_tag.text.strip()).strip()
                 try: qty = int(re.sub(r'\D', '', qty_tag.text)) if re.sub(r'\D', '', qty_tag.text) else 1
                 except: qty = 1
 
-                a_tag = name_tag.find('a')
-                unique_id = ""
+                a_tag = name_tag.find('a'); unique_id = ""
                 if a_tag and a_tag.get('href'):
                     parts = [p for p in a_tag.get('href', '').split('/') if p]
                     if parts: unique_id = parts[-1]
 
                 card_key = f"{name} [{unique_id}]" if unique_id else name
-                
-                # ⚡ 第一優先：檢查本地快取字典 (0 延遲)
                 img_url = LOCAL_CARD_DB.get(card_key) or LOCAL_CARD_DB.get(name)
                 
-                # 🤖 第二優先：官網爬蟲 -> 抓取 -> 寫入資料庫與快取
                 if not img_url:
                     img_url = DEFAULT_CARDBACK
                     if a_tag and a_tag.get('href'):
@@ -323,55 +260,42 @@ def api_parse_official(req: ParseOfficialReq):
                                 src_l = src.lower()
                                 if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
                                     img_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
-                                    
-                                    # 成功抓取新圖片，自動進化卡庫！
                                     LOCAL_CARD_DB[card_key] = img_url
                                     LOCAL_CARD_DB[name] = img_url
-                                    try:
-                                        # 寫入 Supabase 永久保存
-                                        supabase.table("global_cards").upsert({
-                                            "card_key": card_key,
-                                            "name": name,
-                                            "img_url": img_url,
-                                            "metadata": {"source": "auto-scraped"}
-                                        }).execute()
+                                    try: supabase.table("global_cards").upsert({"card_key": card_key, "name": name, "img_url": img_url, "metadata": {"source": "auto-scraped"}}).execute()
                                     except: pass
                                     break
                         except: pass
-
                 new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name}
         return {"success": True, "deck": new_deck}
-    except Exception as e:
-        return {"success": False, "detail": f"例外錯誤: {str(e)}"}
+    except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 📝 解析 Limitless 英文文字牌組
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
-    lines = req.text.split('\n')
-    new_deck = {}
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
     for line in lines:
         try:
             line = line.strip()
             if not line or any(x in line for x in ["Pokémon:", "Trainer:", "Energy:"]): continue
             match = re.search(r'^(\d+)\s+(.+)', line)
             if match:
-                qty = int(match.group(1))
-                raw_name = match.group(2).strip()
+                qty = int(match.group(1)); raw_name = match.group(2).strip()
                 parse_match = re.search(r'^(.+?)(?:\s+([a-zA-Z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
                 search_name = parse_match.group(1).strip() if parse_match else raw_name
                 target_set = parse_match.group(2) if parse_match else ""
                 target_number = parse_match.group(3) if parse_match else ""
                 
+                # 修正：精準比對 CSV 中的英文版格式 (例如 base1-1)
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
+                en_card_key = f"{target_set}-{target_number}" if target_set and target_number else ""
                 
-                # ⚡ 優先檢查快取字典
-                img_url = LOCAL_CARD_DB.get(final_card_key) or LOCAL_CARD_DB.get(search_name)
+                img_url = None
+                if en_card_key: img_url = LOCAL_CARD_DB.get(en_card_key)
+                if not img_url: img_url = LOCAL_CARD_DB.get(final_card_key)
                 
-                # 🤖 如果快取沒有，去 Limitless 抓，然後寫入快取與資料庫
                 if not img_url:
-                    img_url = DEFAULT_CARDBACK
                     if target_set and target_number:
+                        img_url = DEFAULT_CARDBACK
                         try:
                             ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
                             if ll_resp.status_code == 200:
@@ -379,49 +303,39 @@ def api_parse_text(req: ParseTextReq):
                                 ll_img = soup.select_one('.card-image-wrapper img') or soup.select_one('.card-img img') or soup.select_one('div.card img')
                                 if ll_img and ll_img.get('src'):
                                     img_url = ll_img['src']
-                                    # 更新快取與 DB
-                                    LOCAL_CARD_DB[final_card_key] = img_url
-                                    LOCAL_CARD_DB[search_name] = img_url
-                                    try:
-                                        supabase.table("global_cards").upsert({
-                                            "card_key": final_card_key,
-                                            "name": search_name,
-                                            "img_url": img_url,
-                                            "metadata": {"source": "auto-scraped-limitless"}
-                                        }).execute()
+                                    LOCAL_CARD_DB[en_card_key] = img_url
+                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key, "name": search_name, "img_url": img_url, "metadata": {"source": "auto-scraped-limitless"}}).execute()
                                     except: pass
                         except: pass
+                    else:
+                        img_url = LOCAL_CARD_DB.get(search_name) or DEFAULT_CARDBACK
 
                 new_deck[final_card_key] = {'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': search_name}
         except: continue
     return {"success": True, "deck": new_deck}
 
-# 📤 分享對局
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
-    code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
-    supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
-    return {"success": True, "share_code": code}
+    try:
+        code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
+        supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
+        return {"success": True, "share_code": code}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"儲存對局失敗: {str(e)}")
 
-# 📥 載入對局
 @app.get("/api/v1/get_shared_game")
 def api_get_shared_game(code: str):
     res = supabase.table("game_shares").select("game_data").eq("share_code", code.strip().upper()).execute()
     if res.data: return {"success": True, "game_data": json.loads(res.data[0]["game_data"])}
     raise HTTPException(status_code=404, detail="找不到該對局代碼")
 
-# 🎲 蒙地卡羅運算 API (加入完善的錯誤捕捉，解決 500 當機)
 @app.post("/api/v1/simulate")
 def api_simulate(req: MonteCarloReq, user_info: dict = Depends(verify_user_and_check_limit)):
     try:
         iterations = 10000 
         prob = run_monte_carlo(req.deck_cards, req.direct_targets, req.chain_targets, req.draw1, req.target_rule, req.dead_hand_size, iterations)
-        return {
-            "success": True, 
-            "prob": prob, 
-            "remaining_today": user_info["remaining_today"],
-            "is_pro": user_info["is_pro"]
-        }
+        return {"success": True, "prob": prob, "remaining_today": user_info["remaining_today"], "is_pro": user_info["is_pro"]}
     except Exception as e:
-        # 如果 Python 內部發生當機，將捕捉錯誤並傳回前端，避免死板的 500 錯誤
-        raise HTTPException(status_code=500, detail=f"蒙地卡羅計算內部錯誤: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"計算錯誤: {str(e)}")
