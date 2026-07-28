@@ -434,7 +434,7 @@
     <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
-            <h2 style="color: #FFD700; margin-bottom: 10px;">⚠️ 尚未訂閱</h2>
+            <h2 style="color: #FFD700; margin-bottom: 10px;">⚠️ 尚未訂閱或額度用盡</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">請選擇以下方案解鎖「萬次深度推演」：</p>
             
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
@@ -666,12 +666,18 @@
         let historyPtr = -1;
 
         // ==========================================
-        // 3. 認證登入邏輯 (動態 Token 抓取防呆)
+        // 3. 認證登入邏輯 (即時刷新 Token 防止假登入)
         // ==========================================
         async function getFreshToken() {
             if (!supabaseClient) return null;
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            return session ? session.access_token : null;
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            if (error || !session) {
+                document.getElementById('gate-overlay').style.display = 'flex';
+                document.getElementById('sub-modal').style.display = 'none';
+                alert("登入憑證已過期，請重新發送魔法連結登入！");
+                return null;
+            }
+            return session.access_token;
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -764,7 +770,7 @@
             if (!code) return alert("請輸入邀請碼");
             
             const token = await getFreshToken();
-            if (!token) return alert("請先登入帳號");
+            if (!token) return; // token 無效時，getFreshToken 已經會自動跳出登入視窗
 
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/redeem_code`, {
@@ -777,14 +783,19 @@
                     alert(data.detail);
                     document.getElementById('auth-overlay').style.display = 'none';
                 } else {
-                    alert(data.detail || "兌換失敗");
+                    if (resp.status === 401) {
+                        document.getElementById('gate-overlay').style.display = 'flex';
+                        alert(data.detail || "登入已過期");
+                    } else {
+                        alert(data.detail || "兌換失敗");
+                    }
                 }
             } catch (e) { alert("連線發生錯誤"); }
         }
 
         async function activateTrial() {
             const token = await getFreshToken();
-            if (!token) return alert("請先登入帳號");
+            if (!token) return; 
 
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/activate_trial`, {
@@ -795,7 +806,13 @@
                     alert(data.detail);
                     document.getElementById('sub-modal').style.display = 'none';
                 } else {
-                    alert("❌ 失敗：" + data.detail);
+                    if (resp.status === 401) {
+                        document.getElementById('gate-overlay').style.display = 'flex';
+                        document.getElementById('sub-modal').style.display = 'none';
+                        alert(data.detail || "登入已過期");
+                    } else {
+                        alert("❌ 失敗：" + data.detail);
+                    }
                 }
             } catch (e) { alert("連線錯誤"); }
         }
@@ -1060,7 +1077,7 @@
         
         function runSimulation() { 
             getFreshToken().then(token => {
-                if(!token) { document.getElementById('gate-overlay').style.display = 'flex'; return alert("請先登入帳號以使用深度推演！"); } 
+                if(!token) return; 
                 let d1 = parseInt(document.getElementById('draw1-qty').value); let targetRule = document.querySelector('input[name="target_rule"]:checked').value; let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0; 
                 let directDict = {}; Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; }); 
                 if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！"); 
@@ -1077,7 +1094,10 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                     body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) 
                 }).then(async r => { 
-                    if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
+                    if(r.status === 401) { 
+                        document.getElementById('gate-overlay').style.display='flex'; 
+                        throw new Error("請先登入"); 
+                    }
                     if(r.status === 403) { 
                         const d = await r.json();
                         if(d.detail === "LIMIT_REACHED") {
@@ -1204,7 +1224,7 @@
         }
 
         // ==========================================
-        // 💬 跑馬燈功能 (動態字數運算時間)
+        // 💬 跑馬燈功能 (動態字數運算時間，放慢25%)
         // ==========================================
         async function fetchMarquee() {
             try {
@@ -1213,13 +1233,13 @@
                 let text = data.text || "歡迎使用 PTCG 小章魚";
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = text;
-                // 字數 * 0.4秒，並設定最低底線 15秒 避免太快
-                let duration = Math.max(text.length * 0.4, 15);
+                // 字數 * 0.5秒，並設定最低底線 20秒 避免太快
+                let duration = Math.max(text.length * 0.5, 20);
                 el.style.animationDuration = duration + 's';
             } catch (e) {
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = "歡迎使用 PTCG 小章魚";
-                el.style.animationDuration = '15s';
+                el.style.animationDuration = '20s';
             }
         }
         
