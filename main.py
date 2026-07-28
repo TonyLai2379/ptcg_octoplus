@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="9.5.0")
+app = FastAPI(title="PTCG Octoplus API", version="10.0.0")
 
 # 🔒 跨域資源共享限制
 app.add_middleware(
@@ -35,9 +35,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
 # ==========================================
-# ⚡ 混合式快取機制 (Hybrid Cache)
+# ⚡ 混合式快取機制 (過濾無效網址)
 # ==========================================
 LOCAL_CARD_DB = {}
+
+def is_valid_url(url):
+    return isinstance(url, str) and url.startswith("http")
 
 def load_global_cards_to_cache():
     global LOCAL_CARD_DB
@@ -49,8 +52,10 @@ def load_global_cards_to_cache():
             if not res.data: break
             for row in res.data:
                 c_key = row.get('card_key'); c_name = row.get('name'); c_img = row.get('img_url')
-                if c_key and c_img: LOCAL_CARD_DB[c_key] = c_img
-                if c_name and c_img: LOCAL_CARD_DB[c_name] = c_img
+                # 嚴格驗證網址，排除 NaN 或空字串
+                if is_valid_url(c_img):
+                    if c_key: LOCAL_CARD_DB[c_key] = c_img
+                    if c_name: LOCAL_CARD_DB[c_name] = c_img
             total_loaded += len(res.data)
             if len(res.data) < page_size: break
             page += 1
@@ -59,8 +64,19 @@ def load_global_cards_to_cache():
 
 load_global_cards_to_cache()
 
+LL_SET_MAP = {
+    "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
+    "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
+    "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
+    "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
+    "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
+    "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
+    "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
+    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "sve", "PR-SW": "swshp"
+}
+
 # ==========================================
-# 1. 權限分流與 30 次額度檢查 (加強 Token 過期防呆)
+# 1. 權限分流與 30 次額度檢查
 # ==========================================
 def get_user_from_token(auth_header: str):
     if not auth_header or not auth_header.startswith("Bearer "): 
@@ -252,9 +268,10 @@ def api_parse_official(req: ParseOfficialReq):
                     if parts: unique_id = parts[-1]
 
                 card_key = f"{name} [{unique_id}]" if unique_id else name
-                img_url = LOCAL_CARD_DB.get(card_key) or LOCAL_CARD_DB.get(name)
+                img_url = LOCAL_CARD_DB.get(card_key)
+                if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name)
                 
-                if not img_url:
+                if not is_valid_url(img_url):
                     img_url = DEFAULT_CARDBACK
                     if a_tag and a_tag.get('href'):
                         try:
@@ -264,11 +281,12 @@ def api_parse_official(req: ParseOfficialReq):
                             for src in all_imgs:
                                 src_l = src.lower()
                                 if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
-                                    img_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
-                                    LOCAL_CARD_DB[card_key] = img_url
-                                    LOCAL_CARD_DB[name] = img_url
-                                    try: supabase.table("global_cards").upsert({"card_key": card_key, "name": name, "img_url": img_url, "metadata": {"source": "auto-scraped"}}).execute()
-                                    except: pass
+                                    found_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
+                                    if is_valid_url(found_url):
+                                        img_url = found_url
+                                        LOCAL_CARD_DB[card_key] = img_url
+                                        try: supabase.table("global_cards").upsert({"card_key": card_key, "name": name, "img_url": img_url}).execute()
+                                        except: pass
                                     break
                         except: pass
                 new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name}
@@ -292,29 +310,21 @@ def api_parse_text(req: ParseTextReq):
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
                 en_card_key = f"{target_set.upper()}-{target_number}" if target_set and target_number else ""
-                img_url = None
                 
+                img_url = None
                 if en_card_key:
-                    # ⚡ 優先從快取找
                     img_url = LOCAL_CARD_DB.get(en_card_key)
-                    if not img_url: img_url = LOCAL_CARD_DB.get(final_card_key)
-                    
-                    # 🤖 如果快取沒有，直接去 Limitless 爬卡片網頁 (100% 精準)
-                    if not img_url:
-                        img_url = DEFAULT_CARDBACK
-                        try:
-                            ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
-                            if ll_resp.status_code == 200:
-                                soup = BeautifulSoup(ll_resp.text, 'html.parser')
-                                ll_img = soup.select_one('.card-image-wrapper img') or soup.select_one('.card-img img') or soup.select_one('div.card img')
-                                if ll_img and ll_img.get('src'):
-                                    img_url = ll_img['src']
-                                    LOCAL_CARD_DB[en_card_key] = img_url
-                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key, "name": search_name, "img_url": img_url, "metadata": {"source": "limitless-scraped"}}).execute()
-                                    except: pass
-                        except: pass
+                    if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(final_card_key)
+                    if not is_valid_url(img_url):
+                        # 啟動終極雙重防護網：Limitless 爬蟲 -> 國際官方圖庫
+                        mapped_set = LL_SET_MAP.get(target_set.upper(), target_set.lower())
+                        clean_number = target_number.lstrip('0')
+                        # 直接產生國際官方網址交給前端，前端載入失敗會自動觸發 onerror 變卡背
+                        img_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_number}_hires.png"
                 else:
-                    img_url = LOCAL_CARD_DB.get(search_name) or DEFAULT_CARDBACK
+                    img_url = LOCAL_CARD_DB.get(search_name)
+                    
+                if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
 
                 new_deck[final_card_key] = {'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': search_name}
         except: continue
