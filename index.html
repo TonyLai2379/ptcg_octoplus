@@ -55,7 +55,7 @@
         .search-result-item img { width: 35px; height: 50px; object-fit: contain; border-radius: 3px; }
 
         .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; background: rgba(255, 152, 0, 0.08); border: 1px solid #FF9800; border-radius: 6px; padding: 8px; margin-top: 10px; color: #FFB74D; font-size: 13px; }
-        .marquee-content { display: inline-block; padding-left: 100%; } 
+        .marquee-content { display: inline-block; padding-left: 100%; animation: marquee-anim 15s linear infinite; } 
         @keyframes marquee-anim { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
         .disclaimer-box { margin-top: 5px; padding: 8px; background-color: rgba(0, 0, 0, 0.4); border-left: 3px solid #E53935; border-radius: 4px; font-size: 11px; color: #999; line-height: 1.4; }
 
@@ -603,6 +603,13 @@
             }, 1000);
         }
 
+        window.addEventListener('load', () => {
+            checkAgreements();
+            checkCooldownOnLoad();
+        });
+        setInterval(checkAgreements, 1000);
+        window.addEventListener('focus', checkAgreements);
+
         // ==========================================
         // 2. Supabase 與全域變數宣告
         // ==========================================
@@ -903,7 +910,29 @@
         
         function startGame() { if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！"); gameCards = []; Object.keys(deckDict).forEach(k => { for(let i=0; i<deckDict[k].qty; i++) { gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, zone: 'deck' }); } }); gameCards.sort(() => Math.random() - 0.5); for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; historyStates = []; historyPtr = -1; saveState(); renderBoard(); }
         
-        function createCardEl(c, isField=false) { const div = document.createElement('div'); div.className = 'card-wrapper'; div.id = c.id; div.draggable = true; div.ondragstart = (e) => { isDragging = true; e.dataTransfer.setData("text", c.id); setTimeout(() => div.style.opacity = '0.3', 0); }; div.ondragend = (e) => { setTimeout(() => { isDragging = false; }, 100); div.style.opacity = '1'; renderBoard(); }; div.onclick = () => { if(!isDragging) handleCardClick(c.img); }; let inner = `<img src="${c.img === 'default_back' ? DEFAULT_CARDBACK : c.img}">`; if(c.img === 'default_back') inner += `<div class="card-name-overlay">${c.name}</div>`; if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } div.innerHTML = inner; return div; }
+        function createCardEl(c, isField=false) { 
+            const div = document.createElement('div'); 
+            div.className = 'card-wrapper'; 
+            div.id = c.id; 
+            div.draggable = true; 
+            div.ondragstart = (e) => { 
+                isDragging = true; 
+                e.dataTransfer.setData("text", c.id); 
+                setTimeout(() => div.style.opacity = '0.01', 0); 
+            }; 
+            div.ondragend = (e) => { 
+                setTimeout(() => { isDragging = false; }, 100); 
+                div.style.opacity = '1'; 
+                renderBoard(); 
+            }; 
+            div.onclick = () => { if(!isDragging) handleCardClick(c.img); }; 
+            let inner = `<img src="${c.img === 'default_back' ? DEFAULT_CARDBACK : c.img}">`; 
+            if(c.img === 'default_back') inner += `<div class="card-name-overlay">${c.name}</div>`; 
+            if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } 
+            div.innerHTML = inner; 
+            return div; 
+        }
+
         function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); renderBoard(); } }
         
         function renderBoard() { 
