@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="11.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="11.5.0")
 
 # 🔒 跨域資源共享限制
 app.add_middleware(
@@ -62,18 +62,6 @@ def load_global_cards_to_cache():
     except Exception as e: print(f"❌ 載入快取失敗: {e}")
 
 load_global_cards_to_cache()
-
-# 英文賽事代號翻譯地圖
-LL_SET_MAP = {
-    "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
-    "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
-    "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
-    "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
-    "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
-    "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
-    "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
-    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "sve", "PR-SW": "swshp"
-}
 
 # ==========================================
 # 1. 權限分流與 30 次額度檢查
@@ -209,39 +197,33 @@ def api_get_marquee():
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🔍 圖庫搜尋功能 (支援不分大小寫比對)
+# 🔍 圖庫搜尋功能
 @app.get("/api/v1/search_db")
 def api_search_db(q: str = ""):
     results = []
     if not q: return {"results": results}
     q_lower = q.lower()
     seen_imgs = set()
-    
     for k, img in LOCAL_CARD_DB.items():
         if q_lower in k.lower():
             if img not in seen_imgs and is_valid_url(img):
                 seen_imgs.add(img)
                 clean_name = k.split(" [")[0] if " [" in k else k
                 results.append({"key": k, "name": clean_name, "img": img})
-                if len(results) >= 50:
-                    break
+                if len(results) >= 50: break
     return {"results": results}
 
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None)):
     user_id = get_user_from_token(auth_header)
     code = req.code.strip().upper()
-    
     code_res = supabase.table("promo_codes").select("*").eq("code", code).execute()
     if not code_res.data: raise HTTPException(status_code=400, detail="❌ 無效的兌換碼")
-        
     promo = code_res.data[0]
     if promo["used_count"] >= promo["max_uses"]: raise HTTPException(status_code=400, detail="❌ 此兌換碼已被領取完畢")
-        
     days = promo["days_valid"]
     p_res = supabase.table("profiles").select("id").eq("id", user_id).execute()
     if not p_res.data: supabase.table("profiles").insert({"id": user_id}).execute()
-
     exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)).isoformat()
     supabase.table("profiles").update({"is_pro": True, "pro_expires_at": exp_time}).eq("id", user_id).execute()
     supabase.table("promo_codes").update({"used_count": promo["used_count"] + 1}).eq("code", code).execute()
@@ -256,9 +238,7 @@ def api_activate_trial(auth_header: Optional[str] = Header(None)):
         trial_used = False
     else:
         trial_used = p_res.data[0].get("trial_used", False)
-        
     if trial_used: raise HTTPException(status_code=400, detail="您已經使用過 7 天免費體驗囉！")
-        
     exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
     supabase.table("profiles").update({"is_pro": False, "trial_used": True, "pro_expires_at": exp_time}).eq("id", user_id).execute()
     return {"success": True, "detail": "🎉 體驗開通成功！接下來 7 天每日可使用 30 次深度推演。"}
@@ -279,16 +259,13 @@ def api_parse_official(req: ParseOfficialReq):
                 name = re.sub(r'\s+', ' ', name_tag.text.strip()).strip()
                 try: qty = int(re.sub(r'\D', '', qty_tag.text)) if re.sub(r'\D', '', qty_tag.text) else 1
                 except: qty = 1
-
                 a_tag = name_tag.find('a'); unique_id = ""
                 if a_tag and a_tag.get('href'):
                     parts = [p for p in a_tag.get('href', '').split('/') if p]
                     if parts: unique_id = parts[-1]
-
                 card_key = f"{name} [{unique_id}]" if unique_id else name
                 img_url = LOCAL_CARD_DB.get(card_key)
                 if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name)
-                
                 if not is_valid_url(img_url):
                     img_url = DEFAULT_CARDBACK
                     if a_tag and a_tag.get('href'):
@@ -311,6 +288,7 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
+# 🤖 回歸初心：完全採用你備份的 Limitless 爬蟲邏輯，輔以本地快取
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
@@ -323,42 +301,36 @@ def api_parse_text(req: ParseTextReq):
                 qty = int(match.group(1)); raw_name = match.group(2).strip()
                 parse_match = re.search(r'^(.+?)(?:\s+([a-zA-Z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
                 search_name = parse_match.group(1).strip() if parse_match else raw_name
-                target_set = parse_match.group(2) if parse_match else ""
-                target_number = parse_match.group(3) if parse_match else ""
+                target_set = parse_match.group(2) if parse_match and parse_match.group(2) else None
+                target_number = parse_match.group(3) if parse_match and parse_match.group(3) else None
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
                 img_url = None
                 
+                # 1. 優先從快取找
                 if target_set and target_number:
-                    # 雙重護盾比對：轉換大小寫格式，確保命中卡庫
-                    clean_number = target_number.lstrip('0')
-                    mapped_set = LL_SET_MAP.get(target_set.upper(), target_set.lower())
-                    
-                    en_card_key_1 = f"{target_set.lower()}-{target_number}"
-                    en_card_key_2 = f"{mapped_set}-{clean_number}"
-                    
-                    img_url = LOCAL_CARD_DB.get(en_card_key_1)
-                    if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(en_card_key_2)
+                    en_card_key = f"{target_set.lower()}-{target_number}"
+                    img_url = LOCAL_CARD_DB.get(en_card_key)
                     if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(final_card_key)
-                    
-                    # 🤖 回歸初心：若快取無資料，精準爬取 Limitless 網頁
-                    if not is_valid_url(img_url):
-                        img_url = DEFAULT_CARDBACK
+                else:
+                    img_url = LOCAL_CARD_DB.get(search_name)
+                
+                # 2. 若快取沒有，直接執行你備份的 Limitless 爬蟲
+                if not is_valid_url(img_url):
+                    img_url = DEFAULT_CARDBACK
+                    if target_set and target_number:
                         try:
                             ll_resp = requests.get(f"https://limitlesstcg.com/cards/{target_set}/{target_number}", headers=headers, timeout=5)
                             if ll_resp.status_code == 200:
                                 soup = BeautifulSoup(ll_resp.text, 'html.parser')
                                 ll_img = soup.select_one('.card-image-wrapper img') or soup.select_one('.card-img img') or soup.select_one('div.card img')
-                                if ll_img and ll_img.get('src'):
+                                if ll_img and ll_img.get('src'): 
                                     img_url = ll_img['src']
-                                    LOCAL_CARD_DB[en_card_key_1] = img_url
-                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key_1, "name": search_name, "img_url": img_url, "metadata": {"source": "limitless-scraped"}}).execute()
+                                    # 成功抓取，存入快取與資料庫
+                                    LOCAL_CARD_DB[en_card_key] = img_url
+                                    try: supabase.table("global_cards").upsert({"card_key": en_card_key, "name": search_name, "img_url": img_url, "metadata": {"source": "limitless-scraped"}}).execute()
                                     except: pass
                         except: pass
-                else:
-                    img_url = LOCAL_CARD_DB.get(search_name)
-                    
-                if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
 
                 new_deck[final_card_key] = {'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': search_name}
         except: continue
