@@ -635,9 +635,7 @@
             checkAgreements();
             checkCooldownOnLoad();
             
-            // ==========================================
-            // 💾 自動載入本地暫存進度 (無縫接軌)
-            // ==========================================
+            // 💾 自動載入本地暫存進度
             try {
                 let savedDeck = localStorage.getItem('octoplus_deck');
                 if (savedDeck) { 
@@ -682,7 +680,6 @@
         let historyStates = [];
         let historyPtr = -1;
 
-        // 💾 儲存進度至瀏覽器
         function saveLocalData() {
             localStorage.setItem('octoplus_deck', JSON.stringify(deckDict));
             localStorage.setItem('octoplus_board', JSON.stringify(gameCards));
@@ -896,7 +893,9 @@
             let total = getDeckTotal(); 
             Object.keys(deckDict).forEach(key => { 
                 const div = document.createElement('div'); div.className = 'deck-item'; 
-                div.innerHTML = `<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:160px;" title="${deckDict[key].name}">${deckDict[key].name}</span> <div style="display:flex; align-items:center; gap:4px;"> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${key}', -1)">-</button> <span style="display:inline-block; width:20px; text-align:center;">${deckDict[key].qty}</span> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${key}', 1)">+</button></div>`; 
+                // 🛡️ 防護：替換卡名中的單引號
+                let safeKey = key.replace(/'/g, "\\'");
+                div.innerHTML = `<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:160px;" title="${deckDict[key].name.replace(/"/g, '&quot;')}">${deckDict[key].name}</span> <div style="display:flex; align-items:center; gap:4px;"> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${safeKey}', -1)">-</button> <span style="display:inline-block; width:20px; text-align:center;">${deckDict[key].qty}</span> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${safeKey}', 1)">+</button></div>`; 
                 container.appendChild(div); 
             }); 
             document.getElementById('deck-total-count').innerText = total; 
@@ -929,18 +928,20 @@
                 let isSelected = currentModalMode.startsWith('search_multi') ? (searchMultiSelection[item.key] && searchMultiSelection[item.key] > 0) : tempSelectedKeys.includes(item.key); 
                 div.className = 'gallery-item' + (isSelected ? ' selected' : ''); 
                 
-                // 🛡️ 無敵卡背護盾 - 如果圖片失效，自動顯示卡名
+                // 🛡️ 防護：替換卡名中的單引號
+                let safeKey = item.key.replace(/'/g, "\\'");
+                
                 let safeImg = (item.img && item.img.startsWith('http')) ? item.img : DEFAULT_CARDBACK;
                 let isDefault = safeImg === DEFAULT_CARDBACK;
                 let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
                 inner += `<div class="card-name-overlay" style="font-size:12px; display:${isDefault ? 'block' : 'none'};">${item.name}</div>`; 
                 
                 if(currentModalMode === 'preview') { 
-                    inner += `<div class="qty-control" onclick="event.stopPropagation()"> <button class="qty-btn" onclick="modQty('${item.key}', -1)">-</button> <span style="color:white; font-weight:bold; font-size:14px;">${item.qty}</span> <button class="qty-btn" onclick="modQty('${item.key}', 1)">+</button> </div>`; 
+                    inner += `<div class="qty-control" onclick="event.stopPropagation()"> <button class="qty-btn" onclick="modQty('${safeKey}', -1)">-</button> <span style="color:white; font-weight:bold; font-size:14px;">${item.qty}</span> <button class="qty-btn" onclick="modQty('${safeKey}', 1)">+</button> </div>`; 
                 } else if (currentModalMode.startsWith('search_multi')) { 
                     let currentQty = searchMultiSelection[item.key] || 0; 
                     inner += `<div class="badge">x${item.max_qty}</div>`; 
-                    inner += `<div class="qty-control" onclick="event.stopPropagation()"> <button class="qty-btn" onclick="modifySearchQty('${item.key}', -1, ${item.max_qty})">-</button> <span style="color:white; font-weight:bold; font-size:14px;">${currentQty}</span> <button class="qty-btn" onclick="modifySearchQty('${item.key}', 1, ${item.max_qty})">+</button> </div>`; 
+                    inner += `<div class="qty-control" onclick="event.stopPropagation()"> <button class="qty-btn" onclick="modifySearchQty('${safeKey}', -1, ${item.max_qty})">-</button> <span style="color:white; font-weight:bold; font-size:14px;">${currentQty}</span> <button class="qty-btn" onclick="modifySearchQty('${safeKey}', 1, ${item.max_qty})">+</button> </div>`; 
                     if(isSelected) inner += `<div class="check-badge" style="bottom: 30px;">✔</div>`; 
                 } else { 
                     if(item.qty) inner += `<div class="badge">x${item.qty}</div>`; 
@@ -976,7 +977,18 @@
             document.getElementById('gallery-modal').style.display = 'none'; 
         }
 
-        function renderTargetUI() { const container = document.getElementById('target-display'); container.innerHTML = ""; let keys = Object.keys(targetList); if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; } keys.forEach(k => { let c = targetList[k]; let div = document.createElement('div'); div.className = 'target-row'; let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:30px;height:42px;margin-right:10px;">`; div.innerHTML = `<div style="display:flex; align-items:center;">${imgHtml} <span style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${c.name}</span></div> <input type="number" value="${c.qty}" min="0" max="4" style="width:50px; text-align:center; padding:4px;" onchange="updateTargetQty('${k}', this.value)">`; container.appendChild(div); }); }
+        function renderTargetUI() { 
+            const container = document.getElementById('target-display'); container.innerHTML = ""; let keys = Object.keys(targetList); if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; } 
+            keys.forEach(k => { 
+                let c = targetList[k]; let div = document.createElement('div'); div.className = 'target-row'; 
+                let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; 
+                let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:30px;height:42px;margin-right:10px;">`; 
+                // 🛡️ 防護：替換卡名中的單引號
+                let safeKey = k.replace(/'/g, "\\'");
+                div.innerHTML = `<div style="display:flex; align-items:center;">${imgHtml} <span style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${c.name}</span></div> <input type="number" value="${c.qty}" min="0" max="4" style="width:50px; text-align:center; padding:4px;" onchange="updateTargetQty('${safeKey}', this.value)">`; 
+                container.appendChild(div); 
+            }); 
+        }
         function updateTargetQty(k, val) { let v = parseInt(val); if(v <= 0) { delete targetList[k]; } else { targetList[k].qty = v; } renderTargetUI(); }
         
         function renderChainUI() { 
@@ -986,8 +998,12 @@
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search'); 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:24px;height:33px;margin-right:8px;">`; 
                 let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
-                let inner = `<div style="display:flex; justify-content:space-between; align-items:center;"> <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div> <button class="btn-secondary" style="width:24px; padding:2px; color:#FF5252;" onclick="removeChain('${k}')">X</button> </div> <div style="display:flex; gap:10px; margin-top:8px;"> <select style="flex:2; font-size:13px;" onchange="chainList['${k}'].type = this.value; renderChainUI();"> ${optsZH} </select> <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${k}'].val=parseInt(this.value)"> </div> <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;"> <input type="checkbox" onchange="chainList['${k}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}> ✅ 已在手上或場上 (保證發動) </label>`; 
-                if(isSearch) { let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...'; inner += `<button class="btn-secondary" style="margin-top:6px; font-size:12px;" onclick="openChainTargetSelector('${k}')">🎯 ${tgNames}</button>`; } 
+                
+                // 🛡️ 防護：替換卡名中的單引號
+                let safeKey = k.replace(/'/g, "\\'");
+                
+                let inner = `<div style="display:flex; justify-content:space-between; align-items:center;"> <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div> <button class="btn-secondary" style="width:24px; padding:2px; color:#FF5252;" onclick="removeChain('${safeKey}')">X</button> </div> <div style="display:flex; gap:10px; margin-top:8px;"> <select style="flex:2; font-size:13px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();"> ${optsZH} </select> <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${safeKey}'].val=parseInt(this.value)"> </div> <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;"> <input type="checkbox" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}> ✅ 已在手上或場上 (保證發動) </label>`; 
+                if(isSearch) { let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...'; inner += `<button class="btn-secondary" style="margin-top:6px; font-size:12px;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${tgNames}</button>`; } 
                 div.innerHTML = inner; container.appendChild(div); 
             }); 
         }
@@ -1263,10 +1279,9 @@
             }
         }
 
-        
-       // =========================================
+        // ==========================================
         // 💬 跑馬燈功能 (加快 20%)
-        // =========================================
+        // ==========================================
         async function fetchMarquee() {
             try {
                 const resp = await fetch(`${API_BASE}/api/v1/marquee`);
@@ -1274,7 +1289,7 @@
                 let text = data.text || "歡迎使用 PTCG 小章魚";
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = text;
-                // 加快速度：字數 * 0.3秒，最低 16秒 
+                // 字數 * 0.3秒，最低 16秒
                 let duration = Math.max(text.length * 0.3, 16);
                 el.style.animationDuration = duration + 's';
             } catch (e) {
