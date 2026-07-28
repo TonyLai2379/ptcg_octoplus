@@ -420,6 +420,24 @@
         </div>
     </div>
 
+    <!-- 💳 訂閱方案 Modal -->
+    <div id="sub-modal" class="modal-overlay">
+        <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
+            <h2 style="color: #FFD700; margin-bottom: 10px;">⚠️ 額度用盡或尚未解鎖</h2>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">您的免費額度已用盡，請選擇以下方案解鎖「無限制萬次深度推演」：</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">💎 1. 專業版：99 元 / 一個月</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">👑 2. 季繳版：250 元 / 三個月 (省47元)</button>
+                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;">🏆 3. 年繳尊榮版：599 元 / 一年 (最划算)</button>
+                <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed;">🎁 4. 免費體驗 7 天 (每帳號限一次)</button>
+                <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入邀請碼 (測試用碼: TESTER999)</button>
+            </div>
+            
+            <button class="btn btn-secondary" style="margin-top:15px;" onclick="document.getElementById('sub-modal').style.display='none'">先不要，返回</button>
+        </div>
+    </div>
+
     <!-- 圖庫 Modal -->
     <div id="gallery-modal" class="modal-overlay" onclick="closeGalleryModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
@@ -534,7 +552,6 @@
             }
 
             if (btn && rem) {
-                // 檢查是否處於倒數計時防刷狀態
                 let lastSend = localStorage.getItem('magic_link_last_send');
                 let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
                 let inCooldown = false;
@@ -555,9 +572,9 @@
                 if (termsAgreed && privacyAgreed) {
                     rem.style.color = '#34A853';
                     rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！';
-                    if (!inCooldown) btn.disabled = false; // 未在冷卻中才解鎖
+                    if (!inCooldown) btn.disabled = false;
                 } else {
-                    btn.disabled = true; // 鎖死按鈕
+                    btn.disabled = true;
                     rem.style.color = '#FF5252';
                     rem.innerText = '⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送';
                 }
@@ -598,7 +615,7 @@
                 } else {
                     clearInterval(timer);
                     btn.innerText = "✨ 發送驗證連結";
-                    checkAgreements(); // 時間到後重新檢查條款狀態
+                    checkAgreements(); 
                 }
             }, 1000);
         }
@@ -663,7 +680,6 @@
             document.getElementById('auth-status-bar').style.background = "rgba(35, 134, 54, 0.2)";
             document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
             
-            // 登入後自動抓取使用者的牌組清單
             fetchSavedDecks(); 
         }
 
@@ -747,6 +763,22 @@
                     alert(data.detail || "兌換失敗");
                 }
             } catch (e) { alert("連線發生錯誤"); }
+        }
+
+        async function activateTrial() {
+            if (!currentUserToken) return alert("請先登入帳號");
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/activate_trial`, {
+                    method: 'POST', headers: { 'Authorization': `Bearer ${currentUserToken}` }
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    alert(data.detail);
+                    document.getElementById('sub-modal').style.display = 'none';
+                } else {
+                    alert("❌ 失敗：" + data.detail);
+                }
+            } catch (e) { alert("連線錯誤"); }
         }
 
         // ==========================================
@@ -974,21 +1006,22 @@
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentUserToken}` }, 
                 body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) 
-            }).then(r => { 
-                if(r.status === 401 || r.status === 403) { 
-                    document.getElementById('gate-overlay').style.display='flex'; 
-                    throw new Error("請先登入或升級 Pro"); 
+            }).then(async r => { 
+                if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
+                if(r.status === 403) { 
+                    const d = await r.json();
+                    if(d.detail === "LIMIT_REACHED") {
+                        document.getElementById('sub-modal').style.display='flex';
+                        throw new Error("額度用盡");
+                    }
                 }
-                if(!r.ok) {
-                    throw new Error(`伺服器錯誤 (${r.status})`); 
-                }
+                if(!r.ok) throw new Error(`伺服器錯誤 (${r.status})`); 
                 return r.json(); 
             }).then(d => { 
                 if(d.success) { 
                     let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; 
                     let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); 
                     lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; 
-                    
                     resultEl.innerText = `${d.prob.toFixed(1)} %`; 
                     resultEl.style.color = "#00E5FF"; 
                     resultEl.style.fontSize = "46px";
@@ -997,15 +1030,21 @@
                 }
             }).catch(e => { 
                 console.error(e);
-                resultEl.innerText = "❌ 伺服器錯誤"; 
-                resultEl.style.color = "#FF5252"; 
-                resultEl.style.fontSize = "28px";
-                
-                setTimeout(() => {
+                if(e.message !== "額度用盡" && e.message !== "請先登入") {
+                    resultEl.innerText = "❌ 伺服器錯誤"; 
+                    resultEl.style.color = "#FF5252"; 
+                    resultEl.style.fontSize = "28px";
+                    
+                    setTimeout(() => {
+                        resultEl.innerText = "0.0 %";
+                        resultEl.style.color = "#00E5FF";
+                        resultEl.style.fontSize = "46px";
+                    }, 3000);
+                } else {
                     resultEl.innerText = "0.0 %";
                     resultEl.style.color = "#00E5FF";
                     resultEl.style.fontSize = "46px";
-                }, 3000);
+                }
             }); 
         }
         
@@ -1098,10 +1137,10 @@
                 const resp = await fetch(`${API_BASE}/api/v1/marquee`);
                 if (resp.ok) {
                     const data = await resp.json();
-                    document.getElementById('marquee-text').innerText = data.text || "歡迎使用 PTCG 小章魚";
+                    document.getElementById('marquee-text').innerHTML = data.text || "歡迎使用 PTCG 小章魚";
                 }
             } catch (e) {
-                document.getElementById('marquee-text').innerText = "歡迎使用 PTCG 小章魚";
+                document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚";
             }
         }
         
