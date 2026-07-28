@@ -1263,8 +1263,9 @@
             }
         }
 
-        // ==========================================
-        // 💬 跑馬燈功能 (速度再降 25%)
+        
+       // ==========================================
+        // 💬 跑馬燈功能 (加快 20%)
         // ==========================================
         async function fetchMarquee() {
             try {
@@ -1273,13 +1274,13 @@
                 let text = data.text || "歡迎使用 PTCG 小章魚";
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = text;
-                // 字數 * 0.7秒，最低 30秒
-                let duration = Math.max(text.length * 0.7, 30);
+                // 加快速度：字數 * 0.55秒，最低 24秒 
+                let duration = Math.max(text.length * 0.55, 24);
                 el.style.animationDuration = duration + 's';
             } catch (e) {
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = "歡迎使用 PTCG 小章魚";
-                el.style.animationDuration = '30s';
+                el.style.animationDuration = '24s';
             }
         }
         
