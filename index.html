@@ -914,7 +914,24 @@
         function debounceSearch(val) { clearTimeout(searchTimeout); if(!val) { document.getElementById('search-results').style.display='none'; return; } searchTimeout = setTimeout(() => { fetch(`${API_BASE}/api/v1/search_db?q=${val}`).then(r=>r.json()).then(d=>{ let resBox = document.getElementById('search-results'); resBox.innerHTML = ""; if(d.results && d.results.length > 0) { d.results.forEach(c => { let div = document.createElement('div'); div.className = 'search-result-item'; div.innerHTML = `<img src="${c.img}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'"> <span style="font-size:13px;">${c.name}</span>`; div.onclick = () => { if(!deckDict[c.key]) deckDict[c.key] = {qty:0, img: c.img, name: c.name, fallback_img: DEFAULT_CARDBACK}; deckDict[c.key].qty++; updateDeckUI(); document.getElementById('search-input').value = ""; resBox.style.display='none'; }; resBox.appendChild(div); }); resBox.style.display = 'block'; } else { resBox.style.display = 'none'; } }); }, 300); }
         function changeCardBack(color) { DEFAULT_CARDBACK = getCardBackSVG(color); renderBoard(); if(document.getElementById('gallery-modal').style.display === 'flex') { let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : []; if(items.length) renderGalleryItems(items); } }
         function closeGalleryModal(e) { if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none'; }
-        function handleCardClick(imgUrl) { if(!isDragging) { let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK; document.getElementById('lightbox-img').src = safeImg; document.getElementById('lightbox-modal').style.display = 'flex'; } }
+        
+        // 🚀 關鍵修復：給 Lightbox (預覽圖) 穿上 onerror 雙層防護衣
+        function handleCardClick(imgUrl, fallbackUrl) { 
+            if(!isDragging) { 
+                let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK; 
+                let fUrl = (fallbackUrl && fallbackUrl.startsWith('http')) ? fallbackUrl : DEFAULT_CARDBACK;
+                
+                let lbImg = document.getElementById('lightbox-img');
+                lbImg.src = safeImg; 
+                // 如果官方圖庫破圖，瞬間切換為同名備用圖
+                lbImg.onerror = function() { 
+                    this.onerror = null; 
+                    this.src = fUrl; 
+                };
+                
+                document.getElementById('lightbox-modal').style.display = 'flex'; 
+            } 
+        }
         
         function openPreviewModal() { currentModalMode = 'preview'; let titlePrefix = currentLang === 'zh' ? '👁️ 牌組預覽' : '👁️ Deck Preview'; document.getElementById('gallery-title').innerText = `${titlePrefix} (${getDeckTotal()} / 60)`; document.getElementById('gallery-confirm-btn').style.display = 'none'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         function openSelector(type) { currentModalMode = type; tempSelectedKeys = type === 'direct' ? Object.keys(targetList) : []; let tDirect = currentLang === 'zh' ? "🔥 選取目標卡 (可多選)" : "🔥 Select Target Cards"; let tChain = currentLang === 'zh' ? "🔄 新增連鎖牌 (單張加入)" : "🔄 Add Chain Card"; document.getElementById('gallery-title').innerText = type === 'direct' ? tDirect : tChain; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
@@ -930,7 +947,6 @@
                 let safeImg = (item.img && item.img.startsWith('http')) ? item.img : DEFAULT_CARDBACK;
                 let isDefault = safeImg === DEFAULT_CARDBACK;
                 
-                // 🛡️ 終極防護網：CDN 失敗 -> 同名墊檔卡 -> 卡背
                 let fallback = item.fallback_img || DEFAULT_CARDBACK;
                 let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
                 inner += `<div class="card-name-overlay" style="font-size:12px; display:${isDefault ? 'block' : 'none'};">${item.name}</div>`; 
@@ -948,7 +964,7 @@
                 } 
                 div.innerHTML = inner; 
                 div.onclick = () => { 
-                    if(currentModalMode === 'preview' || currentModalMode.startsWith('search_multi')) return handleCardClick(item.img); 
+                    if(currentModalMode === 'preview' || currentModalMode.startsWith('search_multi')) return handleCardClick(item.img, item.fallback_img); 
                     let toggleKey = item.key; 
                     if(currentModalMode === 'direct' || currentModalMode.startsWith('chain_target_')) { 
                         if(tempSelectedKeys.includes(toggleKey)) { tempSelectedKeys = tempSelectedKeys.filter(k=>k!==toggleKey); div.classList.remove('selected'); } 
@@ -1078,7 +1094,6 @@
             gameCards = []; 
             Object.keys(deckDict).forEach(k => { 
                 for(let i=0; i<deckDict[k].qty; i++) { 
-                    // 🛡️ 將 fallback_img 繼承到戰場卡片上
                     gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck' }); 
                 } 
             }); 
@@ -1088,6 +1103,7 @@
             historyStates = []; historyPtr = -1; saveState(); renderBoard(); 
         }
         
+        // 🚀 關鍵修復：戰場上的實體卡牌也裝上防破圖護盾
         function createCardEl(c, isField=false) { 
             const div = document.createElement('div'); 
             div.className = 'card-wrapper'; 
@@ -1103,13 +1119,12 @@
                 div.style.opacity = '1'; 
                 renderBoard(); 
             }; 
-            div.onclick = () => { if(!isDragging) handleCardClick(c.img); }; 
+            div.onclick = () => { if(!isDragging) handleCardClick(c.img, c.fallback_img); }; 
             
             let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
             let isDefault = safeImg === DEFAULT_CARDBACK;
-            
-            // 🛡️ 終極防護網：CDN 失敗 -> 同名墊檔卡 -> 卡背
             let fallback = c.fallback_img || DEFAULT_CARDBACK;
+            
             let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
             inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`; 
             
