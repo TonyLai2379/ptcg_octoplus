@@ -31,7 +31,6 @@
         .tab-content { display: none; margin-top: 10px; }
         .tab-content.active { display: block; }
 
-        /* 💡 顯眼的讀取中提示樣式 */
         .local-progress-container { display: none; margin-top: 10px; padding: 8px; background: rgba(255, 215, 0, 0.1); border: 1px solid #FFD700; border-radius: 6px; text-align: center; }
         .local-progress-bar { height: 4px; width: 0%; background: #FFD700; transition: width 0.3s ease; border-radius: 2px; margin-top: 6px; }
 
@@ -226,7 +225,6 @@
                         <input type="text" id="deck-code" placeholder="輸入官方牌組代碼 (例: uCRvSM...)">
                         <button class="btn" id="btn-parse-official" onclick="parseOfficial()">🌐 解析官方牌組</button>
                         
-                        <!-- 💡 顯眼進度提示區 -->
                         <div class="local-progress-container" id="prog-link">
                             <span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span>
                             <div class="local-progress-bar" id="bar-link"></div>
@@ -237,7 +235,6 @@
                         <textarea id="deck-text" rows="4" placeholder="貼上 Limitless 內容..."></textarea>
                         <button class="btn" id="btn-parse-text" onclick="parseText()">📥 解析文字牌組</button>
 
-                        <!-- 💡 顯眼進度提示區 -->
                         <div class="local-progress-container" id="prog-text">
                             <span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span>
                             <div class="local-progress-bar" id="bar-text"></div>
@@ -882,7 +879,6 @@
         function openTutorial() { document.getElementById('tutorial-modal').style.display='flex'; }
         function closeTutorial() { document.getElementById('tutorial-modal').style.display='none'; localStorage.setItem('tut_shown', 'true'); if(getDeckTotal() < 60) { let arrow = document.getElementById('guide-arrow'); arrow.style.display = 'block'; setTimeout(() => { arrow.style.display = 'none'; }, 1600); } }
         
-        // 💡 進度條與按鈕狀態優化
         function showProgress(id) { 
             let prog = document.getElementById('prog-'+id);
             let bar = document.getElementById('bar-'+id);
@@ -938,7 +934,6 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         
-        // 🔄 Client-side 直連 + 自動補完快取的解析邏輯
         function parseText() { 
             showProgress('text'); 
             document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; 
@@ -951,17 +946,14 @@
                 if(d.success){ 
                     deckDict = d.deck; 
                     
-                    // 🚀 Client-side 前端直連驗證與自動補全
                     let keys = Object.keys(deckDict);
                     for(let k of keys) {
                         let c = deckDict[k];
-                        if(c.img && c.img.includes('images.pokemontcg.io')) {
-                            // 用使用者電腦驗證圖片是否有效
+                        if(c.img && c.img.startsWith('http')) {
                             try {
                                 let imgCheck = new Image();
                                 imgCheck.src = c.img;
                                 imgCheck.onload = () => {
-                                    // 圖片順利下載！默默回報給 Supabase 自動補全全庫快取
                                     fetch(`${API_BASE}/api/v1/upsert_card`, {
                                         method: 'POST',
                                         headers: {'Content-Type': 'application/json'},
@@ -1013,6 +1005,7 @@
         function openPreviewModal() { currentModalMode = 'preview'; let titlePrefix = currentLang === 'zh' ? '👁️ 牌組預覽' : '👁️ Deck Preview'; document.getElementById('gallery-title').innerText = `${titlePrefix} (${getDeckTotal()} / 60)`; document.getElementById('gallery-confirm-btn').style.display = 'none'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         function openSelector(type) { currentModalMode = type; tempSelectedKeys = type === 'direct' ? Object.keys(targetList) : []; let tDirect = currentLang === 'zh' ? "🔥 選取目標卡 (可多選)" : "🔥 Select Target Cards"; let tChain = currentLang === 'zh' ? "🔄 新增連鎖牌 (單張加入)" : "🔄 Add Chain Card"; document.getElementById('gallery-title').innerText = type === 'direct' ? tDirect : tChain; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
+        // 🚀 關鍵處方 2：完美升級的三層防護 onerror (S3 -> 同名卡 -> 帶字卡背)
         function renderGalleryItems(items) { 
             const container = document.getElementById('gallery-container'); container.innerHTML = ""; 
             items.forEach(item => { 
@@ -1023,9 +1016,13 @@
                 let safeKey = item.key.replace(/'/g, "\\\\'");
                 let safeImg = (item.img && item.img.startsWith('http')) ? item.img : DEFAULT_CARDBACK;
                 let isDefault = safeImg === DEFAULT_CARDBACK;
-                
                 let fallback = item.fallback_img || DEFAULT_CARDBACK;
-                let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
+
+                // 🛡️ 三層防護牆：
+                // 第一層 src: 試圖載入 Limitless S3 或全庫圖
+                // 第二層 onerror (1): S3 破圖 ➔ 瞬間切換成資料庫的同名卡 (fallback)
+                // 第三層 onerror (2): 同名卡也破圖 ➔ 切換成藍色卡背，並點亮文字 Overlay (顯示真實卡名)
+                let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
                 inner += `<div class="card-name-overlay" style="font-size:12px; display:${isDefault ? 'block' : 'none'};">${item.name}</div>`; 
                 
                 if(currentModalMode === 'preview') { 
@@ -1201,7 +1198,7 @@
             let isDefault = safeImg === DEFAULT_CARDBACK;
             let fallback = c.fallback_img || DEFAULT_CARDBACK;
             
-            let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
+            let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
             inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`; 
             
             if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } 
@@ -1228,7 +1225,7 @@
                 let safeImg = (topC.img && topC.img.startsWith('http')) ? topC.img : DEFAULT_CARDBACK; 
                 let fallback = topC.fallback_img || DEFAULT_CARDBACK;
                 let isDefault = safeImg === DEFAULT_CARDBACK; 
-                let imgHtml = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';" style="pointer-events:none;">`; 
+                let imgHtml = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';" style="pointer-events:none;">`; 
                 imgHtml += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${topC.name}</div>`; 
                 el.innerHTML = imgHtml; document.getElementById('zone-discard').appendChild(el); 
             } 
