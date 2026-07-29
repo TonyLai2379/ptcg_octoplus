@@ -14,9 +14,8 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="15.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="16.0.0")
 
-# 🔒 跨域資源共享限制
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,7 +33,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# 英文賽事代號翻譯地圖 (解決同名卡版本錯亂的關鍵)
 LL_SET_MAP = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
     "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
@@ -46,11 +44,8 @@ LL_SET_MAP = {
     "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "sve", "PR-SW": "swshp"
 }
 
-# ==========================================
-# ⚡ 混合式快取機制 (修復搜尋被覆蓋的 Bug)
-# ==========================================
 LOCAL_CARD_DB = {}
-GLOBAL_CARDS_LIST = [] # 新增：專門用來提供全圖庫搜尋的清單
+GLOBAL_CARDS_LIST = [] 
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
@@ -59,55 +54,33 @@ def load_global_cards_to_cache():
     global LOCAL_CARD_DB, GLOBAL_CARDS_LIST
     print("⏳ 正在從 Supabase 分頁載入『全部』卡庫至記憶體...")
     try:
-        page = 0
-        page_size = 1000
-        total_loaded = 0
+        page = 0; page_size = 1000; total_loaded = 0
         while True:
             res = supabase.table("global_cards").select("card_key, name, img_url").range(page * page_size, (page + 1) * page_size - 1).execute()
-            if not res.data:
-                break
+            if not res.data: break
             for row in res.data:
-                c_key = row.get('card_key')
-                c_name = row.get('name')
-                c_img = row.get('img_url')
-                
+                c_key = row.get('card_key'); c_name = row.get('name'); c_img = row.get('img_url')
                 if is_valid_url(c_img):
-                    # 放入清單供搜尋使用 (不會被覆蓋)
                     clean_name = c_key.split(" [")[0] if c_key and " [" in c_key else (c_name or "")
-                    GLOBAL_CARDS_LIST.append({
-                        "key": c_key or "",
-                        "name": clean_name,
-                        "img": c_img
-                    })
-                    
-                    # 放入字典供匯入精準比對使用
+                    GLOBAL_CARDS_LIST.append({"key": c_key or "", "name": clean_name, "img": c_img})
                     if c_key: LOCAL_CARD_DB[c_key.lower()] = c_img
-                    if c_name and c_name.lower() not in LOCAL_CARD_DB:
-                        LOCAL_CARD_DB[c_name.lower()] = c_img
-                        
+                    if c_name and c_name.lower() not in LOCAL_CARD_DB: LOCAL_CARD_DB[c_name.lower()] = c_img
             total_loaded += len(res.data)
-            if len(res.data) < page_size:
-                break
+            if len(res.data) < page_size: break
             page += 1
-        print(f"✅ 成功載入全部 {total_loaded} 筆卡片資料至記憶體快取！")
-    except Exception as e:
-        print(f"❌ 載入快取失敗: {e}")
+        print(f"✅ 成功載入全部 {total_loaded} 筆卡片資料！")
+    except Exception as e: print(f"❌ 載入快取失敗: {e}")
 
 load_global_cards_to_cache()
 
-# ==========================================
-# 1. 權限驗證與防護
-# ==========================================
 def get_user_from_token(auth_header: str):
-    if not auth_header or not auth_header.startswith("Bearer "): 
-        raise HTTPException(status_code=401, detail="請先登入帳號")
+    if not auth_header or not auth_header.startswith("Bearer "): raise HTTPException(status_code=401, detail="請先登入帳號")
     token = auth_header.split(" ")[1]
     try:
         user_res = supabase.auth.get_user(token)
         if not user_res or not user_res.user: raise Exception()
         return user_res.user.id
-    except Exception:
-        raise HTTPException(status_code=401, detail="登入憑證已過期，請重新發送驗證信登入")
+    except Exception: raise HTTPException(status_code=401, detail="登入憑證已過期，請重新登入")
 
 def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
     user_id = get_user_from_token(authorization)
@@ -119,66 +92,45 @@ def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
             is_pro = False; expires_at = None
         else:
             profile = profile_res.data[0]
-            is_pro = profile.get("is_pro", False)
-            expires_at = profile.get("pro_expires_at")
+            is_pro = profile.get("is_pro", False); expires_at = profile.get("pro_expires_at")
         
         has_active_sub = False
         if expires_at:
             exp_str = expires_at.replace("Z", "+00:00")
             exp_date = datetime.datetime.fromisoformat(exp_str)
-            if datetime.datetime.now(datetime.timezone.utc) < exp_date:
-                has_active_sub = True
+            if datetime.datetime.now(datetime.timezone.utc) < exp_date: has_active_sub = True
 
         if not has_active_sub: raise HTTPException(status_code=403, detail="LIMIT_REACHED")
         if is_pro: return {"user_id": user_id, "is_pro": True, "remaining_today": 9999}
             
         sim_res = supabase.table("daily_simulations").select("count").eq("user_id", user_id).eq("usage_date", today_str).execute()
         used_today = sim_res.data[0]["count"] if sim_res.data else 0
-        
         if used_today >= 30: raise HTTPException(status_code=403, detail="LIMIT_REACHED")
-            
-        # 🛡️ 權限防護罩：即使 Sequence 流水號被鎖住，也不會導致 500 當機
-        try:
-            supabase.table("daily_simulations").upsert({"user_id": user_id, "usage_date": today_str, "count": used_today + 1}).execute()
-        except Exception as e:
-            print(f"Warning: Failed to update usage count: {e}")
-            pass 
-            
+        try: supabase.table("daily_simulations").upsert({"user_id": user_id, "usage_date": today_str, "count": used_today + 1}).execute()
+        except Exception: pass 
         return {"user_id": user_id, "is_pro": False, "remaining_today": 30 - (used_today + 1)}
-        
     except HTTPException: raise
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"權限驗證失敗: {str(e)}")
+    except Exception as e: raise HTTPException(status_code=500, detail=f"權限驗證失敗: {str(e)}")
 
-# ==========================================
-# 2. 蒙地卡羅引擎
-# ==========================================
 def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND", dead_hand_size=0, iterations=10000):
     if not deck_cards or draw1 <= 0 or not direct_dict: return 0.0
     base_deck = [c['name'] for c in deck_cards]
     success_count = 0
     for _ in range(iterations):
-        deck = base_deck.copy()
-        random.shuffle(deck)
-        hand = deck[:draw1]
-        deck = deck[draw1:]
-        
+        deck = base_deck.copy(); random.shuffle(deck)
+        hand = deck[:draw1]; deck = deck[draw1:]
         for k, v in chain_dict.items():
             if v.get('guaranteed') and k not in hand: hand.append(k)
-
         def check_success(current_hand):
             missing = {k: v.get('qty', 1) for k, v in direct_dict.items()}
             search_cards = []
             for card in current_hand:
                 if card in missing and missing[card] > 0: missing[card] -= 1
                 elif card in chain_dict and '檢索' in chain_dict[card].get('type', ''): search_cards.append(card)
-            
             def is_satisfied(m_dict):
                 if target_rule == "AND": return sum(m_dict.values()) <= 0
                 else: return any(m_dict[k] < direct_dict[k]['qty'] for k in direct_dict)
             if is_satisfied(missing): return True
-            
             for s_card in search_cards:
                 can_fetch = chain_dict[s_card].get('search_targets', [])
                 fetch_qty = chain_dict[s_card].get('val', 1)
@@ -191,25 +143,19 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
             return is_satisfied(missing)
 
         if check_success(hand): success_count += 1; continue
-            
         max_supporter = 0; total_item = 0
         for card in hand:
             if card in chain_dict:
                 ctype = chain_dict[card].get('type', ''); cval = chain_dict[card].get('val', 0)
                 if '支援者' in ctype: max_supporter = max(max_supporter, cval)
                 elif '物品/特性' in ctype: total_item += cval
-                    
         total_draw = max_supporter + total_item
         if total_draw > 0:
             if dead_hand_size > 0: deck.extend(['blank'] * dead_hand_size); random.shuffle(deck)
             hand.extend(deck[:total_draw])
             if check_success(hand): success_count += 1
-
     return (success_count / iterations) * 100.0
 
-# ==========================================
-# 3. Pydantic Models & APIs
-# ==========================================
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
@@ -235,21 +181,18 @@ def api_get_marquee():
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🔍 完美修復版圖庫搜尋 API
 @app.get("/api/v1/search_db")
 def api_search_db(q: str = ""):
     results = []
     if not q: return {"results": results}
-    q_lower = q.lower().strip()
+    q_lower = q.lower().replace('é', 'e').strip()
     seen_imgs = set()
-    
     for card in GLOBAL_CARDS_LIST:
-        if q_lower in card['name'].lower() or q_lower in card['key'].lower():
+        if q_lower in card['name'].lower().replace('é', 'e') or q_lower in card['key'].lower():
             if card['img'] not in seen_imgs:
                 seen_imgs.add(card['img'])
                 results.append(card)
                 if len(results) >= 50: break
-                
     return {"results": results}
 
 @app.post("/api/v1/redeem_code")
@@ -303,10 +246,8 @@ def api_parse_official(req: ParseOfficialReq):
                     parts = [p for p in a_tag.get('href', '').split('/') if p]
                     if parts: unique_id = parts[-1]
                 card_key = f"{name} [{unique_id}]" if unique_id else name
-                
                 img_url = LOCAL_CARD_DB.get(card_key.lower())
                 if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name.lower())
-                
                 if not is_valid_url(img_url):
                     img_url = DEFAULT_CARDBACK
                     if a_tag and a_tag.get('href'):
@@ -321,15 +262,13 @@ def api_parse_official(req: ParseOfficialReq):
                                     if is_valid_url(found_url):
                                         img_url = found_url
                                         LOCAL_CARD_DB[card_key.lower()] = img_url
-                                        try: supabase.table("global_cards").upsert({"card_key": card_key, "name": name, "img_url": img_url}).execute()
-                                        except: pass
                                     break
                         except: pass
-                new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name}
+                new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name, 'fallback_img': DEFAULT_CARDBACK}
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🌐 完美修復版英文匯入 (解決同名卡版本錯亂)
+# 🛡️ 終極修復版英文解析
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
@@ -342,9 +281,12 @@ def api_parse_text(req: ParseTextReq):
                 qty = int(match.group(1)); raw_name = match.group(2).strip()
                 parse_match = re.search(r'^(.+?)(?:\s+([a-zA-Z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
                 search_name = parse_match.group(1).strip() if parse_match else raw_name
+                
+                # 解決 Pokémon Center Lady 等帶有 é 的問題
+                search_name_clean = search_name.replace('é', 'e').replace('É', 'E')
+                
                 target_set = parse_match.group(2) if parse_match and parse_match.group(2) else None
                 target_number = parse_match.group(3) if parse_match and parse_match.group(3) else None
-                
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
                 
                 img_url = None
@@ -356,28 +298,31 @@ def api_parse_text(req: ParseTextReq):
                     set_up = target_set.upper()
                     mapped_set = LL_SET_MAP.get(set_up, set_low)
                     
-                    # 🚀 多重彈性對照，保證命中正確特圖版本
+                    # 1. 優先精準對位，剔除「同名卡」以防抓到舊版
                     candidates = [
                         f"{set_low}-{clean_num}",
                         f"{set_low}-{target_number}",
                         f"{mapped_set}-{clean_num}",
                         f"{mapped_set}-{target_number}",
-                        final_card_key.lower(),
-                        search_name.lower() # 最後手段才抓同名預設卡
+                        final_card_key.lower()
                     ]
-                    
                     for cand in candidates:
                         if cand in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[cand]):
                             img_url = LOCAL_CARD_DB[cand]
                             break
                             
-                    # 若依然查無，給予前端無敵雙重護盾連結
+                    # 2. 如果精準對位失敗，優先給 CDN 直連，確保版圖正確
                     if not is_valid_url(img_url):
                         img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
-                        fallback_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_num}_hires.png"
+                        
+                    # 3. 準備第三層防護：若 CDN 也破圖，退回資料庫隨便一張同名卡
+                    name_fallback = LOCAL_CARD_DB.get(search_name_clean.lower())
+                    if is_valid_url(name_fallback):
+                        fallback_url = name_fallback
                 else:
-                    img_url = LOCAL_CARD_DB.get(search_name.lower())
-                    
+                    # 沒有彈號的卡 (如能量)，直接用名稱找
+                    img_url = LOCAL_CARD_DB.get(search_name_clean.lower(), DEFAULT_CARDBACK)
+
                 if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
 
                 new_deck[final_card_key] = {
@@ -393,13 +338,9 @@ def api_parse_text(req: ParseTextReq):
 
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
-    try:
-        code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
-        supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
-        return {"success": True, "share_code": code}
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"儲存對局失敗: {str(e)}")
+    code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
+    supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
+    return {"success": True, "share_code": code}
 
 @app.get("/api/v1/get_shared_game")
 def api_get_shared_game(code: str):
@@ -409,10 +350,6 @@ def api_get_shared_game(code: str):
 
 @app.post("/api/v1/simulate")
 def api_simulate(req: MonteCarloReq, user_info: dict = Depends(verify_user_and_check_limit)):
-    try:
-        iterations = 10000 
-        prob = run_monte_carlo(req.deck_cards, req.direct_targets, req.chain_targets, req.draw1, req.target_rule, req.dead_hand_size, iterations)
-        return {"success": True, "prob": prob, "iterations": iterations, "remaining_today": user_info["remaining_today"], "is_pro": user_info["is_pro"]}
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"計算錯誤: {str(e)}")
+    iterations = 10000 
+    prob = run_monte_carlo(req.deck_cards, req.direct_targets, req.chain_targets, req.draw1, req.target_rule, req.dead_hand_size, iterations)
+    return {"success": True, "prob": prob, "iterations": iterations, "remaining_today": user_info["remaining_today"], "is_pro": user_info["is_pro"]}
