@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="17.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="18.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,24 +33,31 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# 增加 PR-SV 官方對應碼為 svp
-LL_SET_MAP = {
-    "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
-    "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
-    "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
-    "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
-    "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
-    "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
-    "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
-    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "svp", "PR-SW": "swshp"
-}
-
 LOCAL_CARD_DB = {}
 GLOBAL_CARDS_LIST = [] 
+DYNAMIC_SET_MAP = {} # 動態英文 Set 代號對照表
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
 
+# 🌐 伺服器啟動時，自動從官方 API 動態拉取最新的英文 Set ID 對照表
+def fetch_dynamic_sets():
+    global DYNAMIC_SET_MAP
+    print("⏳ 正在動態拉取最新 Pokemon TCG 官方 Set 代號地圖...")
+    try:
+        resp = requests.get("https://api.pokemontcg.io/v2/sets", timeout=10)
+        if resp.status_code == 200:
+            data = resp.json().get('data', [])
+            for item in data:
+                official_id = item.get('id') # 例: "sv7"
+                ptcgo_code = item.get('ptcgoCode') # 例: "SCR"
+                if official_id and ptcgo_code:
+                    DYNAMIC_SET_MAP[ptcgo_code.upper()] = official_id.lower()
+            print(f"✅ 成功載入 {len(DYNAMIC_SET_MAP)} 筆官方 Set ID 動態對照！")
+    except Exception as e:
+        print(f"⚠️ 動態 Set ID 載入失敗，將採用基礎備用地圖: {e}")
+
+# 全卡庫分頁載入至快取
 def load_global_cards_to_cache():
     global LOCAL_CARD_DB, GLOBAL_CARDS_LIST
     print("⏳ 正在從 Supabase 分頁載入『全部』卡庫至記憶體...")
@@ -72,6 +79,7 @@ def load_global_cards_to_cache():
         print(f"✅ 成功載入全部 {total_loaded} 筆卡片資料！")
     except Exception as e: print(f"❌ 載入快取失敗: {e}")
 
+fetch_dynamic_sets()
 load_global_cards_to_cache()
 
 def get_user_from_token(auth_header: str):
@@ -161,6 +169,7 @@ class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
 class ShareGameReq(BaseModel): game_data: List[Dict[str, Any]]
+class UpsertCardReq(BaseModel): card_key: str; name: str; img_url: str
 class MonteCarloReq(BaseModel):
     deck_cards: List[Dict[str, Any]]; direct_targets: Dict[str, Any]; chain_targets: Dict[str, Any]; draw1: int; target_rule: str = "AND"; dead_hand_size: int = 0
 
@@ -195,6 +204,21 @@ def api_search_db(q: str = ""):
                 results.append(card)
                 if len(results) >= 50: break
     return {"results": results}
+
+# 🔄 提供給前端『自動補完卡庫』的回報 API
+@app.post("/api/v1/upsert_card")
+def api_upsert_card(req: UpsertCardReq):
+    try:
+        c_key = req.card_key.lower().strip()
+        if is_valid_url(req.img_url) and c_key not in LOCAL_CARD_DB:
+            LOCAL_CARD_DB[c_key] = req.img_url
+            GLOBAL_CARDS_LIST.append({"key": req.card_key, "name": req.name, "img": req.img_url})
+            supabase.table("global_cards").upsert({
+                "card_key": req.card_key, "name": req.name, "img_url": req.img_url, "metadata": {"source": "user-client-auto"}
+            }).execute()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "detail": str(e)}
 
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, auth_header: Optional[str] = Header(None)):
@@ -269,7 +293,7 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🚀 終極修復版英文解析 (捨棄失效 S3，改用官方 API 直連)
+# 🌐 快速解析英文文字，同時提供動態代號比對與快取
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
@@ -295,7 +319,9 @@ def api_parse_text(req: ParseTextReq):
                     clean_num = str(int(target_number)) if target_number.isdigit() else target_number
                     set_low = target_set.lower()
                     set_up = target_set.upper()
-                    mapped_set = LL_SET_MAP.get(set_up, set_low)
+                    
+                    # 優先使用動態抓取的官方 Set ID
+                    mapped_set = DYNAMIC_SET_MAP.get(set_up, set_low)
                     
                     candidates = [
                         f"{set_low}-{clean_num}",
@@ -309,11 +335,10 @@ def api_parse_text(req: ParseTextReq):
                             img_url = LOCAL_CARD_DB[cand]
                             break
                             
-                    # 💡 核心修復：如果資料庫找不到完美彈號，改用『高穩定官方圖庫 API』取代死掉的 Limitless S3
+                    # 如果快取找不到，組合出精準的官方 API 網址提供給前端 User 本機載入
                     if not is_valid_url(img_url):
                         img_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_num}_hires.png"
                         
-                    # 準備最後的備用防護：如果連官方 API 都不給圖，才退回資料庫隨便找一張同名卡
                     name_fallback = LOCAL_CARD_DB.get(search_name_clean.lower())
                     if is_valid_url(name_fallback):
                         fallback_url = name_fallback
@@ -326,12 +351,14 @@ def api_parse_text(req: ParseTextReq):
                     'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 
                     'img': img_url, 
                     'name': search_name,
-                    'fallback_img': fallback_url
+                    'fallback_img': fallback_url,
+                    'target_set': target_set,
+                    'target_number': target_number
                 }
         except: continue
         
     if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
-    return {"success": True, "deck": new_deck}
+    return {"success": True, "deck": new_deck, "dynamic_set_map": DYNAMIC_SET_MAP}
 
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
