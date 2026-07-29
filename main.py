@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="19.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="21.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,13 +33,24 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
+# 💡 萬能翻譯蒟蒻 (修復變數名稱對齊)
+LL_TO_OFFICIAL = {
+    "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
+    "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
+    "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
+    "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
+    "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
+    "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
+    "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
+    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "svp", "PR-SW": "swshp"
+}
+
 LOCAL_CARD_DB = {}
 GLOBAL_CARDS_LIST = [] 
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
 
-# 全卡庫分頁載入至快取
 def load_global_cards_to_cache():
     global LOCAL_CARD_DB, GLOBAL_CARDS_LIST
     print("⏳ 正在從 Supabase 分頁載入『全部』卡庫至記憶體...")
@@ -273,7 +284,7 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🌐 英文解析終極版：完全對齊 Limitless S3 CDN，100% 絕不跳掉代號
+# 🎯 完美落實圖3架構：翻譯官方代碼 ➔ 查本機快取 ➔ User本機抓Limitless S3 CDN
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
@@ -297,10 +308,16 @@ def api_parse_text(req: ParseTextReq):
                 
                 if target_set and target_number:
                     clean_num = str(int(target_number)) if target_number.isdigit() else target_number
+                    set_up = target_set.upper()
                     set_low = target_set.lower()
                     
-                    # 1. 優先查詢本機 Supabase 快取
+                    # 💡 第一步：翻譯為官方代號 (如 TEF ➔ sv5)
+                    official_set = LL_TO_OFFICIAL.get(set_up, set_low)
+                    
+                    # 💡 第二步：優先查 Supabase 快取 (精準命中你 2 萬筆純淨庫裡的 sv5-152)
                     candidates = [
+                        f"{official_set}-{clean_num}",
+                        f"{official_set}-{target_number}",
                         f"{set_low}-{clean_num}",
                         f"{set_low}-{target_number}",
                         final_card_key.lower()
@@ -310,11 +327,11 @@ def api_parse_text(req: ParseTextReq):
                             img_url = LOCAL_CARD_DB[cand]
                             break
                             
-                    # 2. 快取沒有，100% 直連 Limitless 官方 AWS S3 CDN (User 本機直接發起抓取)
+                    # 💡 第三步：若快取無庫存，配發 Limitless S3 CDN 網址 (前端發 fetch，繞過阻擋！)
                     if not is_valid_url(img_url):
                         img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
                         
-                    # 3. 準備同名卡備用網址 (萬一 S3 破圖時使用)
+                    # 💡 第四步：備用防護 (萬一 S3 也破圖，退回同名卡)
                     name_fallback = LOCAL_CARD_DB.get(search_name_clean.lower())
                     if is_valid_url(name_fallback):
                         fallback_url = name_fallback
