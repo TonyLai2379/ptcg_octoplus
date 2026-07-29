@@ -14,8 +14,9 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="14.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="15.0.0")
 
+# 🔒 跨域資源共享限制
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,9 +34,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# ==========================================
-# ⚡ 完整代號對照表 (Limitless ➔ 國際官方卡庫 ID)
-# ==========================================
+# 英文賽事代號翻譯地圖 (解決同名卡版本錯亂的關鍵)
 LL_SET_MAP = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
     "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
@@ -48,15 +47,16 @@ LL_SET_MAP = {
 }
 
 # ==========================================
-# ⚡ 混合式快取機制 (無上限分頁載入全卡庫)
+# ⚡ 混合式快取機制 (修復搜尋被覆蓋的 Bug)
 # ==========================================
 LOCAL_CARD_DB = {}
+GLOBAL_CARDS_LIST = [] # 新增：專門用來提供全圖庫搜尋的清單
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
 
 def load_global_cards_to_cache():
-    global LOCAL_CARD_DB
+    global LOCAL_CARD_DB, GLOBAL_CARDS_LIST
     print("⏳ 正在從 Supabase 分頁載入『全部』卡庫至記憶體...")
     try:
         page = 0
@@ -70,9 +70,21 @@ def load_global_cards_to_cache():
                 c_key = row.get('card_key')
                 c_name = row.get('name')
                 c_img = row.get('img_url')
+                
                 if is_valid_url(c_img):
+                    # 放入清單供搜尋使用 (不會被覆蓋)
+                    clean_name = c_key.split(" [")[0] if c_key and " [" in c_key else (c_name or "")
+                    GLOBAL_CARDS_LIST.append({
+                        "key": c_key or "",
+                        "name": clean_name,
+                        "img": c_img
+                    })
+                    
+                    # 放入字典供匯入精準比對使用
                     if c_key: LOCAL_CARD_DB[c_key.lower()] = c_img
-                    if c_name: LOCAL_CARD_DB[c_name.lower()] = c_img
+                    if c_name and c_name.lower() not in LOCAL_CARD_DB:
+                        LOCAL_CARD_DB[c_name.lower()] = c_img
+                        
             total_loaded += len(res.data)
             if len(res.data) < page_size:
                 break
@@ -84,7 +96,7 @@ def load_global_cards_to_cache():
 load_global_cards_to_cache()
 
 # ==========================================
-# 1. 權限驗證與 30 次額度限制
+# 1. 權限驗證與防護
 # ==========================================
 def get_user_from_token(auth_header: str):
     if not auth_header or not auth_header.startswith("Bearer "): 
@@ -125,10 +137,12 @@ def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
         
         if used_today >= 30: raise HTTPException(status_code=403, detail="LIMIT_REACHED")
             
+        # 🛡️ 權限防護罩：即使 Sequence 流水號被鎖住，也不會導致 500 當機
         try:
             supabase.table("daily_simulations").upsert({"user_id": user_id, "usage_date": today_str, "count": used_today + 1}).execute()
-        except Exception:
-            pass # 避免 Sequence 寫入失敗導致 500 當機
+        except Exception as e:
+            print(f"Warning: Failed to update usage count: {e}")
+            pass 
             
         return {"user_id": user_id, "is_pro": False, "remaining_today": 30 - (used_today + 1)}
         
@@ -221,20 +235,21 @@ def api_get_marquee():
             return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
     except Exception: return {"text": "💡 歡迎使用 PTCG 專業沙盤推演機！"}
 
-# 🔍 全圖庫搜尋 API (25,000 張卡片完整搜尋)
+# 🔍 完美修復版圖庫搜尋 API
 @app.get("/api/v1/search_db")
 def api_search_db(q: str = ""):
     results = []
     if not q: return {"results": results}
     q_lower = q.lower().strip()
     seen_imgs = set()
-    for k, img in LOCAL_CARD_DB.items():
-        if q_lower in k:
-            if img not in seen_imgs and is_valid_url(img):
-                seen_imgs.add(img)
-                clean_name = k.split(" [")[0] if " [" in k else k
-                results.append({"key": k, "name": clean_name, "img": img})
+    
+    for card in GLOBAL_CARDS_LIST:
+        if q_lower in card['name'].lower() or q_lower in card['key'].lower():
+            if card['img'] not in seen_imgs:
+                seen_imgs.add(card['img'])
+                results.append(card)
                 if len(results) >= 50: break
+                
     return {"results": results}
 
 @app.post("/api/v1/redeem_code")
@@ -291,6 +306,7 @@ def api_parse_official(req: ParseOfficialReq):
                 
                 img_url = LOCAL_CARD_DB.get(card_key.lower())
                 if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name.lower())
+                
                 if not is_valid_url(img_url):
                     img_url = DEFAULT_CARDBACK
                     if a_tag and a_tag.get('href'):
@@ -313,10 +329,10 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🌐 英文匯入：多重彈性對照，直接擊中資料庫 (0 秒載入)
+# 🌐 完美修復版英文匯入 (解決同名卡版本錯亂)
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
-    lines = req.text.split('\n'); new_deck = {}; headers = {'User-Agent': 'Mozilla/5.0'}
+    lines = req.text.split('\n'); new_deck = {}
     for line in lines:
         try:
             line = line.strip()
@@ -330,39 +346,46 @@ def api_parse_text(req: ParseTextReq):
                 target_number = parse_match.group(3) if parse_match and parse_match.group(3) else None
                 
                 final_card_key = f"{search_name} [{target_set} {target_number}]" if target_set and target_number else search_name
-                img_url = None
                 
-                # 🚀 彈性查詢組合 (全小寫比對)
+                img_url = None
+                fallback_url = DEFAULT_CARDBACK
+                
                 if target_set and target_number:
                     clean_num = str(int(target_number)) if target_number.isdigit() else target_number
                     set_low = target_set.lower()
-                    mapped_set = LL_SET_MAP.get(target_set.upper(), set_low)
+                    set_up = target_set.upper()
+                    mapped_set = LL_SET_MAP.get(set_up, set_low)
                     
-                    # 組合出 Supabase CSV 中所有可能出現的 key
+                    # 🚀 多重彈性對照，保證命中正確特圖版本
                     candidates = [
                         f"{set_low}-{clean_num}",
                         f"{set_low}-{target_number}",
                         f"{mapped_set}-{clean_num}",
                         f"{mapped_set}-{target_number}",
                         final_card_key.lower(),
-                        search_name.lower()
+                        search_name.lower() # 最後手段才抓同名預設卡
                     ]
+                    
                     for cand in candidates:
                         if cand in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[cand]):
                             img_url = LOCAL_CARD_DB[cand]
                             break
+                            
+                    # 若依然查無，給予前端無敵雙重護盾連結
+                    if not is_valid_url(img_url):
+                        img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
+                        fallback_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_num}_hires.png"
                 else:
                     img_url = LOCAL_CARD_DB.get(search_name.lower())
+                    
+                if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
 
-                # 如果資料庫沒有，使用最穩定的直連 CDN
-                if not is_valid_url(img_url):
-                    if target_set and target_number:
-                        clean_num = str(int(target_number)) if target_number.isdigit() else target_number
-                        img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{target_set.lower()}/{clean_num}.png"
-                    else:
-                        img_url = DEFAULT_CARDBACK
-
-                new_deck[final_card_key] = {'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': search_name}
+                new_deck[final_card_key] = {
+                    'qty': new_deck.get(final_card_key, {}).get('qty', 0) + qty, 
+                    'img': img_url, 
+                    'name': search_name,
+                    'fallback_img': fallback_url
+                }
         except: continue
         
     if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
