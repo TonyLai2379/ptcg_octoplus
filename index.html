@@ -204,7 +204,11 @@
                         <span style="font-size:12px; color:#888;">ID:</span>
                         <input type="text" id="user-id-input" value="Player1" readonly style="width:110px; padding:4px; font-size:12px; text-align:center; background:#161B22;">
                     </div>
-                    <button class="btn-secondary" id="tut-btn" style="width:auto; padding:4px 8px; font-size:11px;" onclick="openTutorial()">❓ 教學</button>
+                    <!-- 💡 客服與教學按鈕區 -->
+                    <div style="display:flex; gap: 5px;">
+                        <button class="btn-secondary" style="width:auto; padding:4px 8px; font-size:11px; color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
+                        <button class="btn-secondary" id="tut-btn" style="width:auto; padding:4px 8px; font-size:11px;" onclick="openTutorial()">❓ 教學</button>
+                    </div>
                 </div>
 
                 <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center;">
@@ -410,6 +414,22 @@
             <button class="history-btn" id="btn-import-game" onclick="importGameState()">📥 載入對局</button>
             <button class="history-btn" id="btn-undo" onclick="undo()" disabled>↩ 上一步</button>
             <button class="history-btn" id="btn-redo" onclick="redo()" disabled>下一步 ↪</button>
+        </div>
+    </div>
+
+    <!-- 客服 Modal -->
+    <div id="support-modal" class="modal-overlay">
+        <div class="modal-card" style="width: 450px; text-align: center; border-color: #00E5FF;">
+            <h2 style="color: #00E5FF; margin-bottom: 10px;">💬 聯絡小章魚客服</h2>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 15px; text-align: left; line-height: 1.6;">
+                遇到 Bug、卡片圖案顯示錯誤，或是想許願新功能嗎？<br>
+                歡迎隨時寄信給開發團隊！建議在信件中附上<strong style="color: #FFD700;">文字敘述</strong>與<strong style="color: #FFD700;">錯誤截圖</strong>，小章魚會以最快速度為您處理！
+            </p>
+            <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 16px; color: #FFF; font-weight: bold; border: 1px dashed #58A6FF; margin-bottom: 15px; user-select: all;">
+                loganlai0422@gmail.com
+            </div>
+            <button class="btn" style="background: #238636; margin-bottom: 10px; font-size: 15px;" onclick="window.location.href='mailto:loganlai0422@gmail.com?subject=PTCG%20小章魚%20-%20回報與建議'">📧 點此直接開啟信箱寄信</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('support-modal').style.display='none'">返回</button>
         </div>
     </div>
 
@@ -934,51 +954,104 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         
-        function parseText() { 
+        // 🚀【雙引擎快取架構】前端 LocalStorage 秒殺 + 智慧過濾 + API 補全
+        async function parseText() { 
+            let rawText = document.getElementById('deck-text').value;
+            if(!rawText.trim()) return alert("請貼上牌組內容");
             showProgress('text'); 
-            document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; 
             
-            fetch(`${API_BASE}/api/v1/parse_text`, { 
-                method:'POST', 
-                headers:{'Content-Type':'application/json'}, 
-                body: JSON.stringify({text: document.getElementById('deck-text').value}) 
-            }).then(r=>r.json()).then(async d=>{ 
-                if(d.success){ 
-                    deckDict = d.deck; 
+            let lines = rawText.split('\n').map(l => l.trim()).filter(l => l);
+            let localCache = JSON.parse(localStorage.getItem('octoplus_card_cache') || '{}');
+            let isCleaned = false;
+            let unknownText = [];
+            let newDeck = {};
+
+            // 💡 階段一：前端本地 Regex 快取秒殺，0.01 秒完成解析
+            for(let line of lines) {
+                // 智慧容錯：過濾賽事雜訊 (Player Name, Event, Format...)
+                if(/^(Pokémon|Trainer|Energy|Cards|Player|Event|Deck|Format)/i.test(line) || line.length < 3) {
+                    isCleaned = true; 
+                    continue;
+                }
+                
+                // 提取數量與名稱用於快取比對
+                let match = line.match(/^(\d+)\s+(.+)/);
+                if(match) {
+                    let qty = parseInt(match[1]);
+                    let rawName = match[2].trim();
+                    let parseMatch = rawName.match(/^(.+?)(?:\s+([a-zA-Z0-9\-]+)\s+(\d+[a-zA-Z]*))?$/);
                     
-                    let keys = Object.keys(deckDict);
-                    for(let k of keys) {
-                        let c = deckDict[k];
-                        if(c.img && c.img.startsWith('http')) {
-                            try {
-                                let imgCheck = new Image();
-                                imgCheck.src = c.img;
-                                imgCheck.onload = () => {
-                                    fetch(`${API_BASE}/api/v1/upsert_card`, {
-                                        method: 'POST',
-                                        headers: {'Content-Type': 'application/json'},
-                                        body: JSON.stringify({
-                                            card_key: k,
-                                            name: c.name,
-                                            img_url: c.img
-                                        })
-                                    }).catch(()=>{});
-                                };
-                            } catch(e) {}
-                        }
+                    let searchName = parseMatch ? parseMatch[1].trim() : rawName;
+                    let targetSet = parseMatch && parseMatch[2] ? parseMatch[2] : null;
+                    let targetNumber = parseMatch && parseMatch[3] ? parseMatch[3] : null;
+                    let finalKey = targetSet && targetNumber ? `${searchName} [${targetSet} ${targetNumber}]` : searchName;
+                    
+                    // 查 LocalStorage 永久快取
+                    if(localCache[finalKey]) {
+                        if(!newDeck[finalKey]) newDeck[finalKey] = {qty: 0, img: localCache[finalKey].img, name: localCache[finalKey].name, fallback_img: localCache[finalKey].fallback_img};
+                        newDeck[finalKey].qty += qty;
+                    } else {
+                        unknownText.push(line);
                     }
-                    
-                    updateDeckUI(); 
-                    document.getElementById('deck-text').value=""; 
-                } else { 
-                    alert(d.detail || "解析失敗。"); 
-                } 
-            }).catch(e => { 
-                alert("連線失敗。"); 
-            }).finally(() => { 
-                hideProgress('text'); 
-                document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; 
-            }); 
+                } else {
+                    unknownText.push(line); // 無法正則匹配的交給後端處理
+                }
+            }
+
+            // 💡 階段二：將本機未知的卡片送給後端解析 (自動補全快取)
+            if(unknownText.length > 0) {
+                try {
+                    let r = await fetch(`${API_BASE}/api/v1/parse_text`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: unknownText.join('\n')})
+                    });
+                    let d = await r.json();
+                    if(d.success) {
+                        Object.keys(d.deck).forEach(k => {
+                            let c = d.deck[k];
+                            // 寫入永久快取，下次不用再問伺服器！
+                            localCache[k] = {img: c.img, name: c.name, fallback_img: c.fallback_img};
+                            if(!newDeck[k]) newDeck[k] = {qty: 0, img: c.img, name: c.name, fallback_img: c.fallback_img};
+                            newDeck[k].qty += c.qty;
+                        });
+                        localStorage.setItem('octoplus_card_cache', JSON.stringify(localCache));
+                    } else {
+                        alert(d.detail || "部分解析失敗");
+                    }
+                } catch(e) {
+                    alert("連線解析失敗");
+                }
+            }
+            
+            // 💡 階段三：更新 UI 與自動建檔
+            deckDict = newDeck;
+            updateDeckUI(); 
+            document.getElementById('deck-text').value = "";
+            hideProgress('text');
+            
+            // 智慧過濾提示
+            if(isCleaned) {
+                let msg = document.getElementById('marquee-text');
+                msg.innerHTML = "💡 智慧提示：已為您自動過濾牌組內多餘的賽事標題與空白行！";
+                msg.style.color = "#00E5FF";
+            }
+
+            // 背景回報：成功解析的新卡片，回報給 Supabase 自動補完卡庫
+            Object.keys(deckDict).forEach(k => {
+                let c = deckDict[k];
+                if(c.img && c.img.startsWith('http')) {
+                    try {
+                        let imgCheck = new Image();
+                        imgCheck.src = c.img;
+                        imgCheck.onload = () => {
+                            fetch(`${API_BASE}/api/v1/upsert_card`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ card_key: k, name: c.name, img_url: c.img })
+                            }).catch(()=>{});
+                        };
+                    } catch(e) {}
+                }
+            });
         }
 
         function addCustomCard() { const name = document.getElementById('custom-card-input').value; if(!name) return; if(!deckDict[name]) deckDict[name] = {qty:0, img: "default_back", name: name, fallback_img: DEFAULT_CARDBACK}; deckDict[name].qty++; updateDeckUI(); document.getElementById('custom-card-input').value = ""; }
@@ -1005,7 +1078,6 @@
         function openPreviewModal() { currentModalMode = 'preview'; let titlePrefix = currentLang === 'zh' ? '👁️ 牌組預覽' : '👁️ Deck Preview'; document.getElementById('gallery-title').innerText = `${titlePrefix} (${getDeckTotal()} / 60)`; document.getElementById('gallery-confirm-btn').style.display = 'none'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         function openSelector(type) { currentModalMode = type; tempSelectedKeys = type === 'direct' ? Object.keys(targetList) : []; let tDirect = currentLang === 'zh' ? "🔥 選取目標卡 (可多選)" : "🔥 Select Target Cards"; let tChain = currentLang === 'zh' ? "🔄 新增連鎖牌 (單張加入)" : "🔄 Add Chain Card"; document.getElementById('gallery-title').innerText = type === 'direct' ? tDirect : tChain; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
-        // 🚀 關鍵處方 2：完美升級的三層防護 onerror (S3 -> 同名卡 -> 帶字卡背)
         function renderGalleryItems(items) { 
             const container = document.getElementById('gallery-container'); container.innerHTML = ""; 
             items.forEach(item => { 
@@ -1018,10 +1090,6 @@
                 let isDefault = safeImg === DEFAULT_CARDBACK;
                 let fallback = item.fallback_img || DEFAULT_CARDBACK;
 
-                // 🛡️ 三層防護牆：
-                // 第一層 src: 試圖載入 Limitless S3 或全庫圖
-                // 第二層 onerror (1): S3 破圖 ➔ 瞬間切換成資料庫的同名卡 (fallback)
-                // 第三層 onerror (2): 同名卡也破圖 ➔ 切換成藍色卡背，並點亮文字 Overlay (顯示真實卡名)
                 let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
                 inner += `<div class="card-name-overlay" style="font-size:12px; display:${isDefault ? 'block' : 'none'};">${item.name}</div>`; 
                 
