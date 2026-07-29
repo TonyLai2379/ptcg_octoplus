@@ -635,7 +635,6 @@
             checkAgreements();
             checkCooldownOnLoad();
             
-            // 💾 自動載入本地暫存進度
             try {
                 let savedDeck = localStorage.getItem('octoplus_deck');
                 if (savedDeck) { 
@@ -893,9 +892,7 @@
             let total = getDeckTotal(); 
             Object.keys(deckDict).forEach(key => { 
                 const div = document.createElement('div'); div.className = 'deck-item'; 
-                // 🛡️ 終極防護：替換卡名中的單引號，防止 JS 崩潰
                 let safeKey = key.replace(/'/g, "\\\\'");
-                
                 div.innerHTML = `<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:160px;" title="${deckDict[key].name.replace(/"/g, '&quot;')}">${deckDict[key].name}</span> <div style="display:flex; align-items:center; gap:4px;"> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${safeKey}', -1)">-</button> <span style="display:inline-block; width:20px; text-align:center;">${deckDict[key].qty}</span> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${safeKey}', 1)">+</button></div>`; 
                 container.appendChild(div); 
             }); 
@@ -913,8 +910,8 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         function parseText() { showProgress('text'); document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; fetch(`${API_BASE}/api/v1/parse_text`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text: document.getElementById('deck-text').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); document.getElementById('deck-text').value=""; } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => { hideProgress('text'); document.getElementById('deck-text').placeholder = translations[currentLang].phDeckText; }); }
-        function addCustomCard() { const name = document.getElementById('custom-card-input').value; if(!name) return; if(!deckDict[name]) deckDict[name] = {qty:0, img: "default_back", name: name}; deckDict[name].qty++; updateDeckUI(); document.getElementById('custom-card-input').value = ""; }
-        function debounceSearch(val) { clearTimeout(searchTimeout); if(!val) { document.getElementById('search-results').style.display='none'; return; } searchTimeout = setTimeout(() => { fetch(`${API_BASE}/api/v1/search_db?q=${val}`).then(r=>r.json()).then(d=>{ let resBox = document.getElementById('search-results'); resBox.innerHTML = ""; if(d.results && d.results.length > 0) { d.results.forEach(c => { let div = document.createElement('div'); div.className = 'search-result-item'; div.innerHTML = `<img src="${c.img}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'"> <span style="font-size:13px;">${c.name}</span>`; div.onclick = () => { if(!deckDict[c.key]) deckDict[c.key] = {qty:0, img: c.img, name: c.name}; deckDict[c.key].qty++; updateDeckUI(); document.getElementById('search-input').value = ""; resBox.style.display='none'; }; resBox.appendChild(div); }); resBox.style.display = 'block'; } else { resBox.style.display = 'none'; } }); }, 300); }
+        function addCustomCard() { const name = document.getElementById('custom-card-input').value; if(!name) return; if(!deckDict[name]) deckDict[name] = {qty:0, img: "default_back", name: name, fallback_img: DEFAULT_CARDBACK}; deckDict[name].qty++; updateDeckUI(); document.getElementById('custom-card-input').value = ""; }
+        function debounceSearch(val) { clearTimeout(searchTimeout); if(!val) { document.getElementById('search-results').style.display='none'; return; } searchTimeout = setTimeout(() => { fetch(`${API_BASE}/api/v1/search_db?q=${val}`).then(r=>r.json()).then(d=>{ let resBox = document.getElementById('search-results'); resBox.innerHTML = ""; if(d.results && d.results.length > 0) { d.results.forEach(c => { let div = document.createElement('div'); div.className = 'search-result-item'; div.innerHTML = `<img src="${c.img}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'"> <span style="font-size:13px;">${c.name}</span>`; div.onclick = () => { if(!deckDict[c.key]) deckDict[c.key] = {qty:0, img: c.img, name: c.name, fallback_img: DEFAULT_CARDBACK}; deckDict[c.key].qty++; updateDeckUI(); document.getElementById('search-input').value = ""; resBox.style.display='none'; }; resBox.appendChild(div); }); resBox.style.display = 'block'; } else { resBox.style.display = 'none'; } }); }, 300); }
         function changeCardBack(color) { DEFAULT_CARDBACK = getCardBackSVG(color); renderBoard(); if(document.getElementById('gallery-modal').style.display === 'flex') { let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : []; if(items.length) renderGalleryItems(items); } }
         function closeGalleryModal(e) { if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none'; }
         function handleCardClick(imgUrl) { if(!isDragging) { let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK; document.getElementById('lightbox-img').src = safeImg; document.getElementById('lightbox-modal').style.display = 'flex'; } }
@@ -929,12 +926,13 @@
                 let isSelected = currentModalMode.startsWith('search_multi') ? (searchMultiSelection[item.key] && searchMultiSelection[item.key] > 0) : tempSelectedKeys.includes(item.key); 
                 div.className = 'gallery-item' + (isSelected ? ' selected' : ''); 
                 
-                // 🛡️ 防護：替換卡名中的單引號
                 let safeKey = item.key.replace(/'/g, "\\\\'");
-                
                 let safeImg = (item.img && item.img.startsWith('http')) ? item.img : DEFAULT_CARDBACK;
                 let isDefault = safeImg === DEFAULT_CARDBACK;
-                let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
+                
+                // 🛡️ 終極防護網：CDN 失敗 -> 同名墊檔卡 -> 卡背
+                let fallback = item.fallback_img || DEFAULT_CARDBACK;
+                let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
                 inner += `<div class="card-name-overlay" style="font-size:12px; display:${isDefault ? 'block' : 'none'};">${item.name}</div>`; 
                 
                 if(currentModalMode === 'preview') { 
@@ -984,7 +982,6 @@
                 let c = targetList[k]; let div = document.createElement('div'); div.className = 'target-row'; 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; 
                 let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:30px;height:42px;margin-right:10px;">`; 
-                // 🛡️ 防護：替換卡名中的單引號
                 let safeKey = k.replace(/'/g, "\\\\'");
                 div.innerHTML = `<div style="display:flex; align-items:center;">${imgHtml} <span style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;">${c.name}</span></div> <input type="number" value="${c.qty}" min="0" max="4" style="width:50px; text-align:center; padding:4px;" onchange="updateTargetQty('${safeKey}', this.value)">`; 
                 container.appendChild(div); 
@@ -1000,9 +997,7 @@
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:24px;height:33px;margin-right:8px;">`; 
                 let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
                 
-                // 🛡️ 防護：替換卡名中的單引號
                 let safeKey = k.replace(/'/g, "\\\\'");
-                
                 let inner = `<div style="display:flex; justify-content:space-between; align-items:center;"> <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div> <button class="btn-secondary" style="width:24px; padding:2px; color:#FF5252;" onclick="removeChain('${safeKey}')">X</button> </div> <div style="display:flex; gap:10px; margin-top:8px;"> <select style="flex:2; font-size:13px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();"> ${optsZH} </select> <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${safeKey}'].val=parseInt(this.value)"> </div> <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;"> <input type="checkbox" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}> ✅ 已在手上或場上 (保證發動) </label>`; 
                 if(isSearch) { let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...'; inner += `<button class="btn-secondary" style="margin-top:6px; font-size:12px;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${tgNames}</button>`; } 
                 div.innerHTML = inner; container.appendChild(div); 
@@ -1050,7 +1045,7 @@
                         let cardKey = item.k; 
                         let cardName = item.n || item.k.split(' [')[0]; 
                         let cardImg = item.i || DEFAULT_CARDBACK; 
-                        if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName }; 
+                        if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK }; 
                         deckDict[cardKey].qty++; 
                         return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; 
                     }); 
@@ -1078,7 +1073,20 @@
         function changeBenchSize(delta) { benchSize = Math.max(5, Math.min(8, benchSize + delta)); document.getElementById('bench-size-label').innerText = `${benchSize} 格`; renderBenchSlots(); renderBoard(); }
         function renderBenchSlots() { let container = document.getElementById('bench-container'); container.innerHTML = ""; for(let i=0; i<benchSize; i++) { let div = document.createElement('div'); div.id = `zone-bench-${i}`; div.className = "drop-zone drop-zone-stacked"; div.style.width = "150px"; div.ondrop = drop; div.ondragover = allowDrop; container.appendChild(div); } }
         
-        function startGame() { if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！"); gameCards = []; Object.keys(deckDict).forEach(k => { for(let i=0; i<deckDict[k].qty; i++) { gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, zone: 'deck' }); } }); gameCards.sort(() => Math.random() - 0.5); for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; historyStates = []; historyPtr = -1; saveState(); renderBoard(); }
+        function startGame() { 
+            if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！"); 
+            gameCards = []; 
+            Object.keys(deckDict).forEach(k => { 
+                for(let i=0; i<deckDict[k].qty; i++) { 
+                    // 🛡️ 將 fallback_img 繼承到戰場卡片上
+                    gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck' }); 
+                } 
+            }); 
+            gameCards.sort(() => Math.random() - 0.5); 
+            for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; 
+            for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; 
+            historyStates = []; historyPtr = -1; saveState(); renderBoard(); 
+        }
         
         function createCardEl(c, isField=false) { 
             const div = document.createElement('div'); 
@@ -1097,10 +1105,12 @@
             }; 
             div.onclick = () => { if(!isDragging) handleCardClick(c.img); }; 
             
-            // 🛡️ 無敵卡背護盾 - 如果圖片失效，自動顯示卡名
             let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
             let isDefault = safeImg === DEFAULT_CARDBACK;
-            let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
+            
+            // 🛡️ 終極防護網：CDN 失敗 -> 同名墊檔卡 -> 卡背
+            let fallback = c.fallback_img || DEFAULT_CARDBACK;
+            let inner = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
             inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`; 
             
             if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } 
@@ -1120,7 +1130,17 @@
             fieldZones.forEach(zName => { let domId = 'zone-' + zName.replace('_','-'); let domEl = document.getElementById(domId); if(!domEl) return; let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2; arr.forEach((c, idx) => { let el = createCardEl(c, true); el.style.position = 'absolute'; el.style.top = '50%'; el.style.left = '50%'; el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`; el.style.zIndex = idx; domEl.appendChild(el); }); }); 
             for(let i=0; i<6; i++) { let arr = zones['prize_'+i]||[]; if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false)); } 
             let deckArr = zones['deck']||[]; document.getElementById('deck-count').innerText = deckArr.length; if(deckArr.length > 0) { let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; el.innerHTML = `<img src="${DEFAULT_CARDBACK}" style="pointer-events:none;">`; document.getElementById('zone-deck').appendChild(el); } 
-            let discArr = zones['discard']||[]; document.getElementById('discard-count').innerText = discArr.length; if(discArr.length > 0) { let topC = discArr[discArr.length-1]; let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; let safeImg = (topC.img && topC.img.startsWith('http')) ? topC.img : DEFAULT_CARDBACK; let isDefault = safeImg === DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" style="pointer-events:none;">`; imgHtml += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${topC.name}</div>`; el.innerHTML = imgHtml; document.getElementById('zone-discard').appendChild(el); } 
+            
+            let discArr = zones['discard']||[]; document.getElementById('discard-count').innerText = discArr.length; 
+            if(discArr.length > 0) { 
+                let topC = discArr[discArr.length-1]; let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; 
+                let safeImg = (topC.img && topC.img.startsWith('http')) ? topC.img : DEFAULT_CARDBACK; 
+                let fallback = topC.fallback_img || DEFAULT_CARDBACK;
+                let isDefault = safeImg === DEFAULT_CARDBACK; 
+                let imgHtml = `<img src="${safeImg}" onerror="this.onerror=null; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';" style="pointer-events:none;">`; 
+                imgHtml += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${topC.name}</div>`; 
+                el.innerHTML = imgHtml; document.getElementById('zone-discard').appendChild(el); 
+            } 
             document.getElementById('hand-count').innerText = (zones['hand']||[]).length; 
         }
         
@@ -1281,7 +1301,7 @@
         }
 
         // ==========================================
-        // 💬 跑馬燈功能 (加快 20%)
+        // 💬 跑馬燈功能
         // ==========================================
         async function fetchMarquee() {
             try {
@@ -1290,7 +1310,6 @@
                 let text = data.text || "歡迎使用 PTCG 小章魚";
                 let el = document.getElementById('marquee-text');
                 el.innerHTML = text;
-                // 字數 * 0.45秒，最低 20秒
                 let duration = Math.max(text.length * 0.45, 20);
                 el.style.animationDuration = duration + 's';
             } catch (e) {
