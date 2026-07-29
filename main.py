@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="16.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="17.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,6 +33,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
+# 增加 PR-SV 官方對應碼為 svp
 LL_SET_MAP = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
     "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
@@ -41,7 +42,7 @@ LL_SET_MAP = {
     "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
     "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
     "ASR": "swsh10", "PGO": "pgo", "LOR": "swsh11", "SIT": "swsh12",
-    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "sve", "PR-SW": "swshp"
+    "CRZ": "swsh12pt5", "SVE": "sve", "PR-SV": "svp", "PR-SW": "swshp"
 }
 
 LOCAL_CARD_DB = {}
@@ -268,7 +269,7 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🛡️ 終極修復版英文解析
+# 🚀 終極修復版英文解析 (捨棄失效 S3，改用官方 API 直連)
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
@@ -281,8 +282,6 @@ def api_parse_text(req: ParseTextReq):
                 qty = int(match.group(1)); raw_name = match.group(2).strip()
                 parse_match = re.search(r'^(.+?)(?:\s+([a-zA-Z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
                 search_name = parse_match.group(1).strip() if parse_match else raw_name
-                
-                # 解決 Pokémon Center Lady 等帶有 é 的問題
                 search_name_clean = search_name.replace('é', 'e').replace('É', 'E')
                 
                 target_set = parse_match.group(2) if parse_match and parse_match.group(2) else None
@@ -298,7 +297,6 @@ def api_parse_text(req: ParseTextReq):
                     set_up = target_set.upper()
                     mapped_set = LL_SET_MAP.get(set_up, set_low)
                     
-                    # 1. 優先精準對位，剔除「同名卡」以防抓到舊版
                     candidates = [
                         f"{set_low}-{clean_num}",
                         f"{set_low}-{target_number}",
@@ -311,16 +309,15 @@ def api_parse_text(req: ParseTextReq):
                             img_url = LOCAL_CARD_DB[cand]
                             break
                             
-                    # 2. 如果精準對位失敗，優先給 CDN 直連，確保版圖正確
+                    # 💡 核心修復：如果資料庫找不到完美彈號，改用『高穩定官方圖庫 API』取代死掉的 Limitless S3
                     if not is_valid_url(img_url):
-                        img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
+                        img_url = f"https://images.pokemontcg.io/{mapped_set}/{clean_num}_hires.png"
                         
-                    # 3. 準備第三層防護：若 CDN 也破圖，退回資料庫隨便一張同名卡
+                    # 準備最後的備用防護：如果連官方 API 都不給圖，才退回資料庫隨便找一張同名卡
                     name_fallback = LOCAL_CARD_DB.get(search_name_clean.lower())
                     if is_valid_url(name_fallback):
                         fallback_url = name_fallback
                 else:
-                    # 沒有彈號的卡 (如能量)，直接用名稱找
                     img_url = LOCAL_CARD_DB.get(search_name_clean.lower(), DEFAULT_CARDBACK)
 
                 if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
