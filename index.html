@@ -422,7 +422,8 @@
         <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
             <h2 style="color: #00E5FF; margin-bottom: 8px;">💬 聯絡小章魚客服</h2>
             <p style="color: #ccc; font-size: 13px; margin-bottom: 12px; text-align: left; line-height: 1.5;">
-                遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息，小章魚會收到您的工單：
+                遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息，小章魚會收到您的工單：<br>
+                <span style="color: #FF5252; font-size: 12px;">(提示：送出後，您的回報將上傳至系統資料庫供開發團隊查閱)</span>
             </p>
 
             <div style="text-align: left; display: flex; flex-direction: column; gap: 10px;">
@@ -1040,14 +1041,14 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         
-        // 🚀【雙引擎極速架構】加入 _v2 快取破壞者，強迫系統重抓正確卡圖！
+        // 🚀【前端快取 V2 破壞者】修復數量解析與強制重抓最新圖片
         async function parseText() { 
             let rawText = document.getElementById('deck-text').value;
             if(!rawText.trim()) return alert("請貼上牌組內容");
             showProgress('text'); 
             
             let lines = rawText.split('\n').map(l => l.trim()).filter(l => l);
-            // 💡 改用 _v2 金鑰，無視舊版錯誤快取
+            // 💡 導入 _v2 破壞者：無視所有舊快取，強迫重抓最新的卡圖！
             let localCache = JSON.parse(localStorage.getItem('octoplus_card_cache_v2') || '{}');
             let isCleaned = false;
             let unknownText = [];
@@ -1063,6 +1064,7 @@
                 if(match) {
                     let qty = parseInt(match[1]);
                     let rawName = match[2].trim();
+                    // 💡 修正的正則表達式：不會再把數量吃進去卡名裡
                     let parseMatch = rawName.match(/^(.*?)(?:\s+([A-Za-z0-9\-]+)\s+(\d+[a-zA-Z]*))?$/);
                     
                     let searchName = parseMatch && parseMatch[1] ? parseMatch[1].trim() : rawName;
@@ -1096,7 +1098,6 @@
                             if(!newDeck[k]) newDeck[k] = {qty: 0, img: c.img, name: c.name, fallback_img: c.fallback_img};
                             newDeck[k].qty += c.qty;
                         });
-                        // 💡 存入 _v2 永久快取
                         localStorage.setItem('octoplus_card_cache_v2', JSON.stringify(localCache));
                     } else {
                         alert(d.detail || "部分解析失敗");
