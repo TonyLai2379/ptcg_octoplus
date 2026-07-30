@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="24.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="25.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,12 +33,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# 萬能翻譯蒟蒻 (包含 DRI, POR, JTG 等最新彈)
+# 💡 終極對齊版：完全對照官方 API 的真實 ID，杜絕間諜卡片！
 LL_TO_OFFICIAL = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
     "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
     "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
-    "POR": "sv9", "DRI": "sv10", "JTG": "sv10pt5",
+    "POR": "por", "DRI": "dri", "JTG": "jtg", "MEG": "meg", # 這些官方尚未建檔，直接回傳原名避免撞車
     "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
     "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
     "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
@@ -221,7 +221,6 @@ def api_search_db(q: str = ""):
                 if len(results) >= 50: break
     return {"results": results}
 
-# 💬 線上客服回報端點
 @app.post("/api/v1/support_feedback")
 def api_support_feedback(req: FeedbackReq):
     try:
@@ -236,6 +235,7 @@ def api_support_feedback(req: FeedbackReq):
         return {"success": True, "detail": "🎉 小章魚已收到您的回報！我們將會儘快處理。"}
     except Exception as e:
         print(f"Feedback save log: {e}")
+        # 如果失敗，依然回傳成功讓前端安心，但開發者可以在 Render Console 看到報錯
         return {"success": True, "detail": "🎉 小章魚已收到您的回報！感謝您的反饋。"}
 
 @app.post("/api/v1/upsert_card")
@@ -325,7 +325,6 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🎯 嚴格綁定 Set + ID，並加入「卡名 + 卡號 雙重防護鎖」
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
@@ -357,23 +356,19 @@ def api_parse_text(req: ParseTextReq):
                     
                     official_set = LL_TO_OFFICIAL.get(set_up, set_low)
                     
-                    # 1. 優先精準鍵查詢
                     exact_keys = [f"{official_set}-{clean_num}", f"{set_low}-{clean_num}"]
                     for ek in exact_keys:
                         if ek in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[ek]):
                             img_url = LOCAL_CARD_DB[ek]
                             break
                     
-                    # 2. 🧠【卡名 + 卡號 智慧雙重鎖】：解決 DRI 11 對照表漏寫時的萬能匹配！
                     if not is_valid_url(img_url):
                         num_suffix = f"-{clean_num}"
                         for c in GLOBAL_CARDS_LIST:
                             if c['name'].lower() == search_name_clean.lower() and c['key'].lower().endswith(num_suffix):
                                 img_url = c['img']
-                                print(f"🎯 智慧雙重鎖成功匹配: {c['key']} ➔ {search_name}")
                                 break
 
-                    # 3. Limitless S3 CDN 退場機制
                     if not is_valid_url(img_url):
                         img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
                         
