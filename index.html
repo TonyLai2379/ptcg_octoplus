@@ -213,7 +213,8 @@
 
                 <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center;">
                     <span id="txt-status">目前狀態：未登入</span> <br>
-                    <button class="btn" id="btn-unlock" style="background:#E34C26; padding:6px; margin-top:8px;" onclick="document.getElementById('auth-overlay').style.display='flex'">解鎖萬次精算功能</button>
+                    <!-- 💡 點擊直接開啟訂閱與邀請碼視窗 -->
+                    <button class="btn" id="btn-unlock" style="background:#E34C26; padding:6px; margin-top:8px;" onclick="document.getElementById('sub-modal').style.display='flex'">訂閱、輸入邀請碼</button>
                 </div>
 
                 <div id="import-section" style="position:relative;">
@@ -352,7 +353,7 @@
             <div class="col-center">
                 <div class="field-row">
                     <div>
-                        <div class="zone-title" id="title-stadium" style="color:#FFB300;">🟠 場地 (Stadium)</div>
+                        <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
                         <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     <div>
@@ -417,24 +418,30 @@
         </div>
     </div>
 
-    <!-- 💡 客服 Modal (雙按鈕完美防護) -->
+    <!-- 💡 客服 Modal (直接線上填單與附圖) -->
     <div id="support-modal" class="modal-overlay">
-        <div class="modal-card" style="width: 450px; text-align: center; border-color: #00E5FF;">
-            <h2 style="color: #00E5FF; margin-bottom: 10px;">💬 聯絡小章魚客服</h2>
-            <p style="color: #ccc; font-size: 14px; margin-bottom: 15px; text-align: left; line-height: 1.6;">
-                遇到 Bug、卡片圖案顯示錯誤，或是想許願新功能嗎？<br>
-                歡迎隨時寄信給開發團隊！建議在信件中附上<strong style="color: #FFD700;">文字敘述</strong>與<strong style="color: #FFD700;">錯誤截圖</strong>，小章魚會以最快速度為您處理！
+        <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
+            <h2 style="color: #00E5FF; margin-bottom: 8px;">💬 聯絡小章魚客服</h2>
+            <p style="color: #ccc; font-size: 13px; margin-bottom: 12px; text-align: left; line-height: 1.5;">
+                遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息，亦可附上圖片截圖：
             </p>
-            <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 16px; color: #FFF; font-weight: bold; border: 1px dashed #58A6FF; margin-bottom: 15px; user-select: all;">
-                loganlai0422@gmail.com
+
+            <div style="text-align: left; display: flex; flex-direction: column; gap: 10px;">
+                <textarea id="feedback-msg-input" rows="4" placeholder="請描述您遇到的問題或建議..." style="resize: vertical; font-size: 13px;"></textarea>
+
+                <div>
+                    <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📸 附加截圖 (選填，最大 5MB)：</label>
+                    <input type="file" id="feedback-img-input" accept="image/*" style="font-size: 12px; padding: 4px; background: #21262D;" onchange="previewFeedbackImage(this)">
+                    <img id="feedback-img-preview" src="" style="display: none; max-height: 120px; border-radius: 6px; margin-top: 6px; border: 1px solid #30363D;">
+                </div>
             </div>
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button class="btn" style="background: #238636; flex: 1; font-size: 13px;" onclick="window.location.href='mailto:loganlai0422@gmail.com?subject=PTCG%20小章魚%20-%20回報與建議'">📧 預設信箱開啟</button>
-                <button class="btn btn-secondary" style="flex: 1; font-size: 13px; color: #00E5FF;" onclick="navigator.clipboard.writeText('loganlai0422@gmail.com').then(()=>{alert('✅ 信箱已成功複製：\nloganlai0422@gmail.com\n\n您可以前往您常用的信箱 (如 Gmail) 貼上並寄信給我們！');})">📋 複製信箱地址</button>
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button class="btn" id="btn-submit-feedback" style="background: #238636; flex: 2;" onclick="submitSupportFeedback()">🚀 立即發送給小章魚</button>
+                <button class="btn btn-secondary" style="flex: 1; font-size: 13px; color: #00E5FF;" onclick="navigator.clipboard.writeText('loganlai0422@gmail.com').then(()=>{alert('✅ 信箱已複製：loganlai0422@gmail.com');})">📋 複製信箱</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closeSupportModal()">返回</button>
             </div>
-            
-            <button class="btn btn-secondary" onclick="document.getElementById('support-modal').style.display='none'">返回</button>
+            <p id="feedback-status-msg" style="font-size: 12px; margin-top: 8px; display: none; text-align: center;"></p>
         </div>
     </div>
 
@@ -464,7 +471,7 @@
     <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
-            <h2 style="color: #FFD700; margin-bottom: 10px;">⚠️ 尚未訂閱或額度用盡</h2>
+            <h2 style="color: #FFD700; margin-bottom: 10px;">👑 訂閱方案與會員權限</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">請選擇以下方案解鎖「萬次深度推演」：</p>
             
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
@@ -560,6 +567,81 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
+        let feedbackBase64 = "";
+
+        function previewFeedbackImage(input) {
+            if (input.files && input.files[0]) {
+                let file = input.files[0];
+                if (file.size > 5 * 1024 * 1024) {
+                    alert("圖片檔案過大，請選擇 5MB 以下的圖片");
+                    input.value = "";
+                    return;
+                }
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    feedbackBase64 = e.target.result;
+                    let prev = document.getElementById('feedback-img-preview');
+                    prev.src = feedbackBase64;
+                    prev.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function closeSupportModal() {
+            document.getElementById('support-modal').style.display = 'none';
+            document.getElementById('feedback-msg-input').value = "";
+            document.getElementById('feedback-img-input').value = "";
+            document.getElementById('feedback-img-preview').style.display = 'none';
+            document.getElementById('feedback-status-msg').style.display = 'none';
+            feedbackBase64 = "";
+        }
+
+        async function submitSupportFeedback() {
+            let msg = document.getElementById('feedback-msg-input').value.trim();
+            if(!msg) return alert("請輸入您想發送的回報訊息或建議！");
+
+            let btn = document.getElementById('btn-submit-feedback');
+            let statusEl = document.getElementById('feedback-status-msg');
+            btn.disabled = true;
+            btn.innerText = "⏳ 發送中...";
+
+            let email = "";
+            try {
+                if(supabaseClient) {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if(session && session.user) email = session.user.email || "";
+                }
+            } catch(e) {}
+
+            try {
+                let resp = await fetch(`${API_BASE}/api/v1/support_feedback`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_email: email,
+                        message: msg,
+                        image_base64: feedbackBase64
+                    })
+                });
+                let data = await resp.json();
+                statusEl.style.color = "#00E5FF";
+                statusEl.innerText = data.detail || "🎉 小章魚已收到您的回報！感謝您的反饋。";
+                statusEl.style.display = 'block';
+                setTimeout(() => {
+                    closeSupportModal();
+                    btn.disabled = false;
+                    btn.innerText = "🚀 立即發送給小章魚";
+                }, 1800);
+            } catch(e) {
+                statusEl.style.color = "#FF5252";
+                statusEl.innerText = "❌ 發送失敗，請稍後再試";
+                statusEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = "🚀 立即發送給小章魚";
+            }
+        }
+
         function checkAgreements() {
             let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
             let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
@@ -742,7 +824,7 @@
             document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
             document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
             document.getElementById('auth-status-bar').style.background = "rgba(35, 134, 54, 0.2)";
-            document.getElementById('btn-unlock').innerText = "🎁 輸入邀請碼 / 會員資料";
+            document.getElementById('btn-unlock').innerText = "訂閱、輸入邀請碼";
             
             fetchSavedDecks(); 
         }
@@ -861,8 +943,8 @@
         }
 
         const translations = {
-            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "解鎖萬次精算功能", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
-            en: { tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Unlock Pro Monte Carlo", tabLink: "🔗 Official Code", tabText: "📝 Limitless Text", tabEdit: "🛠️ Search & Edit", phDeckCode: "Enter official deck code (e.g. uCRvSM...)", btnParseOfficial: "🌐 Parse Official Deck", phDeckText: "Paste Limitless deck text...", btnParseText: "📥 Parse Text Deck", lblSearchDb: "Database Search:", phSearchInput: "Type card name to search...", lblCustomCard: "Custom Proxy Card:", phCustomCard: "Proxy Card Name", btnAddCustom: "➕ Create Proxy", deckListTitle: "Deck List", btnPreviewDeck: "👁️ Preview", btnStartGame: "🎲 Lock & Start Game", btnSaveCloud: "💾 Save Cloud", optLoadCloud: "Load Cloud Deck...", disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.", lblZoom: "🔍 UI Zoom", summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)", txtToggleBadge: "Click to Expand/Collapse", lblStep1: "🔥 1. Direct Target Cards (Multi-select)", lblRuleAnd: "Require All (AND)", lblRuleOr: "Require Any (OR)", btnSelectDirect: "🖼️ Select Targets from Deck", lblDraw1: "First Draw Count:", lblDeadHand: "Existing Dead Cards in Hand:", lblStep2: "🔄 2. Chain Resources (Multi-card)", btnAddChain: "🖼️ Add Chain Card", btnRunSim: "🎲 Run Deep Simulation", btnSaveScenario: "📌 Save to Comparison", btnClearBoard: "🗑️ Clear Comparison", titlePrize: "🏆 Prize Cards", titleStadium: "🟠 Stadium", titleActive: "🔴 Active Spot", titleBench: "🔵 Bench", titleHand: "Hand", txtHandSub: "Fan view with drag-and-drop", btnHandShuffle: "🔄 Shuffle Back", btnHandDiscard: "🗑️ Discard All", titleDeck: "🗃️ Deck", btnDrawCard: "🎴 Draw 1 Card", titleDiscard: "🪦 Discard Pile", btnExportGame: "📤 Share Match", btnImportGame: "📥 Load Match", btnUndo: "↩ Undo", btnRedo: "Redo ↪", modalAuthTitle: "Unlock Sandbox Pro", btnCloseAuth: "Close", modalShareTitle: "📤 Share Game State", modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!", btnShareClose: "Close", btnShareCopy: "📋 Copy Short Code", btnGalleryClose: "Close", galleryConfirmBtn: "✅ Confirm Selection", tutMainTitle: "📖 PTCG Sandbox Tutorial", btnTut1: "🛠️ 1. Deck Builder", btnTut2: "⚔️ 2. Battle Board", btnTut3: "🎲 3. Probabilities", tut1Desc: "There are three ways to build/import a deck. Choose one to learn:", btnTut1A: "A. Official Code", btnTut1B: "B. Limitless Export", btnTut1C: "C. Search & Custom", tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.", tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.", tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", btnTutReady: "I'm Ready!", benchLabel: "Slots" }
+            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
+            en: { tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", tabLink: "🔗 Official Code", tabText: "📝 Limitless Text", tabEdit: "🛠️ Search & Edit", phDeckCode: "Enter official deck code (e.g. uCRvSM...)", btnParseOfficial: "🌐 Parse Official Deck", phDeckText: "Paste Limitless deck text...", btnParseText: "📥 Parse Text Deck", lblSearchDb: "Database Search:", phSearchInput: "Type card name to search...", lblCustomCard: "Custom Proxy Card:", phCustomCard: "Proxy Card Name", btnAddCustom: "➕ Create Proxy", deckListTitle: "Deck List", btnPreviewDeck: "👁️ Preview", btnStartGame: "🎲 Lock & Start Game", btnSaveCloud: "💾 Save Cloud", optLoadCloud: "Load Cloud Deck...", disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.", lblZoom: "🔍 UI Zoom", summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)", txtToggleBadge: "Click to Expand/Collapse", lblStep1: "🔥 1. Direct Target Cards (Multi-select)", lblRuleAnd: "Require All (AND)", lblRuleOr: "Require Any (OR)", btnSelectDirect: "🖼️ Select Targets from Deck", lblDraw1: "First Draw Count:", lblDeadHand: "Existing Dead Cards in Hand:", lblStep2: "🔄 2. Chain Resources (Multi-card)", btnAddChain: "🖼️ Add Chain Card", btnRunSim: "🎲 Run Deep Simulation", btnSaveScenario: "📌 Save to Comparison", btnClearBoard: "🗑️ Clear Comparison", titlePrize: "🏆 Prize Cards", titleStadium: "🟠 Stadium", titleActive: "🔴 Active Spot", titleBench: "🔵 Bench", titleHand: "Hand", txtHandSub: "Fan view with drag-and-drop", btnHandShuffle: "🔄 Shuffle Back", btnHandDiscard: "🗑️ Discard All", titleDeck: "🗃️ Deck", btnDrawCard: "🎴 Draw 1 Card", titleDiscard: "🪦 Discard Pile", btnExportGame: "📤 Share Match", btnImportGame: "📥 Load Match", btnUndo: "↩ Undo", btnRedo: "Redo ↪", modalAuthTitle: "Unlock Sandbox Pro", btnCloseAuth: "Close", modalShareTitle: "📤 Share Game State", modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!", btnShareClose: "Close", btnShareCopy: "📋 Copy Short Code", btnGalleryClose: "Close", galleryConfirmBtn: "✅ Confirm Selection", tutMainTitle: "📖 PTCG Sandbox Tutorial", btnTut1: "🛠️ 1. Deck Builder", btnTut2: "⚔️ 2. Battle Board", btnTut3: "🎲 3. Probabilities", tut1Desc: "There are three ways to build/import a deck. Choose one to learn:", btnTut1A: "A. Official Code", btnTut1B: "B. Limitless Export", btnTut1C: "C. Search & Custom", tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.", tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.", tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", btnTutReady: "I'm Ready!", benchLabel: "Slots" }
         };
 
         function setTxt(id, val, isHTML=false) { 
@@ -959,7 +1041,6 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         
-        // 🚀【雙引擎極速架構】前端 Regex 清洗 + LocalStorage 秒殺 + API 智慧補全
         async function parseText() { 
             let rawText = document.getElementById('deck-text').value;
             if(!rawText.trim()) return alert("請貼上牌組內容");
@@ -971,15 +1052,12 @@
             let unknownText = [];
             let newDeck = {};
 
-            // 💡 階段一：前端本地 Regex 快取秒殺 (0.01 秒完成解析)
             for(let line of lines) {
-                // 智慧容錯：過濾賽事雜訊 (Player Name, Event, Format...)
                 if(/^(Pokémon|Trainer|Energy|Cards|Player|Event|Deck|Format)/i.test(line) || line.length < 3) {
                     isCleaned = true; 
                     continue;
                 }
                 
-                // 提取數量與名稱用於快取比對
                 let match = line.match(/^(\d+)\s+(.+)/);
                 if(match) {
                     let qty = parseInt(match[1]);
@@ -992,7 +1070,6 @@
                     
                     let finalKey = targetSet && targetNumber ? `${searchName} [${targetSet} ${targetNumber}]` : searchName;
                     
-                    // 查 LocalStorage 永久快取
                     if(localCache[finalKey]) {
                         if(!newDeck[finalKey]) newDeck[finalKey] = {qty: 0, img: localCache[finalKey].img, name: searchName, fallback_img: localCache[finalKey].fallback_img};
                         newDeck[finalKey].qty += qty;
@@ -1004,7 +1081,6 @@
                 }
             }
 
-            // 💡 階段二：將本機未知的卡片送給後端解析 (包含自動化翻譯與智慧世代配發)
             if(unknownText.length > 0) {
                 try {
                     let r = await fetch(`${API_BASE}/api/v1/parse_text`, {
@@ -1015,7 +1091,6 @@
                     if(d.success) {
                         Object.keys(d.deck).forEach(k => {
                             let c = d.deck[k];
-                            // 寫入永久快取，下次不用再問伺服器！
                             localCache[k] = {img: c.img, name: c.name, fallback_img: c.fallback_img};
                             if(!newDeck[k]) newDeck[k] = {qty: 0, img: c.img, name: c.name, fallback_img: c.fallback_img};
                             newDeck[k].qty += c.qty;
@@ -1029,7 +1104,6 @@
                 }
             }
             
-            // 💡 階段三：更新 UI 與自動建檔
             deckDict = newDeck;
             updateDeckUI(); 
             document.getElementById('deck-text').value = "";
@@ -1041,7 +1115,6 @@
                 msg.style.color = "#00E5FF";
             }
 
-            // 背景回報：成功解析的新卡片，回報給 Supabase 自動補完卡庫
             Object.keys(deckDict).forEach(k => {
                 let c = deckDict[k];
                 if(c.img && c.img.startsWith('http')) {
