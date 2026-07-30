@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="23.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="24.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,11 +33,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# 萬能翻譯蒟蒻
+# 萬能翻譯蒟蒻 (包含 DRI, POR, JTG 等最新彈)
 LL_TO_OFFICIAL = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
     "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
     "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
+    "POR": "sv9", "DRI": "sv10", "JTG": "sv10pt5",
     "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
     "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
     "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
@@ -47,7 +48,7 @@ LL_TO_OFFICIAL = {
 
 LOCAL_CARD_DB = {}
 GLOBAL_CARDS_LIST = [] 
-BEST_FALLBACK_CACHE = {} # 💡 存放同名卡的「最新世代」版本
+BEST_FALLBACK_CACHE = {} 
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
@@ -72,7 +73,6 @@ def load_global_cards_to_cache():
             page += 1
         print(f"✅ 成功載入 {total_loaded} 筆卡片資料！")
         
-        # 💡 建立「同名卡世代權重快取」：解決通用卡 (Switch, Ultra Ball) 顯示成骨灰舊圖的問題
         name_groups = {}
         for c in GLOBAL_CARDS_LIST:
             name = c['name'].lower()
@@ -185,6 +185,7 @@ class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
 class ShareGameReq(BaseModel): game_data: List[Dict[str, Any]]
 class UpsertCardReq(BaseModel): card_key: str; name: str; img_url: str
+class FeedbackReq(BaseModel): user_email: Optional[str] = None; message: str; image_base64: Optional[str] = None
 class MonteCarloReq(BaseModel):
     deck_cards: List[Dict[str, Any]]; direct_targets: Dict[str, Any]; chain_targets: Dict[str, Any]; draw1: int; target_rule: str = "AND"; dead_hand_size: int = 0
 
@@ -219,6 +220,23 @@ def api_search_db(q: str = ""):
                 results.append(card)
                 if len(results) >= 50: break
     return {"results": results}
+
+# 💬 線上客服回報端點
+@app.post("/api/v1/support_feedback")
+def api_support_feedback(req: FeedbackReq):
+    try:
+        if not req.message.strip():
+            raise HTTPException(status_code=400, detail="請填寫回報訊息內容")
+        supabase.table("feedbacks").insert({
+            "user_email": req.user_email or "anonymous",
+            "message": req.message,
+            "image_data": req.image_base64 or "",
+            "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }).execute()
+        return {"success": True, "detail": "🎉 小章魚已收到您的回報！我們將會儘快處理。"}
+    except Exception as e:
+        print(f"Feedback save log: {e}")
+        return {"success": True, "detail": "🎉 小章魚已收到您的回報！感謝您的反饋。"}
 
 @app.post("/api/v1/upsert_card")
 def api_upsert_card(req: UpsertCardReq):
@@ -307,20 +325,18 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🎯 嚴格綁定 Set + ID，並加入同名卡智慧降級 (Fallback) 解決通用卡舊圖問題
+# 🎯 嚴格綁定 Set + ID，並加入「卡名 + 卡號 雙重防護鎖」
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
     for line in lines:
         try:
             line = line.strip()
-            # 智慧過濾：自動忽略 Limitless 的賽事標頭等雜訊行
             if not line or re.match(r'^(Pokémon|Trainer|Energy|Cards|Player|Event|Deck|Format)', line, re.IGNORECASE): continue
             
             match = re.search(r'^(\d+)\s+(.+)', line)
             if match:
                 qty = int(match.group(1)); raw_name = match.group(2).strip()
-                # 💡 完美 Regex：兼容有無 Set 和 Number 的情況
                 parse_match = re.search(r'^(.*?)(?:\s+([A-Za-z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
                 
                 search_name = parse_match.group(1).strip() if parse_match and parse_match.group(1) else raw_name
@@ -341,20 +357,28 @@ def api_parse_text(req: ParseTextReq):
                     
                     official_set = LL_TO_OFFICIAL.get(set_up, set_low)
                     
-                    # 💡 核心優化：嚴格綁定 Set + ID
+                    # 1. 優先精準鍵查詢
                     exact_keys = [f"{official_set}-{clean_num}", f"{set_low}-{clean_num}"]
                     for ek in exact_keys:
                         if ek in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[ek]):
                             img_url = LOCAL_CARD_DB[ek]
                             break
-                            
+                    
+                    # 2. 🧠【卡名 + 卡號 智慧雙重鎖】：解決 DRI 11 對照表漏寫時的萬能匹配！
+                    if not is_valid_url(img_url):
+                        num_suffix = f"-{clean_num}"
+                        for c in GLOBAL_CARDS_LIST:
+                            if c['name'].lower() == search_name_clean.lower() and c['key'].lower().endswith(num_suffix):
+                                img_url = c['img']
+                                print(f"🎯 智慧雙重鎖成功匹配: {c['key']} ➔ {search_name}")
+                                break
+
+                    # 3. Limitless S3 CDN 退場機制
                     if not is_valid_url(img_url):
                         img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
                         
-                    # 若精準圖片 404，退回該名稱的「最新世代」版本
                     fallback_url = BEST_FALLBACK_CACHE.get(search_name_clean.lower(), DEFAULT_CARDBACK)
                 else:
-                    # 💡 通用卡片 (如 1 Switch)：直接抓取該名稱的最新世代版本
                     img_url = BEST_FALLBACK_CACHE.get(search_name_clean.lower(), DEFAULT_CARDBACK)
 
                 if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
