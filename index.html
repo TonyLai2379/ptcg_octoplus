@@ -21,9 +21,9 @@
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
+        body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; position: relative; }
 
-        /* 🌟 電競級震撼 Splash 開場動畫 (100% 無版權問題) */
+        /* 🌟 電競級震撼 Splash 開場動畫 */
         #octopus-splash {
             position: fixed;
             top: 0; left: 0;
@@ -77,27 +77,42 @@
             height: 168px;
             border-radius: 8px;
             border: 2px solid #00E5FF;
-            background-size: cover;
-            background-position: center;
             box-shadow: 0 10px 30px rgba(0, 229, 255, 0.4);
             transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* 🛡️ 置換為電競紅/水藍品牌卡背，100% 避開特定角色版權爭議 */
+        /* 🎴 專屬小章魚品牌限定卡背 (100% 無版權問題) */
         .feat-1 {
             transform: translateX(-80px) rotate(-15deg) scale(0.85);
             border-color: #E91E63;
             box-shadow: 0 0 20px rgba(233, 30, 99, 0.5);
-            background-color: #D32F2F;
-            background-image: radial-gradient(circle, rgba(255,255,255,0.2) 10%, transparent 20%);
+            background: linear-gradient(135deg, #B71C1C, #880E4F);
         }
 
         .feat-2 {
             transform: translateX(80px) rotate(15deg) scale(0.85);
             border-color: #FFD700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-            background-color: #2B579A;
-            background-image: radial-gradient(circle, rgba(255,255,255,0.2) 10%, transparent 20%);
+            background: linear-gradient(135deg, #0D47A1, #01579B);
+        }
+
+        .cardback-octo-logo {
+            font-size: 36px;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+        }
+
+        .cardback-pattern {
+            width: 80%;
+            height: 80%;
+            border: 1px dashed rgba(255,255,255,0.3);
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .feat-main {
@@ -144,6 +159,90 @@
             width: 0%;
             background: linear-gradient(90deg, #00E5FF, #FFD700);
             transition: width 0.03s linear;
+        }
+
+        /* 🐙 左下角 3D 可拖曳互動小章魚吉祥物 */
+        #octo-mascot-wrapper {
+            position: absolute;
+            bottom: 25px;
+            left: 20px;
+            z-index: 800;
+            user-select: none;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #octo-mascot-wrapper:active {
+            cursor: grabbing;
+        }
+
+        #octo-speech-bubble {
+            background: #161B22;
+            border: 2px solid #00E5FF;
+            color: #FFF;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            box-shadow: 0 5px 15px rgba(0, 229, 255, 0.3);
+            margin-bottom: 8px;
+            opacity: 0;
+            transform: translateY(10px) scale(0.9);
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none;
+            position: relative;
+        }
+
+        #octo-speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px 6px 0;
+            border-style: solid;
+            border-color: #00E5FF transparent;
+            display: block;
+            width: 0;
+        }
+
+        #octo-speech-bubble.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .octo-3d-body {
+            width: 75px;
+            height: 75px;
+            background: radial-gradient(circle at 35% 30%, #FF80AB 0%, #E91E63 60%, #880E4F 100%);
+            border-radius: 50%;
+            box-shadow: 0 10px 25px rgba(233, 30, 99, 0.5), inset 0 3px 8px rgba(255,255,255,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 38px;
+            animation: float-mascot 3s ease-in-out infinite;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes float-mascot {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(3deg); }
+        }
+
+        .octo-3d-body.jump {
+            animation: bounce-jump 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounce-jump {
+            0% { transform: scale(1) translateY(0); }
+            40% { transform: scale(1.25) translateY(-25px) rotate(-10deg); }
+            70% { transform: scale(0.9) translateY(5px); }
+            100% { transform: scale(1) translateY(0); }
         }
 
         #sidebar-wrapper { display: flex; height: 100%; position: relative; z-index: 50; }
@@ -229,7 +328,7 @@
         .ab-item:hover { background: #30363D; transform: translateY(-2px); }
         
         .battle-container { display: flex; gap: 30px; flex: 1; min-height: 600px; overflow-x: auto; }
-        .col-left { width: 280px; flex-shrink: 0; }
+        .col-left { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between; }
         .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
         .col-right { width: 280px; flex-shrink: 0; }
 
@@ -323,13 +422,18 @@
             <div class="splash-slogan">Replay. Analyze. Win More.</div>
 
             <div class="splash-card-showcase">
-                <div class="splash-feat-card feat-1"></div>
+                <!-- 🎴 印有小章魚限定圖騰的專屬卡背 (100% 免除角色版權爭議) -->
+                <div class="splash-feat-card feat-1">
+                    <div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div>
+                </div>
                 <div class="splash-feat-card feat-main">
                     <div style="font-size: 28px; margin-bottom: 4px;">🎲</div>
                     <div style="font-size: 12px; color: #AAA;">首對局解牌率</div>
                     <div style="font-size: 22px; color: #FFD700; font-weight: bold;" id="splash-count">0.0%</div>
                 </div>
-                <div class="splash-feat-card feat-2"></div>
+                <div class="splash-feat-card feat-2">
+                    <div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div>
+                </div>
             </div>
 
             <div class="splash-counter-box" id="splash-phase-text">
@@ -531,6 +635,12 @@
                     <div id="zone-prize-3" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     <div id="zone-prize-4" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     <div id="zone-prize-5" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+
+                <!-- 🐙 放置左下角：立體可拖曳點擊互動小章魚 -->
+                <div id="octo-mascot-wrapper" onclick="triggerOctoMascotClick(event)" onmousedown="startMascotDrag(event)" ontouchstart="startMascotDrag(event)">
+                    <div id="octo-speech-bubble">Replay. Analyze. Win More!</div>
+                    <div class="octo-3d-body" id="octo-3d-body">🐙</div>
                 </div>
             </div>
 
@@ -752,6 +862,88 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
+        // 🐙 小章魚吉祥物：語錄庫 & 點擊彈跳 & 自由拖曳邏輯
+        const octoQuotes = [
+            "Replay. Analyze. Win More! 今天也要贏！",
+            "萬次蒙地卡羅算力已就緒！",
+            "對局有精采操作？點右下角一鍵分享給朋友！",
+            "需要幫忙嗎？可以點擊右上角「❓ 教學」喔！",
+            "我是小章魚，為你的勝率保駕護航！",
+            "覆盤是通往大師連勝唯一的捷徑！"
+        ];
+
+        let isMascotDragging = false;
+        let mascotOffsetX = 0, mascotOffsetY = 0;
+        let speechBubbleTimer = null;
+
+        function triggerOctoMascotClick(e) {
+            if (isMascotDragging) return;
+            const bodyEl = document.getElementById('octo-3d-body');
+            const bubble = document.getElementById('octo-speech-bubble');
+            
+            if (bodyEl) {
+                bodyEl.classList.remove('jump');
+                void bodyEl.offsetWidth; 
+                bodyEl.classList.add('jump');
+            }
+
+            if (bubble) {
+                const randomQuote = octoQuotes[Math.floor(Math.random() * octoQuotes.length)];
+                bubble.innerText = randomQuote;
+                bubble.classList.add('active');
+                
+                clearTimeout(speechBubbleTimer);
+                speechBubbleTimer = setTimeout(() => {
+                    bubble.classList.remove('active');
+                }, 3500);
+            }
+        }
+
+        function startMascotDrag(e) {
+            const mascot = document.getElementById('octo-mascot-wrapper');
+            if (!mascot) return;
+
+            let clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            let clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            isMascotDragging = false;
+            let startX = clientX;
+            let startY = clientY;
+
+            let rect = mascot.getBoundingClientRect();
+            mascotOffsetX = clientX - rect.left;
+            mascotOffsetY = clientY - rect.top;
+
+            function onMove(moveEvent) {
+                let curX = moveEvent.clientX || (moveEvent.touches && moveEvent.touches[0].clientX);
+                let curY = moveEvent.clientY || (moveEvent.touches && moveEvent.touches[0].clientY);
+
+                if (Math.abs(curX - startX) > 5 || Math.abs(curY - startY) > 5) {
+                    isMascotDragging = true;
+                }
+
+                if (isMascotDragging) {
+                    mascot.style.position = 'fixed';
+                    mascot.style.left = (curX - mascotOffsetX) + 'px';
+                    mascot.style.top = (curY - mascotOffsetY) + 'px';
+                    mascot.style.bottom = 'auto';
+                }
+            }
+
+            function onEnd() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+                setTimeout(() => { isMascotDragging = false; }, 50);
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+        }
+
         // 🌟 開場 Splash 動畫 3 階段演展控制
         let splashDismissed = false;
 
@@ -811,7 +1003,7 @@
             { id: 'cloud-save-section', title: '💾 步驟 3/6：雲端牌組紀錄', desc: '可以記錄牌組，節省時間。隨時儲存最愛的卡組，跨裝置一鍵載入！' },
             { id: 'battle-board-area', title: '⚔️ 步驟 4/6：覆盤戰場', desc: '設定覆盤戰場，卡片可以自動拖曳呦！支援完美疊放與錯位排列。' },
             { id: 'prob-panel', title: '🎯 步驟 5/6：萬次蒙地卡羅推演', desc: '複雜機率運算、情境分析沒煩惱！一鍵精算極限對局手牌率。' },
-            { id: 'history-controls', title: '📤 步驟 6/6：一鍵對局分享', desc: '想跟朋友分享嗎？這裡可以一秒分享～產生 6 位數短代碼還原戰局！' }
+            { id: 'history-controls', title: '📤 步驟 6/6：一鍵對局分享', desc: '想跟朋友分享嗎？這裡可以一秒分享～產生 6 位數短代碼還原戰局與機率推演！' }
         ];
 
         let currentTourIndex = 0;
@@ -1597,7 +1789,6 @@
                     let raw = d.game_data;
                     deckDict = {}; 
 
-                    // 1. 相容舊版（純陣列）與新版（完整全功能物件）
                     if (Array.isArray(raw)) {
                         gameCards = raw.map(item => { 
                             let cardKey = item.k; 
@@ -1608,7 +1799,6 @@
                             return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; 
                         }); 
                     } else {
-                        // 新版：全套設定還原！
                         if (raw.deck) deckDict = raw.deck;
                         if (raw.cards) {
                             gameCards = raw.cards.map(item => ({
@@ -1634,7 +1824,6 @@
                         renderTargetUI();
                         renderChainUI();
                         
-                        // 自動展開機率推演面板供使用者閱覽
                         let probPanel = document.getElementById('prob-panel');
                         if (probPanel) probPanel.open = true;
                     }
