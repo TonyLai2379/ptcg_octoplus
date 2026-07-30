@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="26.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="27.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +34,9 @@ SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "sb_secret_rQ9BehEwCzjbAF
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
+
+# 對局分享記憶體備用快取 (雙保險機制)
+MEMORY_GAME_SHARES = {}
 
 LL_TO_OFFICIAL = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
@@ -98,13 +101,11 @@ def load_global_cards_to_cache():
 
 load_global_cards_to_cache()
 
-# 🧠【Token 雙軌驗證】：遠端 API + JWT 本地解碼，徹底解決鬼打牆！
 def get_user_from_token(auth_header: str):
     if not auth_header or not auth_header.startswith("Bearer "): 
         raise HTTPException(status_code=401, detail="請先登入帳號")
     token = auth_header.split(" ")[1]
     
-    # 軌道 1：嘗試官方遠端 API 驗證
     try:
         user_res = supabase.auth.get_user(token)
         if user_res and user_res.user:
@@ -112,7 +113,6 @@ def get_user_from_token(auth_header: str):
     except Exception:
         pass
 
-    # 軌道 2：若 API 網路波動，發動 JWT 免斷線解碼，100% 正確提領 User ID
     try:
         parts = token.split('.')
         if len(parts) == 3:
@@ -440,16 +440,43 @@ def api_parse_text(req: ParseTextReq):
     if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
     return {"success": True, "deck": new_deck}
 
+# 🚀【對局分享：雙保險強化版】
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
-    code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
-    supabase.table("game_shares").upsert({"share_code": code, "game_data": json.dumps(req.game_data)}).execute()
-    return {"success": True, "share_code": code}
+    try:
+        code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
+        json_data = json.dumps(req.game_data)
+        
+        # 1. 存入記憶體快取 (0秒備用)
+        MEMORY_GAME_SHARES[code] = json_data
+        
+        # 2. 嘗試寫入 Supabase 資料庫
+        try:
+            supabase.table("game_shares").upsert({"share_code": code, "game_data": json_data}).execute()
+        except Exception as db_err:
+            print(f"⚠️ Supabase game_shares 存取跳過: {db_err}")
+            
+        return {"success": True, "share_code": code}
+    except Exception as e:
+        print(f"Share error: {e}")
+        return {"success": False, "detail": f"分享處理失敗: {str(e)}"}
 
 @app.get("/api/v1/get_shared_game")
 def api_get_shared_game(code: str):
-    res = supabase.table("game_shares").select("game_data").eq("share_code", code.strip().upper()).execute()
-    if res.data: return {"success": True, "game_data": json.loads(res.data[0]["game_data"])}
+    clean_code = code.strip().upper()
+    
+    # 1. 優先從記憶體快取秒讀
+    if clean_code in MEMORY_GAME_SHARES:
+        return {"success": True, "game_data": json.loads(MEMORY_GAME_SHARES[clean_code])}
+        
+    # 2. 查無則從 Supabase 資料庫搜尋
+    try:
+        res = supabase.table("game_shares").select("game_data").eq("share_code", clean_code).execute()
+        if res.data:
+            return {"success": True, "game_data": json.loads(res.data[0]["game_data"])}
+    except Exception as e:
+        print(f"DB Fetch Error: {e}")
+
     raise HTTPException(status_code=404, detail="找不到該對局代碼，請確認代碼是否正確。")
 
 @app.post("/api/v1/simulate")
