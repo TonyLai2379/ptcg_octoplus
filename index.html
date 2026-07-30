@@ -12,6 +12,11 @@
     <meta property="og:description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析與萬次蒙地卡羅手牌率精確推演。">
     <meta property="og:image" content="https://asia.pokemon-card.com/tw/assets/images/card-back.png">
 
+    <!-- 📱 手機觸控拖曳 Polyfill -->
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/index.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/default.css">
+    <script> MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride }); </script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -40,11 +45,32 @@
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-secondary { background: #21262D; border: 1px solid #30363D; color: #C9D1D9; }
         
-        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.9); } 70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
-        .blink-yellow { animation: pulse-yellow 2s infinite; border: 2px solid #FFD700; border-radius: 8px; padding: 5px; background: rgba(255, 215, 0, 0.08); }
+        /* 🌟 導覽引導高亮動畫 */
+        @keyframes tour-pulse { 
+            0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.9); border-color: #00E5FF; } 
+            70% { box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); border-color: #FFD700; } 
+            100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); } 
+        }
+        .tour-active-target { 
+            animation: tour-pulse 1.5s infinite !important; 
+            border: 2px solid #00E5FF !important; 
+            z-index: 10001 !important; 
+            position: relative !important;
+            background: rgba(0, 229, 255, 0.1) !important;
+        }
 
-        #guide-arrow { position: fixed; left: 370px; top: 180px; width: 80px; height: 80px; animation: point-left 0.8s infinite; display: none; z-index: 9999; pointer-events: none; filter: drop-shadow(0px 0px 10px rgba(0,0,0,0.8)); }
-        @keyframes point-left { 0% { transform: translateX(0); opacity: 1; } 50% { transform: translateX(-20px); opacity: 0.5; } 100% { transform: translateX(0); opacity: 1; } }
+        #tour-tooltip-box {
+            position: fixed;
+            background: #161B22;
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 10002;
+            display: none;
+            width: 320px;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
 
         #deck-list-container { flex: 1; overflow-y: auto; border: 1px solid #30363D; border-radius: 6px; padding: 8px; background: #0D1117; min-height: 120px; }
         .deck-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 14px; border-bottom: 1px solid #21262D; padding-bottom: 4px; }
@@ -157,17 +183,30 @@
         .legal-link:hover { color: #79C0FF; }
         
         .status-badge { display: inline-block; width: 85px; font-weight: bold; }
+
+        /* 📱 手機版 RWD 樣式適配 */
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; }
+            #sidebar { width: 100% !important; height: auto; border-right: none; border-bottom: 1px solid #30363D; }
+            #main-view { min-width: 100%; zoom: 0.85; padding: 10px; }
+            .battle-container { min-height: 500px; }
+        }
     </style>
 </head>
 <body>
 
-    <svg style="display:none;">
-        <symbol id="q-arrow" viewBox="0 0 100 100">
-            <path d="M75,50 L25,50 M25,50 L45,30 M25,50 L45,70" stroke="#FFD700" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </symbol>
-    </svg>
+    <!-- 🌟 新手 6 步驟互動導覽提示框 -->
+    <div id="tour-backdrop" class="modal-overlay" style="background: rgba(0,0,0,0.6); z-index: 10000; display: none;"></div>
+    <div id="tour-tooltip-box">
+        <h3 id="tour-step-title" style="color: #FFD700; margin-bottom: 8px; font-size: 16px;">💡 新手導覽 (1/6)</h3>
+        <p id="tour-step-desc" style="color: #FFF; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">提示內容...</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary" style="width: auto; padding: 4px 12px; font-size: 12px;" onclick="endTour()">跳過導覽</button>
+            <button class="btn" style="width: auto; padding: 6px 16px; font-size: 13px; background: #00E5FF; color: #000;" onclick="nextTourStep()">下一步 ➔</button>
+        </div>
+    </div>
 
-    <!-- 🔒 未登入強迫登入護城河 Modal -->
+    <!-- 🔒 未登入護城河 Modal -->
     <div id="gate-overlay" class="modal-overlay" style="display: flex; z-index: 15000; backdrop-filter: blur(8px);">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
             <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
@@ -204,7 +243,6 @@
                         <span style="font-size:12px; color:#888;">ID:</span>
                         <input type="text" id="user-id-input" value="Player1" readonly style="width:110px; padding:4px; font-size:12px; text-align:center; background:#161B22;">
                     </div>
-                    <!-- 💡 客服與教學按鈕區 -->
                     <div style="display:flex; gap: 5px;">
                         <button class="btn-secondary" style="width:auto; padding:4px 8px; font-size:11px; color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
                         <button class="btn-secondary" id="tut-btn" style="width:auto; padding:4px 8px; font-size:11px;" onclick="openTutorial()">❓ 教學</button>
@@ -217,8 +255,6 @@
                 </div>
 
                 <div id="import-section" style="position:relative;">
-                    <svg id="guide-arrow"><use href="#q-arrow"></use></svg>
-                    
                     <div class="tab-group">
                         <button class="tab-btn active" id="tab-btn-link" onclick="switchTab('tab-link')">🔗 官方代碼</button>
                         <button class="tab-btn" id="tab-btn-text" onclick="switchTab('tab-text')">📝 英文匯入</button>
@@ -265,7 +301,7 @@
 
                 <button class="btn" id="btn-start-game" style="background: #E91E63; font-size:15px;" onclick="startGame()">🎲 鎖定牌組並開局</button>
                 
-                <div style="display:flex; gap:5px; margin-top:5px;">
+                <div id="cloud-save-section" style="display:flex; gap:5px; margin-top:5px;">
                     <button class="btn-secondary" id="btn-save-cloud" style="flex:1; padding:8px;" onclick="saveDeckToDB()">💾 紀錄至雲端</button>
                     <select id="saved-decks-select" style="flex:2; margin:0;" onchange="loadDeckFromDB(this.value)">
                         <option value="" id="opt-load-cloud">載入雲端牌組...</option>
@@ -336,7 +372,7 @@
         </details>
 
         <!-- 戰場 -->
-        <div class="battle-container">
+        <div class="battle-container" id="battle-board-area">
             <div class="col-left">
                 <div class="zone-title" id="title-prize">🏆 獎賞卡 (Prize)</div>
                 <div class="prize-grid">
@@ -417,7 +453,7 @@
         </div>
     </div>
 
-    <!-- 💡 客服 Modal (內建回報表單與截圖上傳) -->
+    <!-- 💡 客服 Modal -->
     <div id="support-modal" class="modal-overlay">
         <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
             <h2 style="color: #00E5FF; margin-bottom: 8px;">💬 聯絡小章魚客服</h2>
@@ -457,17 +493,6 @@
         </div>
     </div>
 
-    <!-- 分享對局 Modal -->
-    <div id="share-modal" class="modal-overlay">
-        <div class="modal-card" style="width: 400px; height: auto; text-align: center;">
-            <h2 style="color: #00E5FF; margin-bottom: 15px;" id="modal-share-title">📤 分享對局</h2>
-            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;" id="modal-share-desc">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！</p>
-            <input type="text" id="share-code-display" readonly style="text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; padding: 15px; margin-bottom: 15px; background: #0D1117; color: #FFD700; border: 2px dashed #30363D;">
-            <button class="btn" style="background: #238636; font-size: 16px; padding: 12px; margin-bottom: 10px;" id="btn-share-copy" onclick="copyShareCode()">📋 一鍵複製短代碼</button>
-            <button class="btn btn-secondary" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
-        </div>
-    </div>
-
     <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
@@ -476,9 +501,9 @@
             
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
                 <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用七天 (每日額度限制 30 次)</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">💎 2. 訂閱 1 個月 / 99 元</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;">👑 3. 訂閱 3 個月 / 250 元</button>
-                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;">🏆 4. 訂閱一年 / 599 元</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">💎 2. 訂閱 1 個月 / 99 元</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">👑 3. 訂閱 3 個月 / 250 元</button>
+                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">🏆 4. 訂閱一年 / 599 元</button>
                 <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入會員邀請碼</button>
             </div>
             
@@ -567,6 +592,79 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
+        // 🌟 新手引導導覽 6 步驟設定
+        const tourSteps = [
+            { id: 'import-section', title: '💡 步驟 1/6：牌組匯入', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
+            { id: 'btn-start-game', title: '🎲 步驟 2/6：開局沙盤', desc: '匯入好牌組就可以開局啦！系統會自動幫您隨機洗牌並發放手牌與獎賞卡。' },
+            { id: 'cloud-save-section', title: '💾 步驟 3/6：雲端牌組紀錄', desc: '可以記錄牌組，節省時間。隨時儲存最愛的卡組，跨裝置一鍵載入！' },
+            { id: 'battle-board-area', title: '⚔️ 步驟 4/6：覆盤戰場', desc: '設定覆盤戰場，卡片可以自動拖曳呦！支援完美疊放與錯位排列。' },
+            { id: 'prob-panel', title: '🎯 步驟 5/6：萬次蒙地卡羅推演', desc: '複雜機率運算、情境分析沒煩惱！一鍵精算極限對局手牌率。' },
+            { id: 'history-controls', title: '📤 步驟 6/6：一鍵對局分享', desc: '想跟朋友分享嗎？這裡可以一秒分享～產生 6 位數短代碼還原戰局！' }
+        ];
+
+        let currentTourIndex = 0;
+
+        function startInteractiveTour() {
+            currentTourIndex = 0;
+            document.getElementById('tour-backdrop').style.display = 'block';
+            showTourStep(currentTourIndex);
+        }
+
+        function showTourStep(index) {
+            document.querySelectorAll('.tour-active-target').forEach(el => el.classList.remove('tour-active-target'));
+
+            if(index >= tourSteps.length) {
+                endTour();
+                return;
+            }
+
+            const step = tourSteps[index];
+            const targetEl = document.getElementById(step.id);
+            const box = document.getElementById('tour-tooltip-box');
+
+            if (targetEl) {
+                targetEl.classList.add('tour-active-target');
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                const rect = targetEl.getBoundingClientRect();
+                box.style.display = 'block';
+
+                let top = rect.bottom + 15;
+                let left = rect.left;
+
+                if (top + 180 > window.innerHeight) {
+                    top = rect.top - 180;
+                }
+                if (left + 320 > window.innerWidth) {
+                    left = window.innerWidth - 340;
+                }
+
+                box.style.top = Math.max(20, top) + 'px';
+                box.style.left = Math.max(20, left) + 'px';
+
+                document.getElementById('tour-step-title').innerText = step.title;
+                document.getElementById('tour-step-desc').innerText = step.desc;
+            } else {
+                nextTourStep();
+            }
+        }
+
+        function nextTourStep() {
+            currentTourIndex++;
+            if (currentTourIndex < tourSteps.length) {
+                showTourStep(currentTourIndex);
+            } else {
+                endTour();
+            }
+        }
+
+        function endTour() {
+            document.querySelectorAll('.tour-active-target').forEach(el => el.classList.remove('tour-active-target'));
+            document.getElementById('tour-backdrop').style.display = 'none';
+            document.getElementById('tour-tooltip-box').style.display = 'none';
+            localStorage.setItem('octoplus_tour_done', 'Y');
+        }
+
         let feedbackBase64 = "";
 
         function previewFeedbackImage(input) {
@@ -756,6 +854,15 @@
                     renderBoard(); 
                 }
             } catch(e) { console.error("本機存檔讀取失敗", e); }
+
+            // 💡 若為第一次進入，登入後自動觸發引導導覽
+            if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
+                setTimeout(() => {
+                    if (document.getElementById('gate-overlay').style.display === 'none') {
+                        startInteractiveTour();
+                    }
+                }, 1200);
+            }
         });
         
         setInterval(checkAgreements, 1000);
@@ -983,8 +1090,8 @@
         function switchTab(tabId) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); event.target.classList.add('active'); document.getElementById(tabId).classList.add('active'); }
         function switchTutTab(tid) { document.querySelectorAll('#tutorial-modal .tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('#tutorial-modal .tut-content').forEach(c => c.style.display='none'); document.getElementById('btn-'+tid).classList.add('active'); document.getElementById(tid).style.display = 'flex'; }
         function switchSubTutTab(subId) { document.querySelectorAll('.sub-tab-btn').forEach(b => { b.style.borderColor = '#30363D'; b.style.color = '#888'; }); document.querySelectorAll('.sub-tut-content').forEach(c => c.style.display = 'none'); let activeBtn = document.getElementById('btn-' + subId); activeBtn.style.borderColor = '#00E5FF'; activeBtn.style.color = '#00E5FF'; document.getElementById(subId).style.display = 'block'; }
-        function openTutorial() { document.getElementById('tutorial-modal').style.display='flex'; }
-        function closeTutorial() { document.getElementById('tutorial-modal').style.display='none'; localStorage.setItem('tut_shown', 'true'); if(getDeckTotal() < 60) { let arrow = document.getElementById('guide-arrow'); arrow.style.display = 'block'; setTimeout(() => { arrow.style.display = 'none'; }, 1600); } }
+        function openTutorial() { startInteractiveTour(); }
+        function closeTutorial() { document.getElementById('tutorial-modal').style.display='none'; localStorage.setItem('tut_shown', 'true'); }
         
         function showProgress(id) { 
             let prog = document.getElementById('prog-'+id);
@@ -1041,14 +1148,12 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         
-        // 🚀【前端快取 V3 破壞者】強制遺忘舊的錯誤沙包蛇，重抓最新版本！
         async function parseText() { 
             let rawText = document.getElementById('deck-text').value;
             if(!rawText.trim()) return alert("請貼上牌組內容");
             showProgress('text'); 
             
             let lines = rawText.split('\n').map(l => l.trim()).filter(l => l);
-            // 💡 導入 _v3 破壞者：無視所有舊快取，強迫重抓最新的卡圖！
             let localCache = JSON.parse(localStorage.getItem('octoplus_card_cache_v3') || '{}');
             let isCleaned = false;
             let unknownText = [];
@@ -1097,7 +1202,6 @@
                             if(!newDeck[k]) newDeck[k] = {qty: 0, img: c.img, name: c.name, fallback_img: c.fallback_img};
                             newDeck[k].qty += c.qty;
                         });
-                        // 💡 存入 _v3 永久快取
                         localStorage.setItem('octoplus_card_cache_v3', JSON.stringify(localCache));
                     } else {
                         alert(d.detail || "部分解析失敗");
