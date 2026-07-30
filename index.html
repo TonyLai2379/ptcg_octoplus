@@ -8,8 +8,8 @@
     <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析、Limitless 英文牌組匯入與萬次蒙地卡羅手牌率精確推演。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ptcg-octoplus.com/">
-    <meta property="og:title" content="PTCG 小章魚 - 覆盤最佳工具">
-    <meta property="og:description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析與萬次蒙地卡羅手牌率精確推演。">
+    <meta property="og:title" content="PTCG 小章魚 - Replay. Analyze. Win More.">
+    <meta property="og:description" content="Replay. Analyze. Win More. 專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！">
     <meta property="og:image" content="https://asia.pokemon-card.com/tw/assets/images/card-back.png">
 
     <!-- 📱 手機觸控拖曳 Polyfill -->
@@ -23,12 +23,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
 
-        /* 🌟 Splash Screen 5 秒酷炫開場動畫 */
+        /* 🌟 電競級震撼 Splash 開場動畫 */
         #octopus-splash {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: #090C10;
+            background: radial-gradient(circle at center, #161B22 0%, #090C10 100%);
             z-index: 99999;
             display: flex;
             justify-content: center;
@@ -43,92 +43,105 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
+            max-width: 600px;
         }
 
-        .splash-card-group {
+        .splash-slogan {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #FFD700, #00E5FF, #FFD700);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine-text 3s linear infinite;
+        }
+
+        @keyframes shine-text { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+
+        .splash-card-showcase {
             position: relative;
-            width: 200px;
-            height: 140px;
+            width: 320px;
+            height: 160px;
             display: flex;
             justify-content: center;
             align-items: center;
             perspective: 1000px;
+            margin: 10px 0;
         }
 
-        .splash-card {
+        .splash-feat-card {
             position: absolute;
-            width: 75px;
-            height: 105px;
+            width: 120px;
+            height: 168px;
             border-radius: 8px;
             border: 2px solid #00E5FF;
-            background: linear-gradient(135deg, #161B22, #0D1117);
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
-            transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 10px 30px rgba(0, 229, 255, 0.4);
+            transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        .card-left {
-            transform: translateX(-60px) rotate(-18deg) scale(0.85);
+        .feat-1 {
+            transform: translateX(-80px) rotate(-15deg) scale(0.85);
             border-color: #E91E63;
-            box-shadow: 0 0 15px rgba(233, 30, 99, 0.4);
+            box-shadow: 0 0 20px rgba(233, 30, 99, 0.5);
+            background-image: url('https://images.pokemontcg.io/sv1/119_hires.png');
         }
 
-        .card-right {
-            transform: translateX(60px) rotate(18deg) scale(0.85);
+        .feat-2 {
+            transform: translateX(80px) rotate(15deg) scale(0.85);
             border-color: #FFD700;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            background-image: url('https://asia.pokemon-card.com/tw/assets/images/card-back.png');
         }
 
-        .card-center {
-            z-index: 2;
+        .feat-main {
+            z-index: 5;
+            transform: scale(1.05);
+            border-color: #00E5FF;
+            background: #161B22;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            animation: octo-pulse 2s infinite ease-in-out;
+            padding: 10px;
+            box-shadow: 0 0 35px rgba(0, 229, 255, 0.8);
+            animation: pulse-main 2s infinite ease-in-out;
         }
 
-        .octopus-avatar {
-            font-size: 40px;
-            filter: drop-shadow(0 0 10px #00E5FF);
-        }
-
-        @keyframes octo-pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 229, 255, 0.5); }
-            50% { transform: scale(1.08); box-shadow: 0 0 35px rgba(0, 229, 255, 0.9); }
-        }
-
-        .splash-title {
-            font-size: 32px;
-            font-weight: 900;
-            background: linear-gradient(90deg, #00E5FF, #FFD700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
-        }
-
-        .splash-tagline {
-            font-size: 14px;
-            color: #8B949E;
-            letter-spacing: 1px;
+        @keyframes pulse-main {
+            0%, 100% { transform: scale(1.05); }
+            50% { transform: scale(1.12); box-shadow: 0 0 45px rgba(0, 229, 255, 1); }
         }
 
         .splash-counter-box {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px 18px;
-            border-radius: 20px;
-            border: 1px solid #30363D;
-            font-size: 22px;
-            font-weight: bold;
-            color: #00E5FF;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid #00E5FF;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 26px;
+            font-weight: 900;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
 
-        .splash-skip-tip {
-            font-size: 12px;
-            color: #777;
-            margin-top: 10px;
-            animation: blink 1.5s infinite;
+        .splash-progress-bar {
+            width: 240px;
+            height: 4px;
+            background: #21262D;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 5px;
         }
 
-        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.9; } }
+        .splash-progress-inner {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00E5FF, #FFD700);
+            transition: width 0.03s linear;
+        }
 
         #sidebar-wrapper { display: flex; height: 100%; position: relative; z-index: 50; }
         #sidebar { width: 360px; background-color: #161B22; border-right: 1px solid #30363D; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -230,7 +243,7 @@
         .stadium-zone { width: 150px; border: 2px dashed #FF9800; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(255, 152, 0, 0.05); }
         .active-zone { width: 150px; border: 2px dashed #E53935; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(229, 57, 53, 0.05); }
         
-        #bench-container { display: grid; grid-template-columns: repeat(5, 150px); gap: 12px; justify-content: center; margin-top: 10px; }
+        #bench-container { display: grid; grid-template-columns: repeat(5, 150px); gap: 12px; justify-content: center; margin-top: 10px; min-height: 195px; }
 
         .card-wrapper { width: 128px; height: 178px; border-radius: 6px; cursor: grab; position: relative; transition: transform 0.1s; flex-shrink: 0; }
         .card-wrapper:hover { transform: translateY(-5px) scale(1.05); z-index: 900 !important; }
@@ -300,23 +313,31 @@
 </head>
 <body>
 
-    <!-- 🐙 小章魚 5 秒極速酷炫 Splash Screen -->
+    <!-- 🐙 PTCG 小章魚：Replay. Analyze. Win More. 5~10 秒開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
         <div class="splash-content">
-            <div class="splash-card-group">
-                <div class="splash-card card-left"></div>
-                <div class="splash-card card-center">
-                    <div class="octopus-avatar">🐙</div>
+            <h2 style="color: #00E5FF; font-size: 20px; letter-spacing: 2px;">🐙 PTCG OCTOPLUS</h2>
+            <div class="splash-slogan">Replay. Analyze. Win More.</div>
+
+            <div class="splash-card-showcase">
+                <div class="splash-feat-card feat-1"></div>
+                <div class="splash-feat-card feat-main">
+                    <div style="font-size: 28px; margin-bottom: 4px;">🎲</div>
+                    <div style="font-size: 12px; color: #AAA;">首對局解牌率</div>
+                    <div style="font-size: 22px; color: #FFD700; font-weight: bold;" id="splash-count">0.0%</div>
                 </div>
-                <div class="splash-card card-right"></div>
+                <div class="splash-feat-card feat-2"></div>
             </div>
-            <h1 class="splash-title">PTCG 小章魚</h1>
-            <div class="splash-tagline">萬次蒙地卡羅 ✕ 專業戰術沙盤</div>
-            <div class="splash-counter-box">
-                <span style="font-size: 14px; color: #AAA;">首手解牌成功率：</span>
-                <span id="splash-count">0.0</span>%
+
+            <div class="splash-counter-box" id="splash-phase-text">
+                ⚔️ 戰術沙盤 100% 還原
             </div>
-            <div class="splash-skip-tip">點擊任意處跳過 ➔</div>
+
+            <div class="splash-progress-bar">
+                <div class="splash-progress-inner" id="splash-bar-inner"></div>
+            </div>
+
+            <div class="splash-skip-tip">點擊任意處立即體驗 ➔</div>
         </div>
     </div>
 
@@ -618,6 +639,17 @@
         </div>
     </div>
 
+    <!-- 分享對局 Modal -->
+    <div id="share-modal" class="modal-overlay">
+        <div class="modal-card" style="width: 400px; height: auto; text-align: center;">
+            <h2 style="color: #00E5FF; margin-bottom: 15px;" id="modal-share-title">📤 分享對局</h2>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;" id="modal-share-desc">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！</p>
+            <input type="text" id="share-code-display" readonly style="text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; padding: 15px; margin-bottom: 15px; background: #0D1117; color: #FFD700; border: 2px dashed #30363D;">
+            <button class="btn" style="background: #238636; font-size: 16px; padding: 12px; margin-bottom: 10px;" id="btn-share-copy" onclick="copyShareCode()">📋 一鍵複製短代碼</button>
+            <button class="btn btn-secondary" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
+        </div>
+    </div>
+
     <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
@@ -717,7 +749,7 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
-        // 🌟 開場 Splash 動畫控制邏輯
+        // 🌟 開場 Splash 動畫 3 階段演展控制
         let splashDismissed = false;
 
         function dismissSplash() {
@@ -733,21 +765,40 @@
 
         function runSplashAnimation() {
             let countEl = document.getElementById('splash-count');
+            let phaseEl = document.getElementById('splash-phase-text');
+            let barEl = document.getElementById('splash-bar-inner');
             if (!countEl) return;
             
-            let current = 0.0;
-            let target = 98.6;
-            let step = 2.2;
+            let progress = 0;
+            let currentProb = 0.0;
+            let targetProb = 47.0; // 圖 6 經典 47.0% 勝率
             
+            let totalTimeMs = 6000; // 6 秒震撼展演
+            let intervalMs = 30;
+            let totalSteps = totalTimeMs / intervalMs;
+            let stepProb = targetProb / (totalSteps * 0.7);
+
             let timer = setInterval(() => {
-                current += step;
-                if (current >= target) {
-                    current = target;
-                    clearInterval(timer);
-                    setTimeout(dismissSplash, 1200);
+                progress += (100 / totalSteps);
+                if (barEl) barEl.style.width = Math.min(100, progress) + '%';
+
+                if (currentProb < targetProb) {
+                    currentProb += stepProb;
+                    if (currentProb >= targetProb) currentProb = targetProb;
+                    countEl.innerText = currentProb.toFixed(1) + '%';
                 }
-                countEl.innerText = current.toFixed(1);
-            }, 30);
+
+                if (progress > 30 && progress <= 65) {
+                    if (phaseEl) phaseEl.innerText = "🎯 萬次蒙地卡羅 ✕ 深度勝率精算";
+                } else if (progress > 65) {
+                    if (phaseEl) phaseEl.innerText = "🏆 WIN MORE：掌舵對局，勝率大增";
+                }
+
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    setTimeout(dismissSplash, 800);
+                }
+            }, intervalMs);
         }
 
         // 🌟 新手引導導覽 6 步驟設定
@@ -1009,11 +1060,14 @@
                 let savedBoard = localStorage.getItem('octoplus_board');
                 if (savedBoard) { 
                     gameCards = JSON.parse(savedBoard); 
-                    renderBoard(); 
                 }
             } catch(e) { console.error("本機存檔讀取失敗", e); }
 
-            // 💡 觸發 Splash 動畫，並在動畫結束後判斷是否顯示 6 步驟新手導覽
+            // 💡 確保預設備戰區與戰場邊框 100% 正確渲染！
+            renderBenchSlots();
+            renderBoard();
+
+            // 💡 觸發 6 秒震撼 Splash 開場動畫
             runSplashAnimation();
         });
         
@@ -1480,7 +1534,7 @@
                 let c = chainList[k]; let div = document.createElement('div'); div.className = 'target-row'; div.style.flexDirection = 'column'; div.style.alignItems = 'stretch'; div.style.borderLeftColor = '#FFD700'; 
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search'); 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:24px;height:33px;margin-right:8px;">`; 
-                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
+                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
                 
                 let safeKey = k.replace(/'/g, "\\\\'");
                 let inner = `<div style="display:flex; justify-content:space-between; align-items:center;"> <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div> <button class="btn-secondary" style="width:24px; padding:2px; color:#FF5252;" onclick="removeChain('${safeKey}')">X</button> </div> <div style="display:flex; gap:10px; margin-top:8px;"> <select style="flex:2; font-size:13px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();"> ${optsZH} </select> <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${safeKey}'].val=parseInt(this.value)"> </div> <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;"> <input type="checkbox" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}> ✅ 已在手上或場上 (保證發動) </label>`; 
@@ -1492,8 +1546,9 @@
         function removeChain(k) { delete chainList[k]; renderChainUI(); }
         function openChainTargetSelector(parentKey) { currentModalMode = 'chain_target_' + parentKey; tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : []; document.getElementById('gallery-title').innerText = "🎯 選擇檢索目標卡 (可多選)"; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
+        // 🚀 對局分享 (修正版)
         function exportGameState() { 
-            if(gameCards.length === 0) return alert("尚未開局！"); 
+            if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。"); 
             let fullData = gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name })); 
             fetch(`${API_BASE}/api/v1/share_game`, { 
                 method: 'POST', 
@@ -1504,15 +1559,15 @@
                     document.getElementById('share-code-display').value = d.share_code; 
                     document.getElementById('share-modal').style.display = 'flex'; 
                 } else {
-                    alert("分享失敗：" + d.detail);
+                    alert("分享失敗：" + (d.detail || "未知錯誤"));
                 }
             }).catch(e => {
                 console.error(e);
-                alert("分享發生錯誤，請稍後再試");
+                alert("連線失敗，請檢查網路。");
             }); 
         }
 
-        function copyShareCode() { let input = document.getElementById('share-code-display'); input.select(); navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可載入戰局。"); document.getElementById('share-modal').style.display = 'none'; }); }
+        function copyShareCode() { let input = document.getElementById('share-code-display'); input.select(); navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局。"); document.getElementById('share-modal').style.display = 'none'; }); }
         
         function importGameState() { 
             let input = prompt("請貼上 6 位數對局短代碼："); 
@@ -1536,6 +1591,7 @@
                     }); 
                     updateDeckUI(); 
                     saveState(); 
+                    renderBenchSlots();
                     renderBoard(); 
                     alert(`✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})`); 
                 } else {
@@ -1556,7 +1612,22 @@
         function redo() { if(historyPtr < historyStates.length - 1) { historyPtr++; gameCards = JSON.parse(JSON.stringify(historyStates[historyPtr])); renderBoard(); } updateHistoryBtns(); saveLocalData(); }
         function updateHistoryBtns() { document.getElementById('btn-undo').disabled = (historyPtr <= 0); document.getElementById('btn-redo').disabled = (historyPtr >= historyStates.length - 1); }
         function changeBenchSize(delta) { benchSize = Math.max(5, Math.min(8, benchSize + delta)); document.getElementById('bench-size-label').innerText = `${benchSize} 格`; renderBenchSlots(); renderBoard(); }
-        function renderBenchSlots() { let container = document.getElementById('bench-container'); container.innerHTML = ""; for(let i=0; i<benchSize; i++) { let div = document.createElement('div'); div.id = `zone-bench-${i}`; div.className = "drop-zone drop-zone-stacked"; div.style.width = "150px"; div.ondrop = drop; div.ondragover = allowDrop; container.appendChild(div); } }
+        
+        // 🚀【備戰區卡槽生成：確保預設 100% 顯示】
+        function renderBenchSlots() { 
+            let container = document.getElementById('bench-container'); 
+            if (!container) return;
+            container.innerHTML = ""; 
+            for(let i=0; i<benchSize; i++) { 
+                let div = document.createElement('div'); 
+                div.id = `zone-bench-${i}`; 
+                div.className = "drop-zone drop-zone-stacked"; 
+                div.style.width = "150px"; 
+                div.ondrop = drop; 
+                div.ondragover = allowDrop; 
+                container.appendChild(div); 
+            } 
+        }
         
         function startGame() { 
             if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！"); 
@@ -1569,7 +1640,9 @@
             gameCards.sort(() => Math.random() - 0.5); 
             for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; 
             for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; 
-            historyStates = []; historyPtr = -1; saveState(); renderBoard(); 
+            historyStates = []; historyPtr = -1; saveState(); 
+            renderBenchSlots();
+            renderBoard(); 
         }
         
         function createCardEl(c, isField=false) { 
@@ -1604,6 +1677,7 @@
         function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); renderBoard(); } }
         
         function renderBoard() { 
+            if(!document.getElementById('zone-bench-0')) renderBenchSlots();
             let zList = ['zone-hand', 'zone-stadium', 'zone-active', 'zone-deck', 'zone-discard']; for(let i=0; i<8; i++) zList.push(`zone-bench-${i}`); for(let i=0; i<6; i++) zList.push(`zone-prize-${i}`); zList.forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = ""; }); 
             let zones = {}; gameCards.forEach(c => { if(!zones[c.zone]) zones[c.zone]=[]; zones[c.zone].push(c); }); 
             let handGroups = {}; (zones['hand']||[]).forEach(c => { if(!handGroups[c.key]) handGroups[c.key] = { cards: [] }; handGroups[c.key].cards.push(c); }); 
