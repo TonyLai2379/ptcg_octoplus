@@ -23,6 +23,113 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
 
+        /* 🌟 Splash Screen 5 秒酷炫開場動畫 */
+        #octopus-splash {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #090C10;
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .splash-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .splash-card-group {
+            position: relative;
+            width: 200px;
+            height: 140px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .splash-card {
+            position: absolute;
+            width: 75px;
+            height: 105px;
+            border-radius: 8px;
+            border: 2px solid #00E5FF;
+            background: linear-gradient(135deg, #161B22, #0D1117);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .card-left {
+            transform: translateX(-60px) rotate(-18deg) scale(0.85);
+            border-color: #E91E63;
+            box-shadow: 0 0 15px rgba(233, 30, 99, 0.4);
+        }
+
+        .card-right {
+            transform: translateX(60px) rotate(18deg) scale(0.85);
+            border-color: #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .card-center {
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: octo-pulse 2s infinite ease-in-out;
+        }
+
+        .octopus-avatar {
+            font-size: 40px;
+            filter: drop-shadow(0 0 10px #00E5FF);
+        }
+
+        @keyframes octo-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 229, 255, 0.5); }
+            50% { transform: scale(1.08); box-shadow: 0 0 35px rgba(0, 229, 255, 0.9); }
+        }
+
+        .splash-title {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #00E5FF, #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .splash-tagline {
+            font-size: 14px;
+            color: #8B949E;
+            letter-spacing: 1px;
+        }
+
+        .splash-counter-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid #30363D;
+            font-size: 22px;
+            font-weight: bold;
+            color: #00E5FF;
+        }
+
+        .splash-skip-tip {
+            font-size: 12px;
+            color: #777;
+            margin-top: 10px;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.9; } }
+
         #sidebar-wrapper { display: flex; height: 100%; position: relative; z-index: 50; }
         #sidebar { width: 360px; background-color: #161B22; border-right: 1px solid #30363D; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .sidebar-content { padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; min-width: 360px; }
@@ -45,7 +152,6 @@
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-secondary { background: #21262D; border: 1px solid #30363D; color: #C9D1D9; }
         
-        /* 🌟 導覽引導高亮動畫 */
         @keyframes tour-pulse { 
             0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.9); border-color: #00E5FF; } 
             70% { box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); border-color: #FFD700; } 
@@ -184,7 +290,6 @@
         
         .status-badge { display: inline-block; width: 85px; font-weight: bold; }
 
-        /* 📱 手機版 RWD 樣式適配 */
         @media (max-width: 768px) {
             body { flex-direction: column; overflow-y: auto; }
             #sidebar { width: 100% !important; height: auto; border-right: none; border-bottom: 1px solid #30363D; }
@@ -194,6 +299,26 @@
     </style>
 </head>
 <body>
+
+    <!-- 🐙 小章魚 5 秒極速酷炫 Splash Screen -->
+    <div id="octopus-splash" onclick="dismissSplash()">
+        <div class="splash-content">
+            <div class="splash-card-group">
+                <div class="splash-card card-left"></div>
+                <div class="splash-card card-center">
+                    <div class="octopus-avatar">🐙</div>
+                </div>
+                <div class="splash-card card-right"></div>
+            </div>
+            <h1 class="splash-title">PTCG 小章魚</h1>
+            <div class="splash-tagline">萬次蒙地卡羅 ✕ 專業戰術沙盤</div>
+            <div class="splash-counter-box">
+                <span style="font-size: 14px; color: #AAA;">首手解牌成功率：</span>
+                <span id="splash-count">0.0</span>%
+            </div>
+            <div class="splash-skip-tip">點擊任意處跳過 ➔</div>
+        </div>
+    </div>
 
     <!-- 🌟 新手 6 步驟互動導覽提示框 -->
     <div id="tour-backdrop" class="modal-overlay" style="background: rgba(0,0,0,0.6); z-index: 10000; display: none;"></div>
@@ -592,6 +717,39 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
+        // 🌟 開場 Splash 動畫控制邏輯
+        let splashDismissed = false;
+
+        function dismissSplash() {
+            if (splashDismissed) return;
+            splashDismissed = true;
+            const splash = document.getElementById('octopus-splash');
+            if (splash) {
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                setTimeout(() => splash.remove(), 800);
+            }
+        }
+
+        function runSplashAnimation() {
+            let countEl = document.getElementById('splash-count');
+            if (!countEl) return;
+            
+            let current = 0.0;
+            let target = 98.6;
+            let step = 2.2;
+            
+            let timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                    setTimeout(dismissSplash, 1200);
+                }
+                countEl.innerText = current.toFixed(1);
+            }, 30);
+        }
+
         // 🌟 新手引導導覽 6 步驟設定
         const tourSteps = [
             { id: 'import-section', title: '💡 步驟 1/6：牌組匯入', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
@@ -855,14 +1013,8 @@
                 }
             } catch(e) { console.error("本機存檔讀取失敗", e); }
 
-            // 💡 若為第一次進入，登入後自動觸發引導導覽
-            if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
-                setTimeout(() => {
-                    if (document.getElementById('gate-overlay').style.display === 'none') {
-                        startInteractiveTour();
-                    }
-                }, 1200);
-            }
+            // 💡 觸發 Splash 動畫，並在動畫結束後判斷是否顯示 6 步驟新手導覽
+            runSplashAnimation();
         });
         
         setInterval(checkAgreements, 1000);
@@ -906,7 +1058,7 @@
             if (error || !session) {
                 document.getElementById('gate-overlay').style.display = 'flex';
                 document.getElementById('sub-modal').style.display = 'none';
-                alert("登入憑證已過期，請重新發送魔法連結登入！");
+                alert("請先完成信箱驗證登入！");
                 return null;
             }
             return session.access_token;
@@ -1014,13 +1166,9 @@
                 if (resp.ok) {
                     alert(data.detail);
                     document.getElementById('auth-overlay').style.display = 'none';
+                    document.getElementById('sub-modal').style.display = 'none';
                 } else {
-                    if (resp.status === 401) {
-                        document.getElementById('gate-overlay').style.display = 'flex';
-                        alert(data.detail || "登入已過期");
-                    } else {
-                        alert(data.detail || "兌換失敗");
-                    }
+                    alert(data.detail || "❌ 兌換失敗");
                 }
             } catch (e) { alert("連線發生錯誤"); }
         }
@@ -1038,13 +1186,7 @@
                     alert(data.detail);
                     document.getElementById('sub-modal').style.display = 'none';
                 } else {
-                    if (resp.status === 401) {
-                        document.getElementById('gate-overlay').style.display = 'flex';
-                        document.getElementById('sub-modal').style.display = 'none';
-                        alert(data.detail || "登入已過期");
-                    } else {
-                        alert("❌ 失敗：" + data.detail);
-                    }
+                    alert("❌ 失敗：" + data.detail);
                 }
             } catch (e) { alert("連線錯誤"); }
         }
@@ -1075,7 +1217,7 @@
             let si = document.getElementById('search-input'); if(si) si.placeholder = t.phSearchInput;
             setTxt('lbl-custom-card', t.lblCustomCard);
             let ci = document.getElementById('custom-card-input'); if(ci) ci.placeholder = t.phCustomCard;
-            setTxt('btn-add-custom', t.btnAddCustom); setTxt('txt-deck-list-title', t.deckListTitle); setTxt('btn-preview-deck', t.btnPreviewDeck); setTxt('btn-start-game', t.btnStartGame); setTxt('btn-save-cloud', t.btnSaveCloud); setTxt('opt-load-cloud', t.optLoadCloud); setTxt('txt-disclaimer', t.disclaimer, true); setTxt('lbl-zoom', t.lblZoom); setTxt('summary-prob-title', t.summaryProbTitle); setTxt('txt-toggle-badge', t.txtToggleBadge); setTxt('lbl-step1', t.lblStep1); setTxt('lbl-rule-and', t.lblRuleAnd); setTxt('lbl-rule-or', t.lblRuleOr); setTxt('btn-select-direct', t.btnSelectDirect); setTxt('lbl-draw1', t.lblDraw1); setTxt('lbl-dead-hand', t.lblDeadHand); setTxt('lbl-step2', t.lblStep2); setTxt('btn-add-chain', t.btnAddChain); setTxt('btn-run-sim', t.btnRunSim); setTxt('btn-save-scenario', t.btnSaveScenario); setTxt('btn-clear-board', t.btnClearBoard); setTxt('title-prize', t.titlePrize); setTxt('title-stadium', t.titleStadium); setTxt('title-active', t.titleActive); setTxt('title-bench', t.titleBench); setTxt('title-hand', t.titleHand); setTxt('txt-hand-sub', t.txtHandSub); setTxt('btn-hand-shuffle', t.btnHandShuffle); setTxt('btn-hand-discard', t.btnHandDiscard); setTxt('title-deck', t.titleDeck); setTxt('btn-draw-card', t.btnDrawCard); setTxt('title-discard', t.titleDiscard); setTxt('btn-export-game', t.btnExportGame); setTxt('btn-import-game', t.btnImportGame); setTxt('btn-undo', t.btnUndo); setTxt('btn-redo', t.btnRedo); setTxt('modal-auth-title', t.modalAuthTitle); setTxt('btn-close-auth', t.btnCloseAuth); setTxt('modal-share-title', t.modalShareTitle); setTxt('modal-share-desc', t.modalShareDesc); setTxt('btn-share-close', t.btnShareClose); setTxt('btn-share-copy', t.btnShareCopy); setTxt('btn-gallery-close', t.btnGalleryClose); setTxt('gallery-confirm-btn', t.galleryConfirmBtn); setTxt('tut-main-title', t.tutMainTitle); setTxt('btn-tut1', t.btnTut1); setTxt('btn-tut2', t.btnTut2); setTxt('btn-tut3', t.btnTut3); setTxt('tut1-desc', t.tut1Desc); setTxt('btn-tut1-a', t.btnTut1A); setTxt('btn-tut1-b', t.btnTut1B); setTxt('btn-tut1-c', t.btnTut1C); setTxt('tut1-a-desc', t.tut1ADesc); setTxt('tut1-b-desc', t.tut1BDesc); setTxt('tut1-c-desc', t.tut1CDesc); setTxt('tut2-h4', t.tut2H4); setTxt('tut2-desc', t.tut2Desc); setTxt('tut3-h4', t.tut3H4); setTxt('tut3-desc', t.tut3Desc); setTxt('btn-tut-ready', t.btnTutReady); setTxt('bench-size-label', `${benchSize} ${t.benchLabel}`);
+            setTxt('btn-add-custom', t.btnAddCustom); setTxt('txt-deck-list-title', t.deckListTitle); setTxt('btn-preview-deck', t.btnPreviewDeck); setTxt('btn-start-game', t.btnStartGame); setTxt('btn-save-cloud', t.btnSaveCloud); setTxt('opt-load-cloud', t.optLoadCloud); setTxt('txt-disclaimer', t.disclaimer, true); setTxt('lbl-zoom', t.lblZoom); setTxt('summary-prob-title', t.summaryProbTitle); setTxt('txt-toggle-badge', t.txtToggleBadge); setTxt('lbl-step1', t.lblStep1); setTxt('lbl-rule-and', t.lblRuleAnd); setTxt('lbl-rule-or', t.lblRuleOr); setTxt('btn-select-direct', t.btnSelectDirect); setTxt('lbl-draw1', t.lblDraw1); setTxt('lbl-dead-hand', t.lblDeadHand); setTxt('lbl-step2', t.lblStep2); setTxt('btn-add-chain', t.btnAddChain); setTxt('btn-run-sim', t.btnRunSim); setTxt('btn-save-scenario', t.btnSaveScenario); setTxt('btn-clear-board', t.btnClearBoard); setTxt('title-prize', t.titlePrize); setTxt('title-stadium', t.titleStadium); setTxt('title-active', t.titleActive); setTxt('title-bench', t.titleBench); setTxt('title-hand', t.titleHand); setTxt('txt-hand-sub', t.txtHandSub); setTxt('btn-hand-shuffle', t.btnHandShuffle); setTxt('btn-hand-discard', t.btnHandDiscard); setTxt('title-deck', t.titleDeck); setTxt('btn-draw-card', t.btnDrawCard); setTxt('title-discard', t.titleDiscard); setTxt('btn-export-game', t.btnExportGame); setTxt('btn-import-game', t.btnImportGame); setTxt('btn-undo', t.btnUndo); setTxt('btn-redo', t.btnRedo); setTxt('modal-auth-title', t.modalAuthTitle); setTxt('btnCloseAuth', t.btnCloseAuth); setTxt('modal-share-title', t.modalShareTitle); setTxt('modal-share-desc', t.modalShareDesc); setTxt('btn-share-close', t.btnShareClose); setTxt('btn-share-copy', t.btnShareCopy); setTxt('btn-gallery-close', t.btnGalleryClose); setTxt('gallery-confirm-btn', t.galleryConfirmBtn); setTxt('tut-main-title', t.tutMainTitle); setTxt('btn-tut1', t.btnTut1); setTxt('btn-tut2', t.btnTut2); setTxt('btn-tut3', t.btnTut3); setTxt('tut1-desc', t.tut1Desc); setTxt('btn-tut1-a', t.btnTut1A); setTxt('btn-tut1-b', t.btnTut1B); setTxt('btn-tut1-c', t.btnTut1C); setTxt('tut1-a-desc', t.tut1ADesc); setTxt('tut1-b-desc', t.tut1BDesc); setTxt('tut1-c-desc', t.tut1CDesc); setTxt('tut2-h4', t.tut2H4); setTxt('tut2-desc', t.tut2Desc); setTxt('tut3-h4', t.tut3H4); setTxt('tut3-desc', t.tut3Desc); setTxt('btn-tut-ready', t.btnTutReady); setTxt('bench-size-label', `${benchSize} ${t.benchLabel}`);
             renderTargetUI(); renderChainUI(); renderBoard();
         }
 
