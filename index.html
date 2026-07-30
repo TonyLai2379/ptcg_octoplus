@@ -23,7 +23,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; }
 
-        /* 🌟 電競級震撼 Splash 開場動畫 */
+        /* 🌟 電競級震撼 Splash 開場動畫 (100% 無版權問題) */
         #octopus-splash {
             position: fixed;
             top: 0; left: 0;
@@ -83,18 +83,21 @@
             transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
+        /* 🛡️ 置換為電競紅/水藍品牌卡背，100% 避開特定角色版權爭議 */
         .feat-1 {
             transform: translateX(-80px) rotate(-15deg) scale(0.85);
             border-color: #E91E63;
             box-shadow: 0 0 20px rgba(233, 30, 99, 0.5);
-            background-image: url('https://images.pokemontcg.io/sv1/119_hires.png');
+            background-color: #D32F2F;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.2) 10%, transparent 20%);
         }
 
         .feat-2 {
             transform: translateX(80px) rotate(15deg) scale(0.85);
             border-color: #FFD700;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-            background-image: url('https://asia.pokemon-card.com/tw/assets/images/card-back.png');
+            background-color: #2B579A;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.2) 10%, transparent 20%);
         }
 
         .feat-main {
@@ -121,7 +124,7 @@
             border: 1px solid #00E5FF;
             padding: 10px 24px;
             border-radius: 30px;
-            font-size: 26px;
+            font-size: 20px;
             font-weight: 900;
             color: #FFD700;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
@@ -643,7 +646,7 @@
     <div id="share-modal" class="modal-overlay">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center;">
             <h2 style="color: #00E5FF; margin-bottom: 15px;" id="modal-share-title">📤 分享對局</h2>
-            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;" id="modal-share-desc">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！</p>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;" id="modal-share-desc">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！</p>
             <input type="text" id="share-code-display" readonly style="text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 4px; padding: 15px; margin-bottom: 15px; background: #0D1117; color: #FFD700; border: 2px dashed #30363D;">
             <button class="btn" style="background: #238636; font-size: 16px; padding: 12px; margin-bottom: 10px;" id="btn-share-copy" onclick="copyShareCode()">📋 一鍵複製短代碼</button>
             <button class="btn btn-secondary" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
@@ -771,9 +774,9 @@
             
             let progress = 0;
             let currentProb = 0.0;
-            let targetProb = 47.0; // 圖 6 經典 47.0% 勝率
+            let targetProb = 47.0; 
             
-            let totalTimeMs = 6000; // 6 秒震撼展演
+            let totalTimeMs = 5000; 
             let intervalMs = 30;
             let totalSteps = totalTimeMs / intervalMs;
             let stepProb = targetProb / (totalSteps * 0.7);
@@ -1063,11 +1066,8 @@
                 }
             } catch(e) { console.error("本機存檔讀取失敗", e); }
 
-            // 💡 確保預設備戰區與戰場邊框 100% 正確渲染！
             renderBenchSlots();
             renderBoard();
-
-            // 💡 觸發 6 秒震撼 Splash 開場動畫
             runSplashAnimation();
         });
         
@@ -1246,7 +1246,7 @@
         }
 
         const translations = {
-            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原此戰局！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
+            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
             en: { tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", tabLink: "🔗 Official Code", tabText: "📝 Limitless Text", tabEdit: "🛠️ Search & Edit", phDeckCode: "Enter official deck code (e.g. uCRvSM...)", btnParseOfficial: "🌐 Parse Official Deck", phDeckText: "Paste Limitless deck text...", btnParseText: "📥 Parse Text Deck", lblSearchDb: "Database Search:", phSearchInput: "Type card name to search...", lblCustomCard: "Custom Proxy Card:", phCustomCard: "Proxy Card Name", btnAddCustom: "➕ Create Proxy", deckListTitle: "Deck List", btnPreviewDeck: "👁️ Preview", btnStartGame: "🎲 Lock & Start Game", btnSaveCloud: "💾 Save Cloud", optLoadCloud: "Load Cloud Deck...", disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.", lblZoom: "🔍 UI Zoom", summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)", txtToggleBadge: "Click to Expand/Collapse", lblStep1: "🔥 1. Direct Target Cards (Multi-select)", lblRuleAnd: "Require All (AND)", lblRuleOr: "Require Any (OR)", btnSelectDirect: "🖼️ Select Targets from Deck", lblDraw1: "First Draw Count:", lblDeadHand: "Existing Dead Cards in Hand:", lblStep2: "🔄 2. Chain Resources (Multi-card)", btnAddChain: "🖼️ Add Chain Card", btnRunSim: "🎲 Run Deep Simulation", btnSaveScenario: "📌 Save to Comparison", btnClearBoard: "🗑️ Clear Comparison", titlePrize: "🏆 Prize Cards", titleStadium: "🟠 Stadium", titleActive: "🔴 Active Spot", titleBench: "🔵 Bench", titleHand: "Hand", txtHandSub: "Fan view with drag-and-drop", btnHandShuffle: "🔄 Shuffle Back", btnHandDiscard: "🗑️ Discard All", titleDeck: "🗃️ Deck", btnDrawCard: "🎴 Draw 1 Card", titleDiscard: "🪦 Discard Pile", btnExportGame: "📤 Share Match", btnImportGame: "📥 Load Match", btnUndo: "↩ Undo", btnRedo: "Redo ↪", modalAuthTitle: "Unlock Sandbox Pro", btnCloseAuth: "Close", modalShareTitle: "📤 Share Game State", modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!", btnShareClose: "Close", btnShareCopy: "📋 Copy Short Code", btnGalleryClose: "Close", galleryConfirmBtn: "✅ Confirm Selection", tutMainTitle: "📖 PTCG Sandbox Tutorial", btnTut1: "🛠️ 1. Deck Builder", btnTut2: "⚔️ 2. Battle Board", btnTut3: "🎲 3. Probabilities", tut1Desc: "There are three ways to build/import a deck. Choose one to learn:", btnTut1A: "A. Official Code", btnTut1B: "B. Limitless Export", btnTut1C: "C. Search & Custom", tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.", tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.", tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", btnTutReady: "I'm Ready!", benchLabel: "Slots" }
         };
 
@@ -1534,7 +1534,7 @@
                 let c = chainList[k]; let div = document.createElement('div'); div.className = 'target-row'; div.style.flexDirection = 'column'; div.style.alignItems = 'stretch'; div.style.borderLeftColor = '#FFD700'; 
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search'); 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:24px;height:33px;margin-right:8px;">`; 
-                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
+                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
                 
                 let safeKey = k.replace(/'/g, "\\\\'");
                 let inner = `<div style="display:flex; justify-content:space-between; align-items:center;"> <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div> <button class="btn-secondary" style="width:24px; padding:2px; color:#FF5252;" onclick="removeChain('${safeKey}')">X</button> </div> <div style="display:flex; gap:10px; margin-top:8px;"> <select style="flex:2; font-size:13px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();"> ${optsZH} </select> <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${safeKey}'].val=parseInt(this.value)"> </div> <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;"> <input type="checkbox" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}> ✅ 已在手上或場上 (保證發動) </label>`; 
@@ -1546,10 +1546,23 @@
         function removeChain(k) { delete chainList[k]; renderChainUI(); }
         function openChainTargetSelector(parentKey) { currentModalMode = 'chain_target_' + parentKey; tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : []; document.getElementById('gallery-title').innerText = "🎯 選擇檢索目標卡 (可多選)"; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
-        // 🚀 對局分享 (修正版)
+        // 🚀【對局與機率推演一鍵全打包分享】
         function exportGameState() { 
             if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。"); 
-            let fullData = gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name })); 
+            
+            let ruleEl = document.querySelector('input[name="target_rule"]:checked');
+            let ruleVal = ruleEl ? ruleEl.value : 'AND';
+
+            let fullData = {
+                cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })),
+                deck: deckDict,
+                targets: targetList,
+                chains: chainList,
+                draw1: parseInt(document.getElementById('draw1-qty').value) || 7,
+                rule: ruleVal,
+                dead: parseInt(document.getElementById('dead-hand-qty').value) || 0
+            };
+
             fetch(`${API_BASE}/api/v1/share_game`, { 
                 method: 'POST', 
                 headers: {'Content-Type':'application/json'}, 
@@ -1567,7 +1580,7 @@
             }); 
         }
 
-        function copyShareCode() { let input = document.getElementById('share-code-display'); input.select(); navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局。"); document.getElementById('share-modal').style.display = 'none'; }); }
+        function copyShareCode() { let input = document.getElementById('share-code-display'); input.select(); navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局與機率推演！"); document.getElementById('share-modal').style.display = 'none'; }); }
         
         function importGameState() { 
             let input = prompt("請貼上 6 位數對局短代碼："); 
@@ -1577,23 +1590,60 @@
             loadSharedGameByCode(code); 
         }
         
+        // 🚀【一鍵全還原：戰場卡片 + 牌組 + 進階機率連鎖分析】
         function loadSharedGameByCode(code) { 
             fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => { 
                 if(d.success) { 
+                    let raw = d.game_data;
                     deckDict = {}; 
-                    gameCards = d.game_data.map(item => { 
-                        let cardKey = item.k; 
-                        let cardName = item.n || item.k.split(' [')[0]; 
-                        let cardImg = item.i || DEFAULT_CARDBACK; 
-                        if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK }; 
-                        deckDict[cardKey].qty++; 
-                        return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; 
-                    }); 
+
+                    // 1. 相容舊版（純陣列）與新版（完整全功能物件）
+                    if (Array.isArray(raw)) {
+                        gameCards = raw.map(item => { 
+                            let cardKey = item.k; 
+                            let cardName = item.n || item.k.split(' [')[0]; 
+                            let cardImg = item.i || DEFAULT_CARDBACK; 
+                            if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK }; 
+                            deckDict[cardKey].qty++; 
+                            return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; 
+                        }); 
+                    } else {
+                        // 新版：全套設定還原！
+                        if (raw.deck) deckDict = raw.deck;
+                        if (raw.cards) {
+                            gameCards = raw.cards.map(item => ({
+                                id: 'c_' + Math.random().toString(36).substr(2, 9),
+                                key: item.k,
+                                name: item.n || item.k.split(' [')[0],
+                                img: item.i || DEFAULT_CARDBACK,
+                                fallback_img: item.f || DEFAULT_CARDBACK,
+                                zone: item.z
+                            }));
+                        }
+                        
+                        if (raw.targets) targetList = raw.targets;
+                        if (raw.chains) chainList = raw.chains;
+                        
+                        if (raw.draw1) document.getElementById('draw1-qty').value = raw.draw1;
+                        if (raw.dead !== undefined) document.getElementById('dead-hand-qty').value = raw.dead;
+                        if (raw.rule) {
+                            let radio = document.querySelector(`input[name="target_rule"][value="${raw.rule}"]`);
+                            if (radio) radio.checked = true;
+                        }
+
+                        renderTargetUI();
+                        renderChainUI();
+                        
+                        // 自動展開機率推演面板供使用者閱覽
+                        let probPanel = document.getElementById('prob-panel');
+                        if (probPanel) probPanel.open = true;
+                    }
+
                     updateDeckUI(); 
                     saveState(); 
                     renderBenchSlots();
                     renderBoard(); 
-                    alert(`✅ 成功載入對局與牌組！(代碼: ${code.toUpperCase()})`); 
+                    alert(`✅ 成功還原對局戰場與機率連鎖分析！(代碼: ${code.toUpperCase()})`); 
                 } else {
                     alert("載入失敗: " + (d.detail || "未知錯誤"));
                 } 
@@ -1613,7 +1663,6 @@
         function updateHistoryBtns() { document.getElementById('btn-undo').disabled = (historyPtr <= 0); document.getElementById('btn-redo').disabled = (historyPtr >= historyStates.length - 1); }
         function changeBenchSize(delta) { benchSize = Math.max(5, Math.min(8, benchSize + delta)); document.getElementById('bench-size-label').innerText = `${benchSize} 格`; renderBenchSlots(); renderBoard(); }
         
-        // 🚀【備戰區卡槽生成：確保預設 100% 顯示】
         function renderBenchSlots() { 
             let container = document.getElementById('bench-container'); 
             if (!container) return;
