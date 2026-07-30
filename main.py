@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="22.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="23.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,12 +47,13 @@ LL_TO_OFFICIAL = {
 
 LOCAL_CARD_DB = {}
 GLOBAL_CARDS_LIST = [] 
+BEST_FALLBACK_CACHE = {} # 💡 存放同名卡的「最新世代」版本
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
 
 def load_global_cards_to_cache():
-    global LOCAL_CARD_DB, GLOBAL_CARDS_LIST
+    global LOCAL_CARD_DB, GLOBAL_CARDS_LIST, BEST_FALLBACK_CACHE
     print("⏳ 正在從 Supabase 載入全卡庫...")
     try:
         page = 0; page_size = 1000; total_loaded = 0
@@ -70,6 +71,28 @@ def load_global_cards_to_cache():
             if len(res.data) < page_size: break
             page += 1
         print(f"✅ 成功載入 {total_loaded} 筆卡片資料！")
+        
+        # 💡 建立「同名卡世代權重快取」：解決通用卡 (Switch, Ultra Ball) 顯示成骨灰舊圖的問題
+        name_groups = {}
+        for c in GLOBAL_CARDS_LIST:
+            name = c['name'].lower()
+            if name not in name_groups: name_groups[name] = []
+            name_groups[name].append(c)
+            
+        def set_weight(card):
+            key = card['key'].lower()
+            if key.startswith('sv'): return 8
+            if key.startswith('swsh'): return 7
+            if key.startswith('sm'): return 6
+            if key.startswith('xy'): return 5
+            if key.startswith('bw'): return 4
+            return 0
+            
+        for name, cards in name_groups.items():
+            cards.sort(key=set_weight, reverse=True)
+            BEST_FALLBACK_CACHE[name] = cards[0]['img']
+        print("✅ 世代智慧篩選快取建立完成！")
+            
     except Exception as e: print(f"❌ 快取失敗: {e}")
 
 load_global_cards_to_cache()
@@ -284,22 +307,23 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
-# 🎯 嚴格綁定 Set + ID 邏輯
+# 🎯 嚴格綁定 Set + ID，並加入同名卡智慧降級 (Fallback) 解決通用卡舊圖問題
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
     for line in lines:
         try:
             line = line.strip()
-            # 智慧清洗：過濾雜訊行
+            # 智慧過濾：自動忽略 Limitless 的賽事標頭等雜訊行
             if not line or re.match(r'^(Pokémon|Trainer|Energy|Cards|Player|Event|Deck|Format)', line, re.IGNORECASE): continue
             
             match = re.search(r'^(\d+)\s+(.+)', line)
             if match:
                 qty = int(match.group(1)); raw_name = match.group(2).strip()
-                parse_match = re.search(r'^(.+?)(?:\s+([a-zA-Z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
+                # 💡 完美 Regex：兼容有無 Set 和 Number 的情況
+                parse_match = re.search(r'^(.*?)(?:\s+([A-Za-z0-9\-]+)\s+(\d+[a-zA-Z]*))?$', raw_name)
                 
-                search_name = parse_match.group(1).strip() if parse_match else raw_name
+                search_name = parse_match.group(1).strip() if parse_match and parse_match.group(1) else raw_name
                 search_name_clean = search_name.replace('é', 'e').replace('É', 'E')
                 
                 target_set = parse_match.group(2) if parse_match and parse_match.group(2) else None
@@ -317,7 +341,7 @@ def api_parse_text(req: ParseTextReq):
                     
                     official_set = LL_TO_OFFICIAL.get(set_up, set_low)
                     
-                    # 💡 核心優化：嚴格綁定 Set + ID，絕不隨便抓一張同名卡充數
+                    # 💡 核心優化：嚴格綁定 Set + ID
                     exact_keys = [f"{official_set}-{clean_num}", f"{set_low}-{clean_num}"]
                     for ek in exact_keys:
                         if ek in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[ek]):
@@ -327,11 +351,11 @@ def api_parse_text(req: ParseTextReq):
                     if not is_valid_url(img_url):
                         img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
                         
-                    name_fallback = LOCAL_CARD_DB.get(search_name_clean.lower())
-                    if is_valid_url(name_fallback): fallback_url = name_fallback
+                    # 若精準圖片 404，退回該名稱的「最新世代」版本
+                    fallback_url = BEST_FALLBACK_CACHE.get(search_name_clean.lower(), DEFAULT_CARDBACK)
                 else:
-                    # 如果使用者真的沒填寫彈號，才啟用同名卡模糊搜尋
-                    img_url = LOCAL_CARD_DB.get(search_name_clean.lower(), DEFAULT_CARDBACK)
+                    # 💡 通用卡片 (如 1 Switch)：直接抓取該名稱的最新世代版本
+                    img_url = BEST_FALLBACK_CACHE.get(search_name_clean.lower(), DEFAULT_CARDBACK)
 
                 if not is_valid_url(img_url): img_url = DEFAULT_CARDBACK
 
