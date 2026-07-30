@@ -1333,7 +1333,12 @@
             
             fetchSavedDecks(); 
         }
-
+// 🌟 【新增】登入成功後，如果是第一次使用的玩家，自動開啟 6 步驟引導！
+        if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
+            setTimeout(() => {
+                startInteractiveTour();
+            }, 600);
+        }
         async function loginWithMagicLink() {
             let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
             let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
