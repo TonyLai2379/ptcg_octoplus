@@ -1041,15 +1041,15 @@
         function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
         function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
         
-        // 🚀【前端快取 V2 破壞者】修復數量解析與強制重抓最新圖片
+        // 🚀【前端快取 V3 破壞者】強制遺忘舊的錯誤沙包蛇，重抓最新版本！
         async function parseText() { 
             let rawText = document.getElementById('deck-text').value;
             if(!rawText.trim()) return alert("請貼上牌組內容");
             showProgress('text'); 
             
             let lines = rawText.split('\n').map(l => l.trim()).filter(l => l);
-            // 💡 導入 _v2 破壞者：無視所有舊快取，強迫重抓最新的卡圖！
-            let localCache = JSON.parse(localStorage.getItem('octoplus_card_cache_v2') || '{}');
+            // 💡 導入 _v3 破壞者：無視所有舊快取，強迫重抓最新的卡圖！
+            let localCache = JSON.parse(localStorage.getItem('octoplus_card_cache_v3') || '{}');
             let isCleaned = false;
             let unknownText = [];
             let newDeck = {};
@@ -1064,7 +1064,6 @@
                 if(match) {
                     let qty = parseInt(match[1]);
                     let rawName = match[2].trim();
-                    // 💡 修正的正則表達式：不會再把數量吃進去卡名裡
                     let parseMatch = rawName.match(/^(.*?)(?:\s+([A-Za-z0-9\-]+)\s+(\d+[a-zA-Z]*))?$/);
                     
                     let searchName = parseMatch && parseMatch[1] ? parseMatch[1].trim() : rawName;
@@ -1098,7 +1097,8 @@
                             if(!newDeck[k]) newDeck[k] = {qty: 0, img: c.img, name: c.name, fallback_img: c.fallback_img};
                             newDeck[k].qty += c.qty;
                         });
-                        localStorage.setItem('octoplus_card_cache_v2', JSON.stringify(localCache));
+                        // 💡 存入 _v3 永久快取
+                        localStorage.setItem('octoplus_card_cache_v3', JSON.stringify(localCache));
                     } else {
                         alert(d.detail || "部分解析失敗");
                     }
