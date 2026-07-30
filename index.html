@@ -23,7 +23,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; position: relative; }
 
-        /* 🌟 電競級震撼 Splash 開場動畫 */
+        /* 🌟 電競級震撼 Splash 開場動畫 (100% 無版權問題) */
         #octopus-splash {
             position: fixed;
             top: 0; left: 0;
@@ -85,7 +85,6 @@
             align-items: center;
         }
 
-        /* 🎴 專屬小章魚品牌限定卡背 (100% 無版權問題) */
         .feat-1 {
             transform: translateX(-80px) rotate(-15deg) scale(0.85);
             border-color: #E91E63;
@@ -161,17 +160,18 @@
             transition: width 0.03s linear;
         }
 
-        /* 🐙 左下角 3D 可拖曳互動小章魚吉祥物 */
+        /* 🐙 獨立懸浮 3D 可拖曳小章魚吉祥物 (完全不干涉戰場版型) */
         #octo-mascot-wrapper {
-            position: absolute;
+            position: fixed;
             bottom: 25px;
             left: 20px;
-            z-index: 800;
+            z-index: 8000;
             user-select: none;
             cursor: grab;
             display: flex;
             flex-direction: column;
             align-items: center;
+            pointer-events: auto;
         }
 
         #octo-mascot-wrapper:active {
@@ -215,15 +215,15 @@
         }
 
         .octo-3d-body {
-            width: 75px;
-            height: 75px;
+            width: 70px;
+            height: 70px;
             background: radial-gradient(circle at 35% 30%, #FF80AB 0%, #E91E63 60%, #880E4F 100%);
             border-radius: 50%;
             box-shadow: 0 10px 25px rgba(233, 30, 99, 0.5), inset 0 3px 8px rgba(255,255,255,0.6);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 38px;
+            font-size: 36px;
             animation: float-mascot 3s ease-in-out infinite;
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: 2px solid rgba(255, 255, 255, 0.3);
@@ -231,7 +231,7 @@
 
         @keyframes float-mascot {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(3deg); }
+            50% { transform: translateY(-8px) rotate(3deg); }
         }
 
         .octo-3d-body.jump {
@@ -327,8 +327,9 @@
         .ab-item { min-width: 180px; background: #21262D; border-top: 4px solid #444; border-radius: 6px; padding: 12px; flex-shrink: 0; position: relative; cursor: pointer; transition: 0.2s; }
         .ab-item:hover { background: #30363D; transform: translateY(-2px); }
         
+        /* 🌟 戰場原始完美比例 (完全還原) */
         .battle-container { display: flex; gap: 30px; flex: 1; min-height: 600px; overflow-x: auto; }
-        .col-left { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between; }
+        .col-left { width: 280px; flex-shrink: 0; }
         .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
         .col-right { width: 280px; flex-shrink: 0; }
 
@@ -422,7 +423,6 @@
             <div class="splash-slogan">Replay. Analyze. Win More.</div>
 
             <div class="splash-card-showcase">
-                <!-- 🎴 印有小章魚限定圖騰的專屬卡背 (100% 免除角色版權爭議) -->
                 <div class="splash-feat-card feat-1">
                     <div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div>
                 </div>
@@ -446,6 +446,12 @@
 
             <div class="splash-skip-tip">點擊任意處立即體驗 ➔</div>
         </div>
+    </div>
+
+    <!-- 🐙 獨立懸浮：立體可拖曳點擊互動小章魚吉祥物 -->
+    <div id="octo-mascot-wrapper" onclick="triggerOctoMascotClick(event)" onmousedown="startMascotDrag(event)" ontouchstart="startMascotDrag(event)">
+        <div id="octo-speech-bubble">Replay. Analyze. Win More!</div>
+        <div class="octo-3d-body" id="octo-3d-body">🐙</div>
     </div>
 
     <!-- 🌟 新手 6 步驟互動導覽提示框 -->
@@ -635,12 +641,6 @@
                     <div id="zone-prize-3" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     <div id="zone-prize-4" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     <div id="zone-prize-5" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                </div>
-
-                <!-- 🐙 放置左下角：立體可拖曳點擊互動小章魚 -->
-                <div id="octo-mascot-wrapper" onclick="triggerOctoMascotClick(event)" onmousedown="startMascotDrag(event)" ontouchstart="startMascotDrag(event)">
-                    <div id="octo-speech-bubble">Replay. Analyze. Win More!</div>
-                    <div class="octo-3d-body" id="octo-3d-body">🐙</div>
                 </div>
             </div>
 
@@ -1726,7 +1726,7 @@
                 let c = chainList[k]; let div = document.createElement('div'); div.className = 'target-row'; div.style.flexDirection = 'column'; div.style.alignItems = 'stretch'; div.style.borderLeftColor = '#FFD700'; 
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search'); 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:24px;height:33px;margin-right:8px;">`; 
-                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
+                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
                 
                 let safeKey = k.replace(/'/g, "\\\\'");
                 let inner = `<div style="display:flex; justify-content:space-between; align-items:center;"> <div style="display:flex; align-items:center;">${imgHtml}<span style="font-weight:bold;">${c.name}</span></div> <button class="btn-secondary" style="width:24px; padding:2px; color:#FF5252;" onclick="removeChain('${safeKey}')">X</button> </div> <div style="display:flex; gap:10px; margin-top:8px;"> <select style="flex:2; font-size:13px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();"> ${optsZH} </select> <input type="number" value="${c.val}" min="1" max="15" style="flex:1; padding:4px; text-align:center;" title="Value" onchange="chainList['${safeKey}'].val=parseInt(this.value)"> </div> <label style="font-size:13px; display:flex; align-items:center; gap:4px; margin-top:6px; color:#00E5FF; cursor:pointer;"> <input type="checkbox" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}> ✅ 已在手上或場上 (保證發動) </label>`; 
