@@ -10,6 +10,8 @@ import os
 import datetime
 import json
 import traceback
+import base64
+import uuid
 from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
@@ -33,12 +35,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# 💡 終極對齊版：完全對照官方 API 的真實 ID，杜絕間諜卡片！
+# 💡 萬能翻譯蒟蒻 (對齊官方 API 代號，杜絕撞車間諜卡)
 LL_TO_OFFICIAL = {
     "SVI": "sv1", "PAL": "sv2", "OBF": "sv3", "MEW": "sv3pt5",
     "PAR": "sv4", "PAF": "sv4pt5", "TEF": "sv5", "TWM": "sv6",
     "SFA": "sv6pt5", "SCR": "sv7", "SSP": "sv8", "PRE": "sv8pt5",
-    "POR": "por", "DRI": "dri", "JTG": "jtg", "MEG": "meg", # 這些官方尚未建檔，直接回傳原名避免撞車
+    "POR": "por", "DRI": "dri", "JTG": "jtg", "MEG": "meg",
     "SSH": "swsh1", "RCL": "swsh2", "DAA": "swsh3", "CPA": "swsh3pt5",
     "VIV": "swsh4", "SHF": "swsh4pt5", "BST": "swsh5", "CRE": "swsh6",
     "EVS": "swsh7", "CEL": "swsh7pt5", "FST": "swsh8", "BRS": "swsh9",
@@ -221,21 +223,48 @@ def api_search_db(q: str = ""):
                 if len(results) >= 50: break
     return {"results": results}
 
+# 💬 線上客服回報端點 (Base64 自動轉存 Supabase Storage 超短網址)
 @app.post("/api/v1/support_feedback")
 def api_support_feedback(req: FeedbackReq):
     try:
         if not req.message.strip():
             raise HTTPException(status_code=400, detail="請填寫回報訊息內容")
+        
+        final_img_url = ""
+        
+        # 如果玩家有附圖，自動轉存至 Supabase Storage 桶子
+        if req.image_base64 and "base64," in req.image_base64:
+            try:
+                header, encoded = req.image_base64.split("base64,")
+                img_bytes = base64.b64decode(encoded)
+                
+                ext = "png"
+                if "jpeg" in header or "jpg" in header:
+                    ext = "jpg"
+                
+                file_name = f"feedback_{uuid.uuid4().hex[:8]}.{ext}"
+                
+                supabase.storage.from_("feedback-images").upload(
+                    path=file_name,
+                    file=img_bytes,
+                    file_options={"content-type": f"image/{ext}"}
+                )
+                
+                final_img_url = supabase.storage.from_("feedback-images").get_public_url(file_name)
+            except Exception as img_err:
+                print(f"⚠️ 圖片上傳至 Storage 失敗，使用簡短降級方案: {img_err}")
+                final_img_url = req.image_base64[:100] + "..."
+
         supabase.table("feedbacks").insert({
             "user_email": req.user_email or "anonymous",
             "message": req.message,
-            "image_data": req.image_base64 or "",
+            "image_data": final_img_url,
             "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }).execute()
+        
         return {"success": True, "detail": "🎉 小章魚已收到您的回報！我們將會儘快處理。"}
     except Exception as e:
         print(f"Feedback save log: {e}")
-        # 如果失敗，依然回傳成功讓前端安心，但開發者可以在 Render Console 看到報錯
         return {"success": True, "detail": "🎉 小章魚已收到您的回報！感謝您的反饋。"}
 
 @app.post("/api/v1/upsert_card")
@@ -325,6 +354,7 @@ def api_parse_official(req: ParseOfficialReq):
         return {"success": True, "deck": new_deck}
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
 
+# 🎯 嚴格綁定 Set + ID，並加入「卡名 + 卡號 雙重防護鎖」
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
