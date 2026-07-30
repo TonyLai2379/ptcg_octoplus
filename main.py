@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="27.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="28.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,7 +35,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
-# 對局分享記憶體備用快取 (雙保險機制)
 MEMORY_GAME_SHARES = {}
 
 LL_TO_OFFICIAL = {
@@ -211,7 +210,7 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
-class ShareGameReq(BaseModel): game_data: List[Dict[str, Any]]
+class ShareGameReq(BaseModel): game_data: Any # 支持全物件/全陣列相容封包
 class UpsertCardReq(BaseModel): card_key: str; name: str; img_url: str
 class FeedbackReq(BaseModel): user_email: Optional[str] = None; message: str; image_base64: Optional[str] = None
 class MonteCarloReq(BaseModel):
@@ -440,21 +439,19 @@ def api_parse_text(req: ParseTextReq):
     if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
     return {"success": True, "deck": new_deck}
 
-# 🚀【對局分享：雙保險強化版】
+# 🚀 對局分享：完整支持戰場卡片 + 機率連鎖設定 (全物件/全陣列相容)
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
     try:
         code = "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", k=6))
         json_data = json.dumps(req.game_data)
         
-        # 1. 存入記憶體快取 (0秒備用)
         MEMORY_GAME_SHARES[code] = json_data
         
-        # 2. 嘗試寫入 Supabase 資料庫
         try:
             supabase.table("game_shares").upsert({"share_code": code, "game_data": json_data}).execute()
         except Exception as db_err:
-            print(f"⚠️ Supabase game_shares 存取跳過: {db_err}")
+            print(f"⚠️ Supabase game_shares 寫入跳過: {db_err}")
             
         return {"success": True, "share_code": code}
     except Exception as e:
@@ -465,11 +462,9 @@ def api_share_game(req: ShareGameReq):
 def api_get_shared_game(code: str):
     clean_code = code.strip().upper()
     
-    # 1. 優先從記憶體快取秒讀
     if clean_code in MEMORY_GAME_SHARES:
         return {"success": True, "game_data": json.loads(MEMORY_GAME_SHARES[clean_code])}
         
-    # 2. 查無則從 Supabase 資料庫搜尋
     try:
         res = supabase.table("game_shares").select("game_data").eq("share_code", clean_code).execute()
         if res.data:
