@@ -12,12 +12,16 @@
     <meta property="og:description" content="Replay. Analyze. Win More. 專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！">
     <meta property="og:image" content="https://asia.pokemon-card.com/tw/assets/images/card-back.png">
 
-    <!-- 📱 手機觸控拖曳 Polyfill -->
-    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/index.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/default.css">
-    <script> MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride }); </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 📱 手機觸控拖曳 Polyfill (安全載入版) -->
+<script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/index.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/default.css">
+<script>
+    window.addEventListener('load', function() {
+        if (typeof MobileDragDrop !== 'undefined') {
+            MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride });
+        }
+    });
+</script>
     
     <!-- 引入獨立的 CSS 檔案 -->
     <link rel="stylesheet" href="style.css">
