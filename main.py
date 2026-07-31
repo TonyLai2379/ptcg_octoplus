@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 
-app = FastAPI(title="PTCG Octoplus API", version="28.0.0")
+app = FastAPI(title="PTCG Octoplus API", version="29.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,7 +100,8 @@ def load_global_cards_to_cache():
 
 load_global_cards_to_cache()
 
-def get_user_from_token(auth_header: str):
+# 🧠【Token 雙軌驗證】：同時提取 User ID 與 User Email
+def get_user_and_email_from_token(auth_header: str):
     if not auth_header or not auth_header.startswith("Bearer "): 
         raise HTTPException(status_code=401, detail="請先登入帳號")
     token = auth_header.split(" ")[1]
@@ -108,7 +109,7 @@ def get_user_from_token(auth_header: str):
     try:
         user_res = supabase.auth.get_user(token)
         if user_res and user_res.user:
-            return user_res.user.id
+            return user_res.user.id, user_res.user.email
     except Exception:
         pass
 
@@ -124,8 +125,9 @@ def get_user_from_token(auth_header: str):
                 raise HTTPException(status_code=401, detail="登入憑證已過期，請重新發送驗證連結登入")
             
             user_id = payload_json.get('sub')
+            user_email = payload_json.get('email')
             if user_id:
-                return user_id
+                return user_id, user_email
     except HTTPException:
         raise
     except Exception as e:
@@ -134,15 +136,19 @@ def get_user_from_token(auth_header: str):
     raise HTTPException(status_code=401, detail="登入憑證無效，請重新登入")
 
 def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
-    user_id = get_user_from_token(authorization)
+    user_id, user_email = get_user_and_email_from_token(authorization)
     try:
         today_str = str(datetime.date.today())
         profile_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
+        
+        # 💡 自動填補 profiles 中的 email 欄位！
         if not profile_res.data:
-            supabase.table("profiles").insert({"id": user_id, "is_pro": False, "trial_used": False}).execute()
+            supabase.table("profiles").insert({"id": user_id, "email": user_email, "is_pro": False, "trial_used": False}).execute()
             is_pro = False; expires_at = None
         else:
             profile = profile_res.data[0]
+            if not profile.get("email") and user_email:
+                supabase.table("profiles").update({"email": user_email}).eq("id", user_id).execute()
             is_pro = profile.get("is_pro", False); expires_at = profile.get("pro_expires_at")
         
         has_active_sub = False
@@ -210,7 +216,7 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
-class ShareGameReq(BaseModel): game_data: Any # 支持全物件/全陣列相容封包
+class ShareGameReq(BaseModel): game_data: Any 
 class UpsertCardReq(BaseModel): card_key: str; name: str; img_url: str
 class FeedbackReq(BaseModel): user_email: Optional[str] = None; message: str; image_base64: Optional[str] = None
 class MonteCarloReq(BaseModel):
@@ -297,7 +303,7 @@ def api_upsert_card(req: UpsertCardReq):
 
 @app.post("/api/v1/redeem_code")
 def api_redeem_code(req: RedeemCodeReq, authorization: Optional[str] = Header(None)):
-    user_id = get_user_from_token(authorization)
+    user_id, user_email = get_user_and_email_from_token(authorization)
     code = req.code.strip().upper()
     code_res = supabase.table("promo_codes").select("*").eq("code", code).execute()
     if not code_res.data: 
@@ -310,26 +316,26 @@ def api_redeem_code(req: RedeemCodeReq, authorization: Optional[str] = Header(No
     days = promo["days_valid"]
     p_res = supabase.table("profiles").select("id").eq("id", user_id).execute()
     if not p_res.data: 
-        supabase.table("profiles").insert({"id": user_id}).execute()
+        supabase.table("profiles").insert({"id": user_id, "email": user_email}).execute()
     
     exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)).isoformat()
-    supabase.table("profiles").update({"is_pro": True, "pro_expires_at": exp_time}).eq("id", user_id).execute()
+    supabase.table("profiles").update({"is_pro": True, "pro_expires_at": exp_time, "email": user_email}).eq("id", user_id).execute()
     supabase.table("promo_codes").update({"used_count": promo["used_count"] + 1}).eq("code", code).execute()
     
     return {"success": True, "detail": f"🎉 成功兌換！已為你開通 {days} 天 Pro 專業無限推演權限。"}
 
 @app.post("/api/v1/activate_trial")
 def api_activate_trial(authorization: Optional[str] = Header(None)):
-    user_id = get_user_from_token(authorization)
+    user_id, user_email = get_user_and_email_from_token(authorization)
     p_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
     if not p_res.data:
-        supabase.table("profiles").insert({"id": user_id, "trial_used": False}).execute()
+        supabase.table("profiles").insert({"id": user_id, "email": user_email, "trial_used": False}).execute()
         trial_used = False
     else:
         trial_used = p_res.data[0].get("trial_used", False)
     if trial_used: raise HTTPException(status_code=400, detail="您已經使用過 7 天免費體驗囉！")
     exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
-    supabase.table("profiles").update({"is_pro": False, "trial_used": True, "pro_expires_at": exp_time}).eq("id", user_id).execute()
+    supabase.table("profiles").update({"is_pro": False, "trial_used": True, "pro_expires_at": exp_time, "email": user_email}).eq("id", user_id).execute()
     return {"success": True, "detail": "🎉 體驗開通成功！接下來 7 天每日可使用 30 次深度推演。"}
 
 @app.post("/api/v1/parse_official")
@@ -439,7 +445,6 @@ def api_parse_text(req: ParseTextReq):
     if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
     return {"success": True, "deck": new_deck}
 
-# 🚀 對局分享：完整支持戰場卡片 + 機率連鎖設定 (全物件/全陣列相容)
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
     try:
