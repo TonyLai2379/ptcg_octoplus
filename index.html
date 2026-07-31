@@ -15,11 +15,7 @@
     <!-- 📱 手機觸控拖曳 Polyfill -->
     <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/index.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/default.css">
-    <script> 
-        if (typeof MobileDragDrop !== 'undefined') {
-            MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride }); 
-        }
-    </script>
+    <script> MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride }); </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -314,7 +310,7 @@
         #main-view { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; padding: 20px; gap: 20px; background: #0D1117; position: relative; min-width: 900px; }
         
         details#prob-panel { background: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 15px; transition: 0.3s ease; }
-        details#prob-panel summary { outline: none; list-style: none; cursor: pointer; }
+        details#prob-panel summary { color: #00E5FF; font-weight: bold; font-size: 18px; cursor: pointer; outline: none; list-style: none; display: flex; align-items: center; justify-content: space-between; }
         details#prob-panel summary::-webkit-details-marker { display: none; }
         .arrow-badge { margin-left: 12px; background: #21262D; border: 1px solid #30363D; color: #00E5FF; padding: 4px 12px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
         details#prob-panel summary:hover .arrow-badge { background: #30363D; color: #FFF; }
@@ -334,18 +330,16 @@
         .battle-container { display: flex; gap: 30px; flex: 1; min-height: 600px; overflow-x: auto; }
         .col-left { width: 280px; flex-shrink: 0; }
         .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
+        .col-right { width: 280px; flex-shrink: 0; }
 
-        .col-right { width: 160px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;}
-
+        /* 💡 緊湊標題樣式 (修復括號被 Flex 推開的問題) */
         .zone-title { font-weight: bold; color: #58A6FF; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
         .zone-title-compact { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #58A6FF; font-size: 16px; margin-bottom: 10px; }
 
         .drop-zone { border: 2px dashed #30363D; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; min-height: 195px; }
         .drop-zone.dragover { border-color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
 
-        .drop-zone-stacked { position: relative; display: flex; justify-content: center; align-items: center; overflow: visible; min-height: 195px; width: 128px; border: 2px dashed #30363D; border-radius: 8px;}
-        .drop-zone-stacked.dragover { border-color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
-
+        .drop-zone-stacked { position: relative; display: flex; justify-content: center; align-items: center; overflow: visible; min-height: 195px; }
         .prize-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 12px; border: none; padding: 0; }
         .prize-slot { border: 2px dashed #30363D; border-radius: 6px; height: 183px; display: flex; align-items: center; justify-content: center; }
         
@@ -413,18 +407,6 @@
         
         .status-badge { display: inline-block; width: 85px; font-weight: bold; }
 
-        .counter-badge { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: default; z-index: 30; pointer-events: none;}
-        .dmg-counter { width: 26px; height: 26px; background: #D32F2F; color: #FFF; border: 2px solid #FFF; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.6);}
-        .status-counter { width: 30px; height: 30px; font-size: 14px;}
-        .source-counter { cursor: grab; pointer-events: auto;}
-        
-        #accessory-panel { background: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 10px; margin-top: 10px;}
-        #accessory-panel summary { color: #FFD700; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px;}
-        .counter-pile { display: flex; gap: 10px; margin-top: 10px;}
-
-        #coin-overlay, #dice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; flex-direction: column; cursor: pointer;}
-        #coin-visual, #dice-visual { font-size: 100px;}
-
         @media (max-width: 768px) {
             body { flex-direction: column; overflow-y: auto; }
             #sidebar { width: 100% !important; height: auto; border-right: none; border-bottom: 1px solid #30363D; }
@@ -434,118 +416,8 @@
     </style>
 </head>
 <body>
-    <script>
-        const API_BASE = "https://ptcg-octoplus-api.onrender.com";
-        const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
 
-        let supabaseClient = null;
-
-        function getCardBackSVG(color) {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><g transform="translate(16, 28) scale(0.3)"><text x="0" y="48" font-size="100">🐙</text></g></svg>`;
-            return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-        }
-        
-        let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
-        let currentCardBackColor = '#2B579A';
-
-        // 💡 補齊被刪除的 handleSession 函式！
-        async function handleSession(session) {
-            const gateOverlay = document.getElementById('gate-overlay');
-            if (gateOverlay) gateOverlay.style.display = 'none';
-            
-            const userIdInput = document.getElementById('user-id-input');
-            if (userIdInput) userIdInput.value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
-            
-            const btnUnlock = document.getElementById('btn-unlock');
-            if (btnUnlock) btnUnlock.innerText = "訂閱、輸入邀請碼";
-
-            try {
-                if (supabaseClient) {
-                    const { data, error } = await supabaseClient
-                        .from('profiles')
-                        .select('is_pro, pro_expires_at')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (data) {
-                        let isPro = data.is_pro;
-                        let expiresAt = data.pro_expires_at;
-                        let hasActiveSub = false;
-
-                        if (expiresAt) {
-                            let expDate = new Date(expiresAt.replace("Z", "+00:00"));
-                            if (new Date() < expDate) hasActiveSub = true;
-                        }
-
-                        const statusEl = document.getElementById('txt-status');
-                        const authBar = document.getElementById('auth-status-bar');
-
-                        if (isPro || hasActiveSub) {
-                            let expStr = "";
-                            if (expiresAt) {
-                                let d = new Date(expiresAt.replace("Z", "+00:00"));
-                                if (d.getFullYear() >= 2090) {
-                                    expStr = "終身尊榮 VIP ♾️";
-                                } else {
-                                    let month = String(d.getMonth() + 1).padStart(2, '0');
-                                    let day = String(d.getDate()).padStart(2, '0');
-                                    expStr = `${d.getFullYear()}-${month}-${day}`;
-                                }
-                            } else {
-                                expStr = "終身尊榮 VIP ♾️";
-                            }
-
-                            if (statusEl) statusEl.innerHTML = `👑 <b>Pro 專業會員</b><br><span style="font-size:11px; color:#FFD700;">(有效期限: ${expStr})</span>`;
-                            if (authBar) {
-                                authBar.style.background = "rgba(255, 215, 0, 0.12)";
-                                authBar.style.border = "1px solid rgba(255, 215, 0, 0.5)";
-                            }
-                        } else {
-                            if (statusEl) statusEl.innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(每日 30 次額度)</span>`;
-                            if (authBar) {
-                                authBar.style.background = "rgba(33, 38, 44, 1)";
-                                authBar.style.border = "1px solid #30363D";
-                            }
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Profile status fetch error:", err);
-                const statusEl = document.getElementById('txt-status');
-                if (statusEl) statusEl.innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
-            }
-
-            fetchSavedDecks(); 
-
-            if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
-                setTimeout(() => {
-                    startInteractiveTour();
-                }, 600);
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                if (window.supabase) {
-                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                    supabaseClient.auth.onAuthStateChange((event, session) => {
-                        if (session) handleSession(session);
-                        else document.getElementById('gate-overlay').style.display = 'flex';
-                    });
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (session) handleSession(session);
-                }
-            } catch (e) {
-                console.error("Supabase 初始化失敗", e);
-            }
-
-            let deckCover = document.getElementById('deck-cover-img');
-            if (deckCover) deckCover.src = DEFAULT_CARDBACK;
-        });
-    </script>
-
-    <!-- 🐙 PTCG 小章魚：Replay. Analyze. Win More. 開場動畫 -->
+    <!-- 🐙 PTCG 小章魚：Replay. Analyze. Win More. 5~10 秒開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
         <div class="splash-content">
             <h2 style="color: #00E5FF; font-size: 20px; letter-spacing: 2px;">🐙 PTCG OCTOPLUS</h2>
@@ -575,15 +447,6 @@
 
             <div class="splash-skip-tip">點擊任意處立即體驗 ➔</div>
         </div>
-    </div>
-
-    <!-- 道具投擲 Overlay -->
-    <div id="coin-overlay" onclick="this.style.display='none'">
-        <div id="coin-visual">🐙</div>
-        <div id="coin-result-text" style="font-size: 30px; color: #FFF; margin-top: 20px;">投擲中...</div>
-    </div>
-    <div id="dice-overlay" onclick="this.style.display='none'">
-        <div id="dice-visual">🐙</div>
     </div>
 
     <!-- 🐙 獨立懸浮：立體可拖曳點擊互動小章魚吉祥物 -->
@@ -646,28 +509,7 @@
                     </div>
                 </div>
 
-                <details id="accessory-panel">
-                    <summary>🎲 小章魚道具箱</summary>
-                    <div style="display:flex; gap: 10px; margin-top: 10px;">
-                        <button class="btn-secondary" style="flex:1; padding:6px;" onclick="flipCoin()">🐙 硬幣</button>
-                        <button class="btn-secondary" style="flex:1; padding:6px;" onclick="rollDice()">🎲 骰子</button>
-                    </div>
-                    <div class="counter-pile">
-                        <div class="counter-badge dmg-counter source-counter" draggable="true" data-type="dmg" data-val="10">10</div>
-                        <div class="counter-badge dmg-counter source-counter" draggable="true" data-type="dmg" data-val="20">20</div>
-                        <div class="counter-badge dmg-counter source-counter" draggable="true" data-type="dmg" data-val="50">50</div>
-                        <div class="counter-badge dmg-counter source-counter" draggable="true" data-type="dmg" data-val="100">100</div>
-                    </div>
-                    <div class="counter-pile" style="font-size: 20px;">
-                        <div class="status-counter source-counter" draggable="true" data-type="status" data-val="poison" title="中毒">🤮</div>
-                        <div class="status-counter source-counter" draggable="true" data-type="status" data-val="burn" title="灼燒">🔥</div>
-                        <div class="status-counter source-counter" draggable="true" data-type="status" data-val="confuse" title="混亂">🌀</div>
-                        <div class="status-counter source-counter" draggable="true" data-type="status" data-val="paralyze" title="麻痺">⚡</div>
-                        <div class="status-counter source-counter" draggable="true" data-type="status" data-val="sleep" title="睡眠">💤</div>
-                    </div>
-                </details>
-
-                <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center; border: 1px solid #30363D; margin-top: 10px;">
+                <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center; border: 1px solid #30363D;">
                     <span id="txt-status">目前狀態：載入中...</span> <br>
                     <button class="btn" id="btn-unlock" style="background:#E34C26; padding:6px; margin-top:8px;" onclick="document.getElementById('sub-modal').style.display='flex'">訂閱、輸入邀請碼</button>
                 </div>
@@ -748,14 +590,13 @@
         </div>
 
         <details id="prob-panel">
-            <summary style="display:flex; justify-content:space-between; align-items:center; width:100%; position:relative;">
+            <!-- 💡 圖四：明確放入 summary 中，展開/收合皆可看見並點擊 -->
+            <summary style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
-                    <span class="btn-secondary" style="padding:2px 10px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
                     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
                 </div>
+                <button class="btn-secondary" style="width:auto; padding:4px 12px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; display:inline-flex; align-items:center; gap:4px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</button>
             </summary>
             
             <div class="prob-grid">
@@ -780,6 +621,7 @@
                 <div class="prob-card">
                     <b style="font-size:15px;" id="lbl-step2">🔄 2. 延續解牌 (連鎖資源 - 支援多張)</b>
                     <button class="btn-secondary" id="btn-add-chain" style="width:100%; padding:8px; margin:12px 0;" onclick="openSelector('chain')">🖼️ 新增連鎖牌</button>
+                    <!-- 💡 圖二修復：380px 大空間重啟 -->
                     <div id="chain-display" style="margin-top:8px; font-size:14px; max-height:380px; overflow-y:auto;"></div>
                 </div>
 
@@ -798,10 +640,7 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
-                <div class="zone-title">
-                    <span id="title-prize">🏆 獎賞卡 (Prize)</span>
-                    <button class="btn-secondary" style="width:auto; padding:3px 8px; font-size:12px; color:#FFD700; border-color:#FFD700;" onclick="togglePrizeFaceUp()">🔄 轉換正反</button>
-                </div>
+                <div class="zone-title" id="title-prize">🏆 獎賞卡 (Prize)</div>
                 <div class="prize-grid">
                     <div id="zone-prize-0" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     <div id="zone-prize-1" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -850,12 +689,13 @@
             </div>
 
             <div class="col-right">
-                <div style="display:flex; flex-direction:column; align-items:center;">
+                <div style="margin-bottom: 8px;">
+                    <!-- 💡 圖三修復：緊湊結構，避免括號拉開大空間 -->
                     <div class="zone-title-compact">
                         <span>🗃️ <span id="title-deck">牌庫</span></span>
                         <span style="color:#00E5FF;">( <span id="deck-count">0</span> )</span>
                     </div>
-                    <div style="display:flex; gap:3px; flex-wrap:wrap; padding-bottom: 5px; justify-content:center;">
+                    <div style="display:flex; gap:3px; flex-wrap:wrap; padding-bottom: 5px;">
                         <div class="color-dot" style="background:#D32F2F" onclick="changeCardBack('#D32F2F')" title="火"></div>
                         <div class="color-dot" style="background:#2B579A" onclick="changeCardBack('#2B579A')" title="水"></div>
                         <div class="color-dot" style="background:#388E3C" onclick="changeCardBack('#388E3C')" title="草"></div>
@@ -866,26 +706,25 @@
                         <div class="color-dot" style="background:#607D8B" onclick="changeCardBack('#607D8B')" title="鋼"></div>
                         <div class="color-dot" style="background:#9E9E9E" onclick="changeCardBack('#9E9E9E')" title="無"></div>
                     </div>
-                    <div id="zone-deck" class="drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('deck')" ondrop="drop(event)" ondragover="allowDrop(event)">
-                        <div class="card-wrapper" style="position:absolute;"><img id="deck-cover-img" src="" style="pointer-events:none;"></div>
-                    </div>
-                    
-                    <div style="display:flex; gap:6px; margin-top:5px; width:128px;">
-                        <button class="btn btn-secondary" id="btn-draw-card" style="flex:1; padding:8px; font-size:13px;" onclick="drawCard()">🎴 抽牌</button>
-                        <button class="btn btn-secondary" id="btn-shuffle-deck" style="flex:1; padding:8px; font-size:13px; color:#FFD700; border-color:#FFD700;" onclick="shuffleDeck()">🔀 洗牌</button>
-                    </div>
+                </div>
+                <div id="zone-deck" class="drop-zone drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('deck')" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                
+                <!-- 💡 圖三新增：並排「🎴 抽一張牌」與「🔀 洗牌」按鈕 -->
+                <div style="display:flex; gap:6px; margin-top:5px;">
+                    <button class="btn btn-secondary" id="btn-draw-card" style="flex:1; padding:8px; font-size:13px;" onclick="drawCard()">🎴 抽一張牌</button>
+                    <button class="btn btn-secondary" id="btn-shuffle-deck" style="flex:1; padding:8px; font-size:13px; color:#FFD700; border-color:#FFD700;" onclick="shuffleDeck()">🔀 洗牌</button>
                 </div>
 
-                <div style="display:flex; flex-direction:column; align-items:center; margin-top:15px;">
-                    <div class="zone-title-compact">
-                        <span>🪦 <span id="title-discard">棄牌</span></span>
-                        <span style="color:#00E5FF;">( <span id="discard-count">0</span> )</span>
-                    </div>
-                    <div id="zone-discard" class="drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('discard')" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <!-- 💡 圖三修復：緊湊結構，避免棄牌括號拉開空間 -->
+                <div class="zone-title-compact" style="margin-top:25px;">
+                    <span>🪦 <span id="title-discard">棄牌</span></span>
+                    <span style="color:#00E5FF;">( <span id="discard-count">0</span> )</span>
                 </div>
+                <div id="zone-discard" class="drop-zone drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('discard')" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
         </div>
         
+        <!-- 💡 圖一修復：一鍵分享列（加上 id 供導覽定位） -->
         <div id="history-controls">
             <button class="history-btn" id="btn-export-game" onclick="exportGameState()">📤 分享對局</button>
             <button class="history-btn" id="btn-import-game" onclick="importGameState()">📥 載入對局</button>
@@ -1076,44 +915,19 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
+        // 💡 圖二：開啟進階情境專用教學 Modal 函式
         function openProbTutorial() {
             document.getElementById('prob-tutorial-modal').style.display = 'flex';
         }
 
-        const counterPositions = {
-            dmg_0: { top: '5px', left: '5px' },
-            dmg_1: { top: '5px', left: '35px' },
-            dmg_2: { top: '5px', left: '65px' },
-            status: { top: '35px', left: '5px' }
-        };
-
-        function createCounterEl(type, val, cardId) {
-            const div = document.createElement('div');
-            div.id = `cntr_${Math.random().toString(36).substr(2, 9)}`;
-            div.dataset.cardId = cardId;
-            div.dataset.type = type;
-            div.dataset.val = val;
-            div.style.position = 'absolute';
-            
-            if (type === 'dmg') {
-                div.className = 'counter-badge dmg-counter';
-                div.innerText = val;
-            } else {
-                div.className = 'counter-badge status-counter';
-                const icons = { poison: '🤮', burn: '🔥', confuse: '🌀', paralyze: '⚡', sleep: '💤' };
-                div.innerText = icons[val];
-            }
-            return div;
-        }
-
+        // 🔀 圖三新增：牌庫重新洗牌函式
         function shuffleDeck() {
             let deckCards = gameCards.filter(c => c.zone === 'deck');
             if (deckCards.length <= 1) return alert("⚠️ 牌庫卡片不足（0 或 1 張），無需洗牌！");
             
+            // 將牌庫內的卡片進行隨機打亂
             deckCards.sort(() => Math.random() - 0.5);
-            let otherCards = gameCards.filter(c => c.zone !== 'deck');
-            gameCards = otherCards.concat(deckCards);
-
+            
             saveState();
             renderBoard();
             
@@ -1124,55 +938,7 @@
             }
         }
 
-        function togglePrizeFaceUp() {
-            isPrizeFaceUp = !isPrizeFaceUp;
-            renderBoard();
-        }
-
-        function flipCoin() {
-            const result = Math.random() > 0.5 ? 'heads' : 'tails';
-            const overlay = document.getElementById('coin-overlay');
-            const visual = document.getElementById('coin-visual');
-            const text = document.getElementById('coin-result-text');
-            overlay.style.display = 'flex';
-            
-            let count = 0;
-            let timer = setInterval(() => {
-                visual.innerText = count % 2 === 0 ? '🐙' : '卡';
-                text.innerText = '投擲中...';
-                count++;
-                if (count > 6) {
-                    clearInterval(timer);
-                    if (result === 'heads') { visual.innerText = '🐙'; text.innerText = '正面 (小章魚)'; }
-                    else { visual.innerText = '卡'; text.innerText = '反面 (卡背)'; }
-                    let msg = document.getElementById('marquee-text');
-                    msg.innerHTML = `🪙 硬幣投擲結果：${result==='heads'?'正面 (小章魚)':'反面 (卡背)'}`;
-                    saveState(); 
-                }
-            }, 100);
-        }
-
-        function rollDice() {
-            const overlay = document.getElementById('dice-overlay');
-            const visual = document.getElementById('dice-visual');
-            overlay.style.display = 'flex';
-            
-            const results = ['🐙', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
-            let count = 0;
-            let timer = setInterval(() => {
-                visual.innerText = results[count % 6];
-                count++;
-                if (count > 6) {
-                    clearInterval(timer);
-                    const final = Math.ceil(Math.random() * 6);
-                    visual.innerText = results[final - 1];
-                    let msg = document.getElementById('marquee-text');
-                    msg.innerHTML = `🎲 骰子投擲結果：${final}`;
-                    saveState(); 
-                }
-            }, 100);
-        }
-
+        // 🐙 小章魚吉祥物：語錄庫 & 點擊彈跳 & 自由拖曳邏輯
         const octoQuotes = [
             "Replay. Analyze. Win More! 今天也要贏！",
             "萬次蒙地卡羅算力已就緒！",
@@ -1254,6 +1020,7 @@
             document.addEventListener('touchend', onEnd);
         }
 
+        // 🌟 開場 Splash 動畫 3 階段演展控制
         let splashDismissed = false;
 
         function dismissSplash() {
@@ -1305,6 +1072,7 @@
             }, intervalMs);
         }
 
+        // 🌟 新手引導導覽 6 步驟設定 (圖一修復：強制鎖定歷史按鈕位置)
         const tourSteps = [
             { id: 'import-section', title: '💡 步驟 1/6：牌組匯入', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
             { id: 'btn-start-game', title: '🎲 步驟 2/6：開局沙盤', desc: '匯入好牌組就可以開局啦！系統會自動幫您隨機洗牌並發放手牌與獎賞卡。' },
@@ -1337,11 +1105,13 @@
             if (targetEl) {
                 targetEl.classList.add('tour-active-target');
                 
+                // 💡 圖一修復：遇到 history-controls 這種 fixed 定位時，不捲動螢幕，直接強制算好右下角座標
                 if (step.id === 'history-controls') {
                     box.style.display = 'block';
                     let boxHeight = box.offsetHeight || 220;
                     let boxWidth = box.offsetWidth || 320;
                     
+                    // 強制固定在螢幕右下角分享按鈕上方
                     box.style.top = (window.innerHeight - boxHeight - 80) + 'px';
                     box.style.left = (window.innerWidth - boxWidth - 30) + 'px';
                 } else {
@@ -1586,6 +1356,126 @@
         setInterval(checkAgreements, 1000);
         window.addEventListener('focus', checkAgreements);
 
+        // ==========================================
+        // Supabase 與全域變數宣告
+        // ==========================================
+        const API_BASE = "https://ptcg-octoplus-api.onrender.com";
+        const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
+
+        let supabaseClient = null;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) { console.error("Supabase 初始化失敗", e); }
+
+        let currentLang = localStorage.getItem('app_lang') || 'zh';
+        let deckDict = {}; 
+        let gameCards = []; 
+        let lastSimResult = null;
+        let targetList = {}; 
+        let chainList = {}; 
+        let tempSelectedKeys = []; 
+        let searchMultiSelection = {}; 
+        let currentModalMode = ""; 
+        let searchTimeout = null;
+        let isDragging = false; 
+        let benchSize = 5;
+        let historyStates = [];
+        let historyPtr = -1;
+
+        function saveLocalData() {
+            localStorage.setItem('octoplus_deck', JSON.stringify(deckDict));
+            localStorage.setItem('octoplus_board', JSON.stringify(gameCards));
+        }
+
+        async function getFreshToken() {
+            if (!supabaseClient) return null;
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            if (error || !session) {
+                document.getElementById('gate-overlay').style.display = 'flex';
+                document.getElementById('sub-modal').style.display = 'none';
+                alert("請先完成信箱驗證登入！");
+                return null;
+            }
+            return session.access_token;
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (supabaseClient) {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) handleSession(session);
+            }
+        });
+
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (session) handleSession(session);
+                else document.getElementById('gate-overlay').style.display = 'flex';
+            });
+        }
+
+        async function handleSession(session) {
+            document.getElementById('gate-overlay').style.display = 'none';
+            document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
+            document.getElementById('btn-unlock').innerText = "訂閱、輸入邀請碼";
+
+            try {
+                if (supabaseClient) {
+                    const { data, error } = await supabaseClient
+                        .from('profiles')
+                        .select('is_pro, pro_expires_at')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (data) {
+                        let isPro = data.is_pro;
+                        let expiresAt = data.pro_expires_at;
+                        let hasActiveSub = false;
+
+                        if (expiresAt) {
+                            let expDate = new Date(expiresAt.replace("Z", "+00:00"));
+                            if (new Date() < expDate) hasActiveSub = true;
+                        }
+
+                        if (isPro || hasActiveSub) {
+                            let expStr = "";
+                            if (expiresAt) {
+                                let d = new Date(expiresAt.replace("Z", "+00:00"));
+                                if (d.getFullYear() >= 2090) {
+                                    expStr = "終身尊榮 VIP ♾️";
+                                } else {
+                                    let month = String(d.getMonth() + 1).padStart(2, '0');
+                                    let day = String(d.getDate()).padStart(2, '0');
+                                    expStr = `${d.getFullYear()}-${month}-${day}`;
+                                }
+                            } else {
+                                expStr = "終身尊榮 VIP ♾️";
+                            }
+
+                            document.getElementById('txt-status').innerHTML = `👑 <b>Pro 專業會員</b><br><span style="font-size:11px; color:#FFD700;">(有效期限: ${expStr})</span>`;
+                            document.getElementById('auth-status-bar').style.background = "rgba(255, 215, 0, 0.12)";
+                            document.getElementById('auth-status-bar').style.border = "1px solid rgba(255, 215, 0, 0.5)";
+                        } else {
+                            document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(每日 30 次額度)</span>`;
+                            document.getElementById('auth-status-bar').style.background = "rgba(33, 38, 44, 1)";
+                            document.getElementById('auth-status-bar').style.border = "1px solid #30363D";
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Profile status fetch error:", err);
+                document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
+            }
+
+            fetchSavedDecks(); 
+
+            if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
+                setTimeout(() => {
+                    startInteractiveTour();
+                }, 600);
+            }
+        }
+
         async function loginWithMagicLink() {
             let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
             let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
@@ -1725,6 +1615,13 @@
             renderTargetUI(); renderChainUI(); renderBoard();
         }
 
+        function getCardBackSVG(color) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><ellipse cx="50%" cy="50%" rx="20" ry="12" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/></svg>`;
+            return `data:image/svg+xml;base64,${btoa(svg)}`;
+        }
+        
+        let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
+
         function toggleSidebar() { const sb = document.getElementById('sidebar'); const btn = document.getElementById('sidebar-toggle-btn'); if(sb.style.width === '0px') { sb.style.width = '360px'; btn.innerText = '«'; } else { sb.style.width = '0px'; btn.innerText = '»'; } }
         function switchTab(tabId) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); event.target.classList.add('active'); document.getElementById(tabId).classList.add('active'); }
         function switchTutTab(tid) { document.querySelectorAll('#tutorial-modal .tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('#tutorial-modal .tut-content').forEach(c => c.style.display='none'); document.getElementById('btn-'+tid).classList.add('active'); document.getElementById(tid).style.display = 'flex'; }
@@ -1761,6 +1658,128 @@
             }, 400); 
         }
 
+        function checkBlink() { let total = getDeckTotal(); let el = document.getElementById('import-section'); if(total < 60) el.classList.add('blink-yellow'); else el.classList.remove('blink-yellow'); }
+        function getDeckTotal() { return Object.values(deckDict).reduce((sum, c) => sum + c.qty, 0); }
+        
+        function updateDeckUI() { 
+            const container = document.getElementById('deck-list-container'); container.innerHTML = ""; 
+            let total = getDeckTotal(); 
+            Object.keys(deckDict).forEach(key => { 
+                const div = document.createElement('div'); div.className = 'deck-item'; 
+                let safeKey = key.replace(/'/g, "\\\\'");
+                div.innerHTML = `<span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:160px;" title="${deckDict[key].name.replace(/"/g, '&quot;')}">${deckDict[key].name}</span> <div style="display:flex; align-items:center; gap:4px;"> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${safeKey}', -1)">-</button> <span style="display:inline-block; width:20px; text-align:center;">${deckDict[key].qty}</span> <button class="btn-secondary" style="padding:2px 8px; cursor:pointer;" onclick="modQty('${safeKey}', 1)">+</button></div>`; 
+                container.appendChild(div); 
+            }); 
+            document.getElementById('deck-total-count').innerText = total; 
+            document.getElementById('deck-total-count').style.color = (total === 60) ? '#00E5FF' : '#FF5252'; 
+            checkBlink(); 
+            if(document.getElementById('gallery-modal').style.display === 'flex' && currentModalMode === 'preview') { 
+                let titlePrefix = currentLang === 'zh' ? '👁️ 牌組預覽' : '👁️ Deck Preview'; 
+                document.getElementById('gallery-title').innerText = `${titlePrefix} (${total} / 60)`; 
+                renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); 
+            } 
+            saveLocalData(); 
+        }
+        
+        function modQty(key, delta) { deckDict[key].qty += delta; if(deckDict[key].qty <= 0) delete deckDict[key]; updateDeckUI(); }
+        function parseOfficial() { showProgress('link'); fetch(`${API_BASE}/api/v1/parse_official`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({deck_code: document.getElementById('deck-code').value}) }).then(r=>r.json()).then(d=>{ if(d.success){ deckDict=d.deck; updateDeckUI(); } else { alert(d.detail || "解析失敗。"); } }).catch(e => { alert("連線失敗。"); }).finally(() => hideProgress('link')); }
+        
+        async function parseText() { 
+            let rawText = document.getElementById('deck-text').value;
+            if(!rawText.trim()) return alert("請貼上牌組內容");
+            showProgress('text'); 
+            
+            let lines = rawText.split('\n').map(l => l.trim()).filter(l => l);
+            let localCache = JSON.parse(localStorage.getItem('octoplus_card_cache_v3') || '{}');
+            let isCleaned = false;
+            let unknownText = [];
+            let newDeck = {};
+
+            for(let line of lines) {
+                if(/^(Pokémon|Trainer|Energy|Cards|Player|Event|Deck|Format)/i.test(line) || line.length < 3) {
+                    isCleaned = true; 
+                    continue;
+                }
+                
+                let match = line.match(/^(\d+)\s+(.+)/);
+                if(match) {
+                    let qty = parseInt(match[1]);
+                    let rawName = match[2].trim();
+                    let parseMatch = rawName.match(/^(.*?)(?:\s+([A-Za-z0-9\-]+)\s+(\d+[a-zA-Z]*))?$/);
+                    
+                    let searchName = parseMatch && parseMatch[1] ? parseMatch[1].trim() : rawName;
+                    let targetSet = parseMatch && parseMatch[2] ? parseMatch[2] : null;
+                    let targetNumber = parseMatch && parseMatch[3] ? parseMatch[3] : null;
+                    
+                    let finalCardKey = targetSet && targetNumber ? `${searchName} [${targetSet} ${targetNumber}]` : searchName;
+                    
+                    if(localCache[finalCardKey]) {
+                        if(!newDeck[finalCardKey]) newDeck[finalCardKey] = {qty: 0, img: localCache[finalCardKey].img, name: searchName, fallback_img: localCache[finalCardKey].fallback_img};
+                        newDeck[finalCardKey].qty += qty;
+                    } else {
+                        unknownText.push(line);
+                    }
+                } else {
+                    unknownText.push(line);
+                }
+            }
+
+            if(unknownText.length > 0) {
+                try {
+                    let r = await fetch(`${API_BASE}/api/v1/parse_text`, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: unknownText.join('\n')})
+                    });
+                    let d = await r.json();
+                    if(d.success) {
+                        Object.keys(d.deck).forEach(k => {
+                            let c = d.deck[k];
+                            localCache[k] = {img: c.img, name: c.name, fallback_img: c.fallback_img};
+                            if(!newDeck[k]) newDeck[k] = {qty: 0, img: c.img, name: c.name, fallback_img: c.fallback_img};
+                            newDeck[k].qty += c.qty;
+                        });
+                        localStorage.setItem('octoplus_card_cache_v3', JSON.stringify(localCache));
+                    } else {
+                        alert(d.detail || "部分解析失敗");
+                    }
+                } catch(e) {
+                    alert("連線解析失敗");
+                }
+            }
+            
+            deckDict = newDeck;
+            updateDeckUI(); 
+            document.getElementById('deck-text').value = "";
+            hideProgress('text');
+            
+            if(isCleaned) {
+                let msg = document.getElementById('marquee-text');
+                msg.innerHTML = "💡 智慧提示：已為您自動過濾牌組內多餘的賽事標題與空白行！";
+                msg.style.color = "#00E5FF";
+            }
+
+            Object.keys(deckDict).forEach(k => {
+                let c = deckDict[k];
+                if(c.img && c.img.startsWith('http')) {
+                    try {
+                        let imgCheck = new Image();
+                        imgCheck.src = c.img;
+                        imgCheck.onload = () => {
+                            fetch(`${API_BASE}/api/v1/upsert_card`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ card_key: k, name: c.name, img_url: c.img })
+                            }).catch(()=>{});
+                        };
+                    } catch(e) {}
+                }
+            });
+        }
+
+        function addCustomCard() { const name = document.getElementById('custom-card-input').value; if(!name) return; if(!deckDict[name]) deckDict[name] = {qty:0, img: "default_back", name: name, fallback_img: DEFAULT_CARDBACK}; deckDict[name].qty++; updateDeckUI(); document.getElementById('custom-card-input').value = ""; }
+        function debounceSearch(val) { clearTimeout(searchTimeout); if(!val) { document.getElementById('search-results').style.display='none'; return; } searchTimeout = setTimeout(() => { fetch(`${API_BASE}/api/v1/search_db?q=${val}`).then(r=>r.json()).then(d=>{ let resBox = document.getElementById('search-results'); resBox.innerHTML = ""; if(d.results && d.results.length > 0) { d.results.forEach(c => { let div = document.createElement('div'); div.className = 'search-result-item'; div.innerHTML = `<img src="${c.img}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'"> <span style="font-size:13px;">${c.name}</span>`; div.onclick = () => { if(!deckDict[c.key]) deckDict[c.key] = {qty:0, img: c.img, name: c.name, fallback_img: DEFAULT_CARDBACK}; deckDict[c.key].qty++; updateDeckUI(); document.getElementById('search-input').value = ""; resBox.style.display='none'; }; resBox.appendChild(div); }); resBox.style.display = 'block'; } else { resBox.style.display = 'none'; } }); }, 300); }
+        function changeCardBack(color) { DEFAULT_CARDBACK = getCardBackSVG(color); renderBoard(); if(document.getElementById('gallery-modal').style.display === 'flex') { let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : []; if(items.length) renderGalleryItems(items); } }
+        function closeGalleryModal(e) { if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none'; }
+        
         function handleCardClick(imgUrl, fallbackUrl) { 
             if(!isDragging) { 
                 let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK; 
@@ -1849,6 +1868,7 @@
         }
         function updateTargetQty(k, val) { let v = parseInt(val); if(v <= 0) { delete targetList[k]; } else { targetList[k].qty = v; } renderTargetUI(); }
         
+        // 💡 圖三：連鎖卡片列 UI 單行極簡優化
         function renderChainUI() { 
             const container = document.getElementById('chain-display'); container.innerHTML = ""; let keys = Object.keys(chainList); if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; } 
             keys.forEach(k => { 
@@ -1886,6 +1906,7 @@
         function removeChain(k) { delete chainList[k]; renderChainUI(); }
         function openChainTargetSelector(parentKey) { currentModalMode = 'chain_target_' + parentKey; tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : []; document.getElementById('gallery-title').innerText = "🎯 選擇檢索目標卡 (可多選)"; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
+        // 🚀【對局與機率推演一鍵全打包分享】
         function exportGameState() { 
             if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。"); 
             
@@ -1893,15 +1914,13 @@
             let ruleVal = ruleEl ? ruleEl.value : 'AND';
 
             let fullData = {
-                cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img, cntrs: c.counters })),
+                cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })),
                 deck: deckDict,
                 targets: targetList,
                 chains: chainList,
                 draw1: parseInt(document.getElementById('draw1-qty').value) || 7,
                 rule: ruleVal,
-                dead: parseInt(document.getElementById('dead-hand-qty').value) || 0,
-                bench: benchSize,
-                prizeFaceUp: isPrizeFaceUp
+                dead: parseInt(document.getElementById('dead-hand-qty').value) || 0
             };
 
             fetch(`${API_BASE}/api/v1/share_game`, { 
@@ -1931,6 +1950,7 @@
             loadSharedGameByCode(code); 
         }
         
+        // 🚀【一鍵全還原：戰場卡片 + 牌組 + 進階機率連鎖分析】
         function loadSharedGameByCode(code) { 
             fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => { 
                 if(d.success) { 
@@ -1944,10 +1964,8 @@
                             let cardImg = item.i || DEFAULT_CARDBACK; 
                             if(!deckDict[cardKey]) deckDict[cardKey] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK }; 
                             deckDict[cardKey].qty++; 
-                            return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, fallback_img:DEFAULT_CARDBACK, zone: item.z, counters: [] }; 
+                            return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: cardKey, name: cardName, img: cardImg, zone: item.z }; 
                         }); 
-                        benchSize = 5;
-                        isPrizeFaceUp = false;
                     } else {
                         if (raw.deck) deckDict = raw.deck;
                         if (raw.cards) {
@@ -1957,15 +1975,12 @@
                                 name: item.n || item.k.split(' [')[0],
                                 img: item.i || DEFAULT_CARDBACK,
                                 fallback_img: item.f || DEFAULT_CARDBACK,
-                                zone: item.z,
-                                counters: item.cntrs || []
+                                zone: item.z
                             }));
                         }
                         
                         if (raw.targets) targetList = raw.targets;
                         if (raw.chains) chainList = raw.chains;
-                        if (raw.bench) benchSize = raw.bench;
-                        if (raw.prizeFaceUp !== undefined) isPrizeFaceUp = raw.prizeFaceUp;
                         
                         if (raw.draw1) document.getElementById('draw1-qty').value = raw.draw1;
                         if (raw.dead !== undefined) document.getElementById('dead-hand-qty').value = raw.dead;
@@ -2003,7 +2018,7 @@
         function undo() { if(historyPtr > 0) { historyPtr--; gameCards = JSON.parse(JSON.stringify(historyStates[historyPtr])); renderBoard(); } updateHistoryBtns(); saveLocalData(); }
         function redo() { if(historyPtr < historyStates.length - 1) { historyPtr++; gameCards = JSON.parse(JSON.stringify(historyStates[historyPtr])); renderBoard(); } updateHistoryBtns(); saveLocalData(); }
         function updateHistoryBtns() { document.getElementById('btn-undo').disabled = (historyPtr <= 0); document.getElementById('btn-redo').disabled = (historyPtr >= historyStates.length - 1); }
-        function changeBenchSize(delta) { benchSize = Math.max(1, Math.min(8, benchSize + delta)); document.getElementById('bench-size-label').innerText = `${benchSize} 格`; renderBenchSlots(); renderBoard(); }
+        function changeBenchSize(delta) { benchSize = Math.max(5, Math.min(8, benchSize + delta)); document.getElementById('bench-size-label').innerText = `${benchSize} 格`; renderBenchSlots(); renderBoard(); }
         
         function renderBenchSlots() { 
             let container = document.getElementById('bench-container'); 
@@ -2025,29 +2040,26 @@
             gameCards = []; 
             Object.keys(deckDict).forEach(k => { 
                 for(let i=0; i<deckDict[k].qty; i++) { 
-                    gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck', counters: [] }); 
+                    gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck' }); 
                 } 
             }); 
             gameCards.sort(() => Math.random() - 0.5); 
             for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; 
             for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; 
             historyStates = []; historyPtr = -1; saveState(); 
-            isPrizeFaceUp = false;
             renderBenchSlots();
             renderBoard(); 
         }
         
         function createCardEl(c, isField=false) { 
             const div = document.createElement('div'); 
-            div.className = 'card-wrapper field-card'; 
+            div.className = 'card-wrapper'; 
             div.id = c.id; 
             div.draggable = true; 
             div.ondragstart = (e) => { 
-                if (e.target.classList.contains('field-card')) {
-                    isDragging = true; 
-                    e.dataTransfer.setData("text/cardId", c.id); 
-                    setTimeout(() => div.style.opacity = '0.01', 0); 
-                }
+                isDragging = true; 
+                e.dataTransfer.setData("text", c.id); 
+                setTimeout(() => div.style.opacity = '0.01', 0); 
             }; 
             div.ondragend = (e) => { 
                 setTimeout(() => { isDragging = false; }, 100); 
@@ -2057,46 +2069,22 @@
             div.onclick = () => { if(!isDragging) handleCardClick(c.img, c.fallback_img); }; 
             
             let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
-            let fallback = c.fallback_img || DEFAULT_CARDBACK;
             let isDefault = safeImg === DEFAULT_CARDBACK;
+            let fallback = c.fallback_img || DEFAULT_CARDBACK;
             
-            if (c.zone.startsWith('prize_') && !isPrizeFaceUp) {
-                safeImg = DEFAULT_CARDBACK;
-                isDefault = true;
-            }
-
             let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`; 
             inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`; 
             
             if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } 
-            
-            if (isField && c.counters && c.counters.length > 0) {
-                let dmgCount = 0;
-                c.counters.forEach(cntr => {
-                    const cntrEl = createCounterEl(cntr.type, cntr.val, c.id);
-                    if (cntr.type === 'dmg') {
-                        if (dmgCount < 3) {
-                             cntrEl.style.top = counterPositions[`dmg_${dmgCount}`].top;
-                             cntrEl.style.left = counterPositions[`dmg_${dmgCount}`].left;
-                             dmgCount++;
-                        } else { return; }
-                    } else {
-                        cntrEl.style.top = counterPositions.status.top;
-                        cntrEl.style.left = counterPositions.status.left;
-                    }
-                    inner += cntrEl.outerHTML;
-                });
-            }
-
             div.innerHTML = inner; 
             return div; 
         }
 
-        function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(idx, 1)[0]); saveState(); renderBoard(); } }
-
+        function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); renderBoard(); } }
+        
         function renderBoard() { 
             if(!document.getElementById('zone-bench-0')) renderBenchSlots();
-            let zList = ['zone-hand', 'zone-stadium', 'zone-active', 'zone-deck', 'zone-discard']; for(let i=0; i<benchSize; i++) zList.push(`zone-bench-${i}`); for(let i=0; i<6; i++) zList.push(`zone-prize-${i}`); zList.forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = ""; }); 
+            let zList = ['zone-hand', 'zone-stadium', 'zone-active', 'zone-deck', 'zone-discard']; for(let i=0; i<8; i++) zList.push(`zone-bench-${i}`); for(let i=0; i<6; i++) zList.push(`zone-prize-${i}`); zList.forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = ""; }); 
             let zones = {}; gameCards.forEach(c => { if(!zones[c.zone]) zones[c.zone]=[]; zones[c.zone].push(c); }); 
             let handGroups = {}; (zones['hand']||[]).forEach(c => { if(!handGroups[c.key]) handGroups[c.key] = { cards: [] }; handGroups[c.key].cards.push(c); }); 
             let handGroupsKeys = Object.keys(handGroups); let handCenter = (handGroupsKeys.length - 1) / 2; 
@@ -2104,7 +2092,6 @@
             let fieldZones = ['active', 'stadium']; for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`); 
             fieldZones.forEach(zName => { let domId = 'zone-' + zName.replace('_','-'); let domEl = document.getElementById(domId); if(!domEl) return; let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2; arr.forEach((c, idx) => { let el = createCardEl(c, true); el.style.position = 'absolute'; el.style.top = '50%'; el.style.left = '50%'; el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`; el.style.zIndex = idx; domEl.appendChild(el); }); }); 
             for(let i=0; i<6; i++) { let arr = zones['prize_'+i]||[]; if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false)); } 
-            
             let deckArr = zones['deck']||[]; document.getElementById('deck-count').innerText = deckArr.length; if(deckArr.length > 0) { let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; el.innerHTML = `<img src="${DEFAULT_CARDBACK}" style="pointer-events:none;">`; document.getElementById('zone-deck').appendChild(el); } 
             
             let discArr = zones['discard']||[]; document.getElementById('discard-count').innerText = discArr.length; 
@@ -2118,60 +2105,11 @@
                 el.innerHTML = imgHtml; document.getElementById('zone-discard').appendChild(el); 
             } 
             document.getElementById('hand-count').innerText = (zones['hand']||[]).length; 
-
-            const deckImg = document.getElementById('deck-cover-img');
-            if (deckImg) deckImg.src = DEFAULT_CARDBACK;
         }
         
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('dragover'); }
-        
-        function drop(ev) { 
-            ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); 
-            const cardId = ev.dataTransfer.getData("text/cardId");
-            const counterType = ev.dataTransfer.getData("text/counterType");
-
-            if (cardId) {
-                let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_'); 
-                let c = gameCards.find(c => c.id === cardId); 
-                if(c) { 
-                    if(targetZone.startsWith('prize_')) { let occupier = gameCards.find(card => card.zone === targetZone); if(occupier) occupier.zone = c.zone; } 
-                    c.zone = targetZone; 
-                    if (targetZone !== 'active' && !targetZone.startsWith('bench_')) {
-                        c.counters = []; 
-                    }
-                    gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); setTimeout(() => renderBoard(), 10); 
-                } 
-            }
-            else if (counterType) {
-                const targetZone = ev.currentTarget.id;
-                if (targetZone === 'zone-active' || targetZone.startsWith('zone-bench-')) {
-                    const counterVal = ev.dataTransfer.getData("text/counterVal");
-                    const elements = document.elementsFromPoint(ev.clientX, ev.clientY);
-                    let targetCardId = null;
-                    for (let el of elements) {
-                        if (el.classList.contains('field-card')) { targetCardId = el.id; break; }
-                    }
-                    
-                    if (targetCardId) {
-                        let c = gameCards.find(card => card.id === targetCardId);
-                        if (c) {
-                            if (!c.counters) c.counters = [];
-                            c.counters.push({ type: counterType, val: counterVal });
-                            saveState(); renderBoard();
-                        }
-                    }
-                }
-            }
-        }
-        document.querySelectorAll('.drop-zone, .drop-zone-stacked').forEach(z => z.addEventListener('dragleave', (e) => e.currentTarget.classList.remove('dragover')));
-        
-        document.querySelectorAll('.source-counter').forEach(el => {
-            el.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData("text/counterType", e.target.dataset.type);
-                e.dataTransfer.setData("text/counterVal", e.target.dataset.val);
-            });
-        });
-
+        function drop(ev) { ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); let cardId = ev.dataTransfer.getData("text"); let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_'); let c = gameCards.find(c => c.id === cardId); if(c) { if(targetZone.startsWith('prize_')) { let occupier = gameCards.find(card => card.zone === targetZone); if(occupier) occupier.zone = c.zone; } c.zone = targetZone; gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); setTimeout(() => renderBoard(), 10); } }
+        document.querySelectorAll('.drop-zone').forEach(z => z.addEventListener('dragleave', (e) => e.currentTarget.classList.remove('dragover')));
         function moveCard(cardId, targetDomId) { let targetZone = targetDomId.replace('zone-', '').replace('-', '_'); let c = gameCards.find(c => c.id === cardId); if(c) { c.zone = targetZone; saveState(); renderBoard(); } }
         function drawCard() { let dc = gameCards.filter(c => c.zone === 'deck'); if(dc.length > 0) { dc[0].zone = 'hand'; saveState(); renderBoard(); } }
         function moveZoneTo(fromZone, toZone) { gameCards.filter(c => c.zone === fromZone).forEach(c => c.zone = toZone); if(toZone === 'deck') { let d = gameCards.filter(c => c.zone === 'deck').sort(() => Math.random()-0.5); gameCards = gameCards.filter(c => c.zone !== 'deck').concat(d); } saveState(); renderBoard(); }
@@ -2187,20 +2125,64 @@
                 let cDeck = gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})); 
                 
                 let resultEl = document.getElementById('sim-result');
-                resultEl.innerText = "運算中..."; resultEl.style.color = "#FFD700"; resultEl.style.fontSize = "32px";
+                resultEl.innerText = "運算中..."; 
+                resultEl.style.color = "#FFD700"; 
+                resultEl.style.fontSize = "32px";
 
                 fetch(`${API_BASE}/api/v1/simulate`, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
                     body: JSON.stringify({ deck_cards: cDeck, direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand }) 
                 }).then(async r => { 
-                    if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
-                    if(r.status === 403) { const d = await r.json(); if(d.detail === "LIMIT_REACHED") { document.getElementById('sub-modal').style.display='flex'; throw new Error("額度用盡"); } }
-                    if(!r.ok) { const errData = await r.json().catch(() => ({})); throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); }
+                    if(r.status === 401) { 
+                        document.getElementById('gate-overlay').style.display='flex'; 
+                        throw new Error("請先登入"); 
+                    }
+                    if(r.status === 403) { 
+                        const d = await r.json();
+                        if(d.detail === "LIMIT_REACHED") {
+                            document.getElementById('sub-modal').style.display='flex';
+                            throw new Error("額度用盡");
+                        }
+                    }
+                    if(!r.ok) {
+                        const errData = await r.json().catch(() => ({}));
+                        throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); 
+                    }
                     return r.json(); 
                 }).then(d => { 
-                    if(d.success) { let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; resultEl.innerText = `${d.prob.toFixed(1)} %`; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px"; } else { throw new Error(d.detail || "運算失敗"); }
-                }).catch(e => { console.error(e); resultEl.innerText = "❌ " + e.message; resultEl.style.color = "#FF5252"; resultEl.style.fontSize = "20px"; }); 
+                    if(d.success) { 
+                        let joinSymbol = targetRule === 'AND' ? ' + ' : ' 或 '; 
+                        let desc = Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(joinSymbol); 
+                        lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${desc}`, prob: d.prob }; 
+                        resultEl.innerText = `${d.prob.toFixed(1)} %`; 
+                        resultEl.style.color = "#00E5FF"; 
+                        resultEl.style.fontSize = "46px";
+
+                        if (!d.is_pro && d.remaining_today !== undefined) {
+                            document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
+                        }
+                    } else {
+                        throw new Error(d.detail || "運算失敗");
+                    }
+                }).catch(e => { 
+                    console.error(e);
+                    if(e.message !== "額度用盡" && e.message !== "請先登入") {
+                        resultEl.innerText = "❌ " + e.message; 
+                        resultEl.style.color = "#FF5252"; 
+                        resultEl.style.fontSize = "20px";
+                        
+                        setTimeout(() => {
+                            resultEl.innerText = "0.0 %";
+                            resultEl.style.color = "#00E5FF";
+                            resultEl.style.fontSize = "46px";
+                        }, 4000);
+                    } else {
+                        resultEl.innerText = "0.0 %";
+                        resultEl.style.color = "#00E5FF";
+                        resultEl.style.fontSize = "46px";
+                    }
+                }); 
             });
         }
         
@@ -2219,10 +2201,18 @@
             if (!deckName) return;
 
             try {
-                const { data, error } = await supabaseClient.from('user_decks').insert([{ user_id: session.user.id, deck_name: deckName, deck_data: deckDict }]);
+                const { data, error } = await supabaseClient
+                    .from('user_decks')
+                    .insert([
+                        { user_id: session.user.id, deck_name: deckName, deck_data: deckDict }
+                    ]);
+                
                 if (error) throw error;
-                alert("💾 牌組儲存成功！"); fetchSavedDecks(); 
-            } catch (err) { alert("儲存失敗：" + err.message); }
+                alert("💾 牌組儲存成功！");
+                fetchSavedDecks(); 
+            } catch (err) {
+                alert("儲存失敗：" + err.message);
+            }
         }
 
         async function fetchSavedDecks() {
@@ -2231,22 +2221,47 @@
             if (!session) return;
 
             try {
-                const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name').order('created_at', { ascending: false });
+                const { data, error } = await supabaseClient
+                    .from('user_decks')
+                    .select('id, deck_name')
+                    .order('created_at', { ascending: false });
+                
                 if (error) throw error;
+                
                 let select = document.getElementById('saved-decks-select');
                 let optCloud = currentLang === 'zh' ? '載入雲端牌組...' : 'Load Cloud Deck...';
                 select.innerHTML = `<option value="">${optCloud}</option>`;
-                data.forEach(deck => { let opt = document.createElement('option'); opt.value = deck.id; opt.innerText = deck.deck_name; select.appendChild(opt); });
-            } catch (err) { console.error("讀取牌組清單失敗", err); }
+                
+                data.forEach(deck => {
+                    let opt = document.createElement('option');
+                    opt.value = deck.id;
+                    opt.innerText = deck.deck_name;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("讀取牌組清單失敗", err);
+            }
         }
 
         async function loadDeckFromDB(deckId) {
             if (!deckId || !supabaseClient) return;
+
             try {
-                const { data, error } = await supabaseClient.from('user_decks').select('deck_data').eq('id', deckId).single();
+                const { data, error } = await supabaseClient
+                    .from('user_decks')
+                    .select('deck_data')
+                    .eq('id', deckId)
+                    .single();
+                
                 if (error) throw error;
-                deckDict = data.deck_data; updateDeckUI(); alert("📥 牌組載入成功！"); document.getElementById('saved-decks-select').value = ""; 
-            } catch (err) { alert("載入失敗：" + err.message); }
+                
+                deckDict = data.deck_data;
+                updateDeckUI();
+                alert("📥 牌組載入成功！");
+                document.getElementById('saved-decks-select').value = ""; 
+            } catch (err) {
+                alert("載入失敗：" + err.message);
+            }
         }
 
         async function fetchMarquee() {
