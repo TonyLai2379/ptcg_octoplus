@@ -448,8 +448,15 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let supabaseClient = null;
 try {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} catch (e) { console.error("Supabase 初始化失敗", e); }
+    // 先檢查工具是否存在，再執行連線
+    if (typeof window.supabase !== 'undefined') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } else {
+        console.error("❌ Supabase 初始化失敗：找不到 window.supabase，請檢查 index.html 的 CDN 是否正確引入。");
+    }
+} catch (e) { 
+    console.error("Supabase 初始化發生例外錯誤", e); 
+}
 
 let currentLang = localStorage.getItem('app_lang') || 'zh';
 let deckDict = {}; 
