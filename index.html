@@ -332,7 +332,7 @@
         .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
         .col-right { width: 280px; flex-shrink: 0; }
 
-        /* 💡 圖三：區域標題結構優化 (避免 Flexbox 將張數括號拉太寬) */
+        /* 💡 緊湊標題樣式 (修復括號被 Flex 推開的問題) */
         .zone-title { font-weight: bold; color: #58A6FF; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
         .zone-title-compact { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #58A6FF; font-size: 16px; margin-bottom: 10px; }
 
@@ -590,7 +590,7 @@
         </div>
 
         <details id="prob-panel">
-            <!-- 💡 圖二：明確獨立置頂並醒目顯示「💡 情境推演教學」按鈕 -->
+            <!-- 💡 圖四：明確放入 summary 中，展開/收合皆可看見並點擊 -->
             <summary style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
@@ -598,6 +598,7 @@
                 </div>
                 <button class="btn-secondary" style="width:auto; padding:4px 12px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; display:inline-flex; align-items:center; gap:4px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</button>
             </summary>
+            
             <div class="prob-grid">
                 <div class="prob-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
@@ -620,6 +621,7 @@
                 <div class="prob-card">
                     <b style="font-size:15px;" id="lbl-step2">🔄 2. 延續解牌 (連鎖資源 - 支援多張)</b>
                     <button class="btn-secondary" id="btn-add-chain" style="width:100%; padding:8px; margin:12px 0;" onclick="openSelector('chain')">🖼️ 新增連鎖牌</button>
+                    <!-- 💡 圖二修復：380px 大空間重啟 -->
                     <div id="chain-display" style="margin-top:8px; font-size:14px; max-height:380px; overflow-y:auto;"></div>
                 </div>
 
@@ -691,7 +693,7 @@
                     <!-- 💡 圖三修復：緊湊結構，避免括號拉開大空間 -->
                     <div class="zone-title-compact">
                         <span>🗃️ <span id="title-deck">牌庫</span></span>
-                        <span style="color:#00E5FF;">(<span id="deck-count">0</span>)</span>
+                        <span style="color:#00E5FF;">( <span id="deck-count">0</span> )</span>
                     </div>
                     <div style="display:flex; gap:3px; flex-wrap:wrap; padding-bottom: 5px;">
                         <div class="color-dot" style="background:#D32F2F" onclick="changeCardBack('#D32F2F')" title="火"></div>
@@ -716,12 +718,13 @@
                 <!-- 💡 圖三修復：緊湊結構，避免棄牌括號拉開空間 -->
                 <div class="zone-title-compact" style="margin-top:25px;">
                     <span>🪦 <span id="title-discard">棄牌</span></span>
-                    <span style="color:#00E5FF;">(<span id="discard-count">0</span>)</span>
+                    <span style="color:#00E5FF;">( <span id="discard-count">0</span> )</span>
                 </div>
                 <div id="zone-discard" class="drop-zone drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('discard')" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
         </div>
         
+        <!-- 💡 圖一修復：一鍵分享列（加上 id 供導覽定位） -->
         <div id="history-controls">
             <button class="history-btn" id="btn-export-game" onclick="exportGameState()">📤 分享對局</button>
             <button class="history-btn" id="btn-import-game" onclick="importGameState()">📥 載入對局</button>
@@ -1069,7 +1072,7 @@
             }, intervalMs);
         }
 
-        // 🌟 新手引導導覽 6 步驟設定 (圖一修復：智慧彈出方向控制)
+        // 🌟 新手引導導覽 6 步驟設定 (圖一修復：強制鎖定歷史按鈕位置)
         const tourSteps = [
             { id: 'import-section', title: '💡 步驟 1/6：牌組匯入', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
             { id: 'btn-start-game', title: '🎲 步驟 2/6：開局沙盤', desc: '匯入好牌組就可以開局啦！系統會自動幫您隨機洗牌並發放手牌與獎賞卡。' },
@@ -1102,25 +1105,25 @@
             if (targetEl) {
                 targetEl.classList.add('tour-active-target');
                 
-                // 非固定定位元素進行捲動定位
-                if (step.id !== 'history-controls') {
-                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-
-                const rect = targetEl.getBoundingClientRect();
-                box.style.display = 'block';
-
-                let boxHeight = box.offsetHeight || 220;
-                let boxWidth = box.offsetWidth || 320;
-                let top, left;
-
-                // 💡 圖一修復：歷史按鈕 (Step 6) 為固定右下角，將提示框精準定位在對局分享按鈕正上方
+                // 💡 圖一修復：遇到 history-controls 這種 fixed 定位時，不捲動螢幕，直接強制算好右下角座標
                 if (step.id === 'history-controls') {
-                    top = rect.top - boxHeight - 15;
-                    left = window.innerWidth - boxWidth - 30;
+                    box.style.display = 'block';
+                    let boxHeight = box.offsetHeight || 220;
+                    let boxWidth = box.offsetWidth || 320;
+                    
+                    // 強制固定在螢幕右下角分享按鈕上方
+                    box.style.top = (window.innerHeight - boxHeight - 80) + 'px';
+                    box.style.left = (window.innerWidth - boxWidth - 30) + 'px';
                 } else {
-                    top = rect.bottom + 15;
-                    left = rect.left;
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    const rect = targetEl.getBoundingClientRect();
+                    box.style.display = 'block';
+
+                    let boxHeight = box.offsetHeight || 220;
+                    let boxWidth = box.offsetWidth || 320;
+                    let top = rect.bottom + 15;
+                    let left = rect.left;
 
                     if (top + boxHeight > window.innerHeight) {
                         top = rect.top - boxHeight - 15;
@@ -1128,10 +1131,10 @@
                     if (left + boxWidth > window.innerWidth) {
                         left = window.innerWidth - boxWidth - 25;
                     }
-                }
 
-                box.style.top = Math.max(20, top) + 'px';
-                box.style.left = Math.max(20, left) + 'px';
+                    box.style.top = Math.max(20, top) + 'px';
+                    box.style.left = Math.max(20, left) + 'px';
+                }
 
                 document.getElementById('tour-step-title').innerText = step.title;
                 document.getElementById('tour-step-desc').innerText = step.desc;
@@ -1865,13 +1868,14 @@
         }
         function updateTargetQty(k, val) { let v = parseInt(val); if(v <= 0) { delete targetList[k]; } else { targetList[k].qty = v; } renderTargetUI(); }
         
+        // 💡 圖三：連鎖卡片列 UI 單行極簡優化
         function renderChainUI() { 
             const container = document.getElementById('chain-display'); container.innerHTML = ""; let keys = Object.keys(chainList); if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; } 
             keys.forEach(k => { 
                 let c = chainList[k]; let div = document.createElement('div'); div.className = 'target-row'; div.style.flexDirection = 'column'; div.style.alignItems = 'stretch'; div.style.borderLeftColor = '#FFD700'; 
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search'); 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:26px;height:36px;margin-right:8px; border-radius:3px;">`; 
-                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
+                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
                 
                 let safeKey = k.replace(/'/g, "\\\\'");
                 let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...';
