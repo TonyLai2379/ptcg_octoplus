@@ -15,7 +15,12 @@
     <!-- 📱 手機觸控拖曳 Polyfill -->
     <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/index.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/default.css">
-    <script> MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride }); </script>
+    <!-- 💡 加入防呆機制：若 CDN 被擋廣告套件阻擋，不引發崩潰 -->
+    <script> 
+        if (typeof MobileDragDrop !== 'undefined') {
+            MobileDragDrop.polyfill({ dragImageTranslateOverride: MobileDragDrop.scrollBehaviourScrollImageTranslateOverride }); 
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -430,13 +435,27 @@
     </style>
 </head>
 <body>
-    <!-- 💡 【重大修復】將 encodeURIComponent 安全函式置於最頂端 -->
+    <!-- 💡 【重大修復】將 encodeURIComponent 安全函式與 Supabase 宣告置於最頂端 -->
     <script>
         const API_BASE = "https://ptcg-octoplus-api.onrender.com";
         const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
 
-        // 💡 使用 encodeURIComponent 安全編碼，解決 btoa 對 Emoji 的崩潰 Bug
+        // 💡 1. 修復 `supabaseClient is not defined`
+        let supabaseClient = null;
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (window.supabase) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                } else {
+                    console.warn("Supabase SDK not loaded yet.");
+                }
+            } catch (e) {
+                console.error("Supabase 初始化失敗", e);
+            }
+        });
+
+        // 💡 2. 使用 encodeURIComponent 安全編碼，解決 btoa 對 Emoji 的崩潰 Bug
         function getCardBackSVG(color) {
             const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><g transform="translate(16, 28) scale(0.3)"><text x="0" y="48" font-size="100">🐙</text></g></svg>`;
             return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -649,11 +668,11 @@
         </div>
 
         <details id="prob-panel">
-            <!-- 💡 圖一：情境教學按鈕放置於圖一紅框處 -->
+            <!-- 💡 3. 修復 HTML 警告：將教學按鈕從 button 改為 span，避免 Interactive element inside summary -->
             <summary style="display:flex; justify-content:space-between; align-items:center; width:100%; position:relative;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
-                    <button class="btn-secondary" style="padding:2px 10px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</button>
+                    <span class="btn-secondary" style="padding:2px 10px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
@@ -769,7 +788,7 @@
                         <div class="color-dot" style="background:#9E9E9E" onclick="changeCardBack('#9E9E9E')" title="無"></div>
                     </div>
                     <div id="zone-deck" class="drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('deck')" ondrop="drop(event)" ondragover="allowDrop(event)">
-                        <!-- 初始動態卡背 -->
+                        <!-- 💡 4. 初始化時保證 SVG 安全寫入 -->
                         <div class="card-wrapper" style="position:absolute;"><img id="deck-cover-img" src="" style="pointer-events:none;"></div>
                     </div>
                     
@@ -979,6 +998,12 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
+        // 💡 圖四：初始化寫入 SVG
+        window.addEventListener('DOMContentLoaded', () => {
+            let deckCover = document.getElementById('deck-cover-img');
+            if (deckCover) deckCover.src = DEFAULT_CARDBACK;
+        });
+
         function openProbTutorial() {
             document.getElementById('prob-tutorial-modal').style.display = 'flex';
         }
@@ -1307,7 +1332,7 @@
                 setTimeout(() => {
                     closeSupportModal();
                     btn.disabled = false;
-                    btn.innerText = "🚀 策略發送給小章魚";
+                    btn.innerText = "🚀 立即發送給小章魚";
                 }, 1800);
             } catch(e) {
                 statusEl.style.color = "#FF5252";
@@ -1473,260 +1498,6 @@
             return session.access_token;
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            if (supabaseClient) {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session) handleSession(session);
-            }
-        });
-
-        if (supabaseClient) {
-            supabaseClient.auth.onAuthStateChange((event, session) => {
-                if (session) handleSession(session);
-                else document.getElementById('gate-overlay').style.display = 'flex';
-            });
-        }
-
-        async function handleSession(session) {
-            document.getElementById('gate-overlay').style.display = 'none';
-            document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
-            document.getElementById('btn-unlock').innerText = "訂閱、輸入邀請碼";
-
-            try {
-                if (supabaseClient) {
-                    const { data, error } = await supabaseClient
-                        .from('profiles')
-                        .select('is_pro, pro_expires_at')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (data) {
-                        let isPro = data.is_pro;
-                        let expiresAt = data.pro_expires_at;
-                        let hasActiveSub = false;
-
-                        if (expiresAt) {
-                            let expDate = new Date(expiresAt.replace("Z", "+00:00"));
-                            if (new Date() < expDate) hasActiveSub = true;
-                        }
-
-                        if (isPro || hasActiveSub) {
-                            let expStr = "";
-                            if (expiresAt) {
-                                let d = new Date(expiresAt.replace("Z", "+00:00"));
-                                if (d.getFullYear() >= 2090) {
-                                    expStr = "終身尊榮 VIP ♾️";
-                                } else {
-                                    let month = String(d.getMonth() + 1).padStart(2, '0');
-                                    let day = String(d.getDate()).padStart(2, '0');
-                                    expStr = `${d.getFullYear()}-${month}-${day}`;
-                                }
-                            } else {
-                                expStr = "終身尊榮 VIP ♾️";
-                            }
-
-                            document.getElementById('txt-status').innerHTML = `👑 <b>Pro 專業會員</b><br><span style="font-size:11px; color:#FFD700;">(有效期限: ${expStr})</span>`;
-                            document.getElementById('auth-status-bar').style.background = "rgba(255, 215, 0, 0.12)";
-                            document.getElementById('auth-status-bar').style.border = "1px solid rgba(255, 215, 0, 0.5)";
-                        } else {
-                            document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(每日 30 次額度)</span>`;
-                            document.getElementById('auth-status-bar').style.background = "rgba(33, 38, 44, 1)";
-                            document.getElementById('auth-status-bar').style.border = "1px solid #30363D";
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Profile status fetch error:", err);
-                document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
-            }
-
-            fetchSavedDecks(); 
-
-            if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
-                setTimeout(() => {
-                    startInteractiveTour();
-                }, 600);
-            }
-        }
-
-        async function loginWithMagicLink() {
-            let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
-            let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
-            
-            if (!termsAgreed || !privacyAgreed) return alert("請先閱讀並同意服務條款與隱私權政策！");
-            if (!supabaseClient) return alert("系統初始化失敗，請重新整理網頁");
-            
-            const emailInput = document.getElementById('magic-email-input');
-            const email = emailInput ? emailInput.value.trim() : "";
-            if (!email) return alert("請輸入有效的 Email 信箱");
-
-            const btn = document.getElementById('send-verify-btn');
-            const msgEl = document.getElementById('magic-link-msg');
-            
-            btn.innerText = "⏳ 發送中...";
-            btn.disabled = true;
-            msgEl.style.display = 'none';
-
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithOtp({
-                    email: email,
-                    options: { emailRedirectTo: window.location.origin }
-                });
-
-                if (error) {
-                    msgEl.style.color = "#FF5252";
-                    msgEl.innerText = "❌ 發送失敗：" + error.message;
-                    msgEl.style.display = 'block';
-                    btn.innerText = "✨ 發送驗證連結";
-                    btn.disabled = false;
-                } else {
-                    msgEl.style.color = "#00E5FF";
-                    msgEl.innerText = "✅ 驗證信已成功發送！請至信箱點擊連結登入。";
-                    msgEl.style.display = 'block';
-                    
-                    let now = new Date().getTime();
-                    let lastSend = parseInt(localStorage.getItem('magic_link_last_send')) || 0;
-                    let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
-                    
-                    if (now - lastSend > 60 * 60 * 1000) { count = 0; }
-                    count++;
-                    
-                    localStorage.setItem('octoplus_send_count', count);
-                    localStorage.setItem('magic_link_last_send', now);
-
-                    let targetCooldown = 5;
-                    if (count === 1) targetCooldown = 5;
-                    else if (count === 2) targetCooldown = 30;
-                    else targetCooldown = 300;
-
-                    startCooldownTimer(targetCooldown);
-                }
-            } catch (err) {
-                msgEl.style.color = "#FF5252";
-                msgEl.innerText = "❌ 發生例外錯誤，請重試";
-                msgEl.style.display = 'block';
-                btn.innerText = "✨ 發送驗證連結";
-                btn.disabled = false;
-            }
-        }
-
-        async function redeemPromoCode() {
-            const code = document.getElementById('promo-code-input').value.trim();
-            if (!code) return alert("請輸入邀請碼");
-            
-            const token = await getFreshToken();
-            if (!token) return;
-
-            try {
-                const resp = await fetch(`${API_BASE}/api/v1/redeem_code`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code })
-                });
-                const data = await resp.json();
-                if (resp.ok) {
-                    alert(data.detail);
-                    document.getElementById('auth-overlay').style.display = 'none';
-                    document.getElementById('sub-modal').style.display = 'none';
-                    
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (session) handleSession(session);
-                } else {
-                    alert(data.detail || "❌ 兌換失敗");
-                }
-            } catch (e) { alert("連線發生錯誤"); }
-        }
-
-        async function activateTrial() {
-            const token = await getFreshToken();
-            if (!token) return; 
-
-            try {
-                const resp = await fetch(`${API_BASE}/api/v1/activate_trial`, {
-                    method: 'POST', headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await resp.json();
-                if (resp.ok) {
-                    alert(data.detail);
-                    document.getElementById('sub-modal').style.display = 'none';
-                    
-                    const { data: { session } } = await supabaseClient.auth.getSession();
-                    if (session) handleSession(session);
-                } else {
-                    alert("❌ 失敗：" + data.detail);
-                }
-            } catch (e) { alert("連線錯誤"); }
-        }
-
-        const translations = {
-            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
-            en: { tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", tabLink: "🔗 Official Code", tabText: "📝 Limitless Text", tabEdit: "🛠️ Search & Edit", phDeckCode: "Enter official deck code (e.g. uCRvSM...)", btnParseOfficial: "🌐 Parse Official Deck", phDeckText: "Paste Limitless deck text...", btnParseText: "📥 Parse Text Deck", lblSearchDb: "Database Search:", phSearchInput: "Type card name to search...", lblCustomCard: "Custom Proxy Card:", phCustomCard: "Proxy Card Name", btnAddCustom: "➕ Create Proxy", deckListTitle: "Deck List", btnPreviewDeck: "👁️ Preview", btnStartGame: "🎲 Lock & Start Game", btnSaveCloud: "💾 Save Cloud", optLoadCloud: "Load Cloud Deck...", disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.", lblZoom: "🔍 UI Zoom", summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)", txtToggleBadge: "Click to Expand/Collapse", lblStep1: "🔥 1. Direct Target Cards (Multi-select)", lblRuleAnd: "Require All (AND)", lblRuleOr: "Require Any (OR)", btnSelectDirect: "🖼️ Select Targets from Deck", lblDraw1: "First Draw Count:", lblDeadHand: "Existing Dead Cards in Hand:", lblStep2: "🔄 2. Chain Resources (Multi-card)", btnAddChain: "🖼️ Add Chain Card", btnRunSim: "🎲 Run Deep Simulation", btnSaveScenario: "📌 Save to Comparison", btnClearBoard: "🗑️ Clear Comparison", titlePrize: "🏆 Prize Cards", titleStadium: "🟠 Stadium", titleActive: "🔴 Active Spot", titleBench: "🔵 Bench", titleHand: "Hand", txtHandSub: "Fan view with drag-and-drop", btnHandShuffle: "🔄 Shuffle Back", btnHandDiscard: "🗑️ Discard All", titleDeck: "🗃️ Deck", btnDrawCard: "🎴 Draw 1 Card", titleDiscard: "🪦 Discard Pile", btnExportGame: "📤 Share Match", btnImportGame: "📥 Load Match", btnUndo: "↩ Undo", btnRedo: "Redo ↪", modalAuthTitle: "Unlock Sandbox Pro", btnCloseAuth: "Close", modalShareTitle: "📤 Share Game State", modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!", btnShareClose: "Close", btnShareCopy: "📋 Copy Short Code", btnGalleryClose: "Close", galleryConfirmBtn: "✅ Confirm Selection", tutMainTitle: "📖 PTCG Sandbox Tutorial", btnTut1: "🛠️ 1. Deck Builder", btnTut2: "⚔️ 2. Battle Board", btnTut3: "🎲 3. Probabilities", tut1Desc: "There are three ways to build/import a deck. Choose one to learn:", btnTut1A: "A. Official Code", btnTut1B: "B. Limitless Export", btnTut1C: "C. Search & Custom", tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.", tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.", tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", btnTutReady: "I'm Ready!", benchLabel: "Slots" }
-        };
-
-        function setTxt(id, val, isHTML=false) { 
-            let el = document.getElementById(id); 
-            if(el) { 
-                if(isHTML) el.innerHTML = val; 
-                else el.innerText = val; 
-            } 
-        }
-
-        function changeLanguage(lang) {
-            currentLang = lang; localStorage.setItem('app_lang', lang); document.getElementById('lang-select').value = lang; let t = translations[lang];
-            setTxt('tut-btn', t.tutBtn); 
-            const statusEl = document.getElementById('txt-status');
-            if (statusEl && statusEl.innerText.includes("未登入")) setTxt('txt-status', t.statusNotLogin); 
-            setTxt('btn-unlock', t.btnUnlock); setTxt('tab-btn-link', t.tabLink); setTxt('tab-btn-text', t.tabText); setTxt('tab-btn-edit', t.tabEdit);
-            let dc = document.getElementById('deck-code'); if(dc) dc.placeholder = t.phDeckCode;
-            setTxt('btn-parse-official', t.btnParseOfficial);
-            let dt = document.getElementById('deck-text'); if(dt) dt.placeholder = t.phDeckText;
-            setTxt('btn-parse-text', t.btnParseText); setTxt('lbl-search-db', t.lblSearchDb);
-            let si = document.getElementById('search-input'); if(si) si.placeholder = t.phSearchInput;
-            setTxt('lbl-custom-card', t.lblCustomCard);
-            let ci = document.getElementById('custom-card-input'); if(ci) ci.placeholder = t.phCustomCard;
-            setTxt('btn-add-custom', t.btnAddCustom); setTxt('txt-deck-list-title', t.deckListTitle); setTxt('btn-preview-deck', t.btnPreviewDeck); setTxt('btn-start-game', t.btnStartGame); setTxt('btn-save-cloud', t.btnSaveCloud); setTxt('opt-load-cloud', t.optLoadCloud); setTxt('txt-disclaimer', t.disclaimer, true); setTxt('lbl-zoom', t.lblZoom); setTxt('summary-prob-title', t.summaryProbTitle); setTxt('txt-toggle-badge', t.txtToggleBadge); setTxt('lbl-step1', t.lblStep1); setTxt('lbl-rule-and', t.lblRuleAnd); setTxt('lbl-rule-or', t.lblRuleOr); setTxt('btn-select-direct', t.btnSelectDirect); setTxt('lbl-draw1', t.lblDraw1); setTxt('lbl-dead-hand', t.lblDeadHand); setTxt('lbl-step2', t.lblStep2); setTxt('btn-add-chain', t.btnAddChain); setTxt('btn-run-sim', t.btnRunSim); setTxt('btn-save-scenario', t.btnSaveScenario); setTxt('btn-clear-board', t.btnClearBoard); setTxt('title-prize', t.titlePrize); setTxt('title-stadium', t.titleStadium); setTxt('title-active', t.titleActive); setTxt('title-bench', t.titleBench); setTxt('title-hand', t.titleHand); setTxt('txt-hand-sub', t.txtHandSub); setTxt('btn-hand-shuffle', t.btnHandShuffle); setTxt('btn-hand-discard', t.btnHandDiscard); setTxt('title-deck', t.titleDeck); setTxt('btn-draw-card', t.btnDrawCard); setTxt('title-discard', t.titleDiscard); setTxt('btn-export-game', t.btnExportGame); setTxt('btn-import-game', t.btnImportGame); setTxt('btn-undo', t.btnUndo); setTxt('btn-redo', t.btnRedo); setTxt('modal-auth-title', t.modalAuthTitle); setTxt('btnCloseAuth', t.btnCloseAuth); setTxt('modal-share-title', t.modalShareTitle); setTxt('modal-share-desc', t.modalShareDesc); setTxt('btn-share-close', t.btnShareClose); setTxt('btn-share-copy', t.btnShareCopy); setTxt('btn-gallery-close', t.btnGalleryClose); setTxt('gallery-confirm-btn', t.galleryConfirmBtn); setTxt('tut-main-title', t.tutMainTitle); setTxt('btn-tut1', t.btnTut1); setTxt('btn-tut2', t.btnTut2); setTxt('btn-tut3', t.btnTut3); setTxt('tut1-desc', t.tut1Desc); setTxt('btn-tut1-a', t.btnTut1A); setTxt('btn-tut1-b', t.btnTut1B); setTxt('btn-tut1-c', t.btnTut1C); setTxt('tut1-a-desc', t.tut1ADesc); setTxt('tut1-b-desc', t.tut1BDesc); setTxt('tut1-c-desc', t.tut1CDesc); setTxt('tut2-h4', t.tut2H4); setTxt('tut2-desc', t.tut2Desc); setTxt('tut3-h4', t.tut3H4); setTxt('tut3-desc', t.tut3Desc); setTxt('btn-tut-ready', t.btnTutReady); setTxt('bench-size-label', `${benchSize} ${t.benchLabel}`);
-            renderTargetUI(); renderChainUI(); renderBoard();
-        }
-
-        function toggleSidebar() { const sb = document.getElementById('sidebar'); const btn = document.getElementById('sidebar-toggle-btn'); if(sb.style.width === '0px') { sb.style.width = '360px'; btn.innerText = '«'; } else { sb.style.width = '0px'; btn.innerText = '»'; } }
-        function switchTab(tabId) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); event.target.classList.add('active'); document.getElementById(tabId).classList.add('active'); }
-        function switchTutTab(tid) { document.querySelectorAll('#tutorial-modal .tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('#tutorial-modal .tut-content').forEach(c => c.style.display='none'); document.getElementById('btn-'+tid).classList.add('active'); document.getElementById(tid).style.display = 'flex'; }
-        function switchSubTutTab(subId) { document.querySelectorAll('.sub-tab-btn').forEach(b => { b.style.borderColor = '#30363D'; b.style.color = '#888'; }); document.querySelectorAll('.sub-tut-content').forEach(c => c.style.display = 'none'); let activeBtn = document.getElementById('btn-' + subId); activeBtn.style.borderColor = '#00E5FF'; activeBtn.style.color = '#00E5FF'; document.getElementById(subId).style.display = 'block'; }
-        function openTutorial() { startInteractiveTour(); }
-        function closeTutorial() { document.getElementById('tutorial-modal').style.display='none'; localStorage.setItem('tut_shown', 'true'); }
-        
-        function showProgress(id) { 
-            let prog = document.getElementById('prog-'+id);
-            let bar = document.getElementById('bar-'+id);
-            let btn = id === 'link' ? document.getElementById('btn-parse-official') : document.getElementById('btn-parse-text');
-            if(prog && bar) {
-                prog.style.display = 'block'; 
-                bar.style.width = '30%'; 
-            }
-            if(btn) {
-                btn.disabled = true;
-                btn.dataset.origText = btn.innerText;
-                btn.innerText = "⏳ 解析中...";
-            }
-        }
-        function hideProgress(id) { 
-            let prog = document.getElementById('prog-'+id);
-            let bar = document.getElementById('bar-'+id);
-            let btn = id === 'link' ? document.getElementById('btn-parse-official') : document.getElementById('btn-parse-text');
-            if(bar) bar.style.width = '100%';
-            setTimeout(() => { 
-                if(prog) prog.style.display = 'none'; 
-                if(bar) bar.style.width = '0%'; 
-                if(btn) {
-                    btn.disabled = false;
-                    btn.innerText = btn.dataset.origText || "解析牌組";
-                }
-            }, 400); 
-        }
-
-        function checkBlink() { let total = getDeckTotal(); let el = document.getElementById('import-section'); if(total < 60) el.classList.add('blink-yellow'); else el.classList.remove('blink-yellow'); }
-        function getDeckTotal() { return Object.values(deckDict).reduce((sum, c) => sum + c.qty, 0); }
-        
         function updateDeckUI() { 
             const container = document.getElementById('deck-list-container'); container.innerHTML = ""; 
             let total = getDeckTotal(); 
