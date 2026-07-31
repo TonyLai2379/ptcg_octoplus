@@ -310,7 +310,7 @@
         #main-view { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; padding: 20px; gap: 20px; background: #0D1117; position: relative; min-width: 900px; }
         
         details#prob-panel { background: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 15px; transition: 0.3s ease; }
-        details#prob-panel summary { color: #00E5FF; font-weight: bold; font-size: 18px; cursor: pointer; outline: none; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+        details#prob-panel summary { outline: none; list-style: none; cursor: pointer; }
         details#prob-panel summary::-webkit-details-marker { display: none; }
         .arrow-badge { margin-left: 12px; background: #21262D; border: 1px solid #30363D; color: #00E5FF; padding: 4px 12px; border-radius: 20px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
         details#prob-panel summary:hover .arrow-badge { background: #30363D; color: #FFF; }
@@ -331,16 +331,14 @@
         .col-left { width: 280px; flex-shrink: 0; }
         .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
 
-        /* 💡 圖三：縮小右側空間 */
         .col-right { width: 160px; flex-shrink: 0; display: flex; flex-direction: column; gap: 15px;}
 
-        /* 💡 圖三：牌庫棄牌緊湊樣式 */
-        .zone-title-compact { font-weight: bold; color: #58A6FF; margin-bottom: 10px; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+        .zone-title { font-weight: bold; color: #58A6FF; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .zone-title-compact { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #58A6FF; font-size: 16px; margin-bottom: 10px; }
 
         .drop-zone { border: 2px dashed #30363D; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; min-height: 195px; }
         .drop-zone.dragover { border-color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
 
-        /* 💡 圖三：牌庫棄牌堆樣式優化 */
         .drop-zone-stacked { position: relative; display: flex; justify-content: center; align-items: center; overflow: visible; min-height: 195px; width: 128px; border: 2px dashed #30363D; border-radius: 8px;}
         .drop-zone-stacked.dragover { border-color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
 
@@ -411,18 +409,15 @@
         
         .status-badge { display: inline-block; width: 85px; font-weight: bold; }
 
-        /* 💡 圖四：傷害與狀態指示物樣式 */
         .counter-badge { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: default; z-index: 30; pointer-events: none;}
         .dmg-counter { width: 26px; height: 26px; background: #D32F2F; color: #FFF; border: 2px solid #FFF; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.6);}
         .status-counter { width: 30px; height: 30px; font-size: 14px;}
         .source-counter { cursor: grab; pointer-events: auto;}
         
-        /* 💡 圖四：指示物來源堆樣式 */
         #accessory-panel { background: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 10px; margin-top: 10px;}
         #accessory-panel summary { color: #FFD700; font-weight: bold; font-size: 15px; cursor: pointer; display: flex; align-items: center; gap: 8px;}
         .counter-pile { display: flex; gap: 10px; margin-top: 10px;}
 
-        /* 硬幣投擲 Overlay */
         #coin-overlay, #dice-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; flex-direction: column; cursor: pointer;}
         #coin-visual, #dice-visual { font-size: 100px;}
 
@@ -435,6 +430,20 @@
     </style>
 </head>
 <body>
+    <!-- 💡 宣告與初始化移至最頂部，防止 ReferenceError 崩潰 -->
+    <script>
+        const API_BASE = "https://ptcg-octoplus-api.onrender.com";
+        const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
+
+        function getCardBackSVG(color) {
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><g transform="translate(16, 28) scale(0.3)"><text x="0" y="48" font-size="100">🐙</text></g></svg>`;
+            return `data:image/svg+xml;base64,${btoa(svg)}`;
+        }
+        
+        let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
+        let currentCardBackColor = '#2B579A';
+    </script>
 
     <!-- 🐙 PTCG 小章魚：Replay. Analyze. Win More. 5~10 秒開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
@@ -537,7 +546,6 @@
                     </div>
                 </div>
 
-                <!-- 💡 圖四：道具箱詳情 -->
                 <details id="accessory-panel">
                     <summary>🎲 小章魚道具箱</summary>
                     <div style="display:flex; gap: 10px; margin-top: 10px;">
@@ -640,12 +648,15 @@
         </div>
 
         <details id="prob-panel">
-            <summary>
+            <!-- 💡 圖一修復：將情境教學按鈕移到與標題同行，並確保不被 summary 預設行為干擾 -->
+            <summary style="display:flex; justify-content:space-between; align-items:center; width:100%; position:relative;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
+                    <button class="btn-secondary" style="padding:2px 10px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
                     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
                 </div>
-                <button id="btn-prob-tut" class="btn-secondary" style="width:auto; padding:4px 12px; font-size:12px; color:#FFD700; border:1px solid #FFD700; border-radius:15px; display:inline-flex; align-items:center; gap:4px; font-weight:bold; cursor:pointer; background:#21262D;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">💡 情境推演教學</button>
             </summary>
             
             <div class="prob-grid">
@@ -688,7 +699,6 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
-                <!-- 💡 圖二：新增獎賞卡轉換按鈕 -->
                 <div class="zone-title">
                     <span id="title-prize">🏆 獎賞卡 (Prize)</span>
                     <button class="btn-secondary" style="width:auto; padding:3px 8px; font-size:12px; color:#FFD700; border-color:#FFD700;" onclick="togglePrizeFaceUp()">🔄 轉換正反</button>
@@ -740,10 +750,8 @@
                 </div>
             </div>
 
-            <!-- 💡 圖三：縮小右側空間 -->
             <div class="col-right">
                 <div style="display:flex; flex-direction:column; align-items:center;">
-                    <!-- 💡 修復張數緊湊樣式 -->
                     <div class="zone-title-compact">
                         <span>🗃️ <span id="title-deck">牌庫</span></span>
                         <span style="color:#00E5FF;">( <span id="deck-count">0</span> )</span>
@@ -761,12 +769,11 @@
                     </div>
                     <div id="zone-deck" class="drop-zone-stacked" style="cursor:pointer;" onclick="openSearchModal('deck')" ondrop="drop(event)" ondragover="allowDrop(event)">
                         <!-- 初始狀態顯示牌背 -->
-                        <div class="card-wrapper" style="position:absolute;"><img src="${getCardBackSVG('#2B579A')}" style="pointer-events:none;"></div>
+                        <div class="card-wrapper" style="position:absolute;"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MyIgaGVpZ2h0PSI4OCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzJCNTc5QSIgcng9IjQiIC8+PHJlY3QgeD0iNSUiIHk9IjUlIiB3aWR0aD0iOTAlIiBoZWlnaHQ9IjkwJSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMikiIHN0cm9rZS13aWR0aD0iMSIgcng9IjIiIC8+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTYsIDI4KSBzY2FsZSgwLjMpIj48dGV4dCB4PSIwIiB5PSI0OCIgZm9udC1zaXplPSIxMDAiPvCfkZk8L3RleHQ+PC9nPjwvc3ZnPg==" style="pointer-events:none;"></div>
                     </div>
                     
                     <div style="display:flex; gap:6px; margin-top:5px; width:128px;">
-                        <button class="btn btn-secondary" id="btn-draw-card" style="flex:1; padding:8px; font-size:13px;" onclick="drawCard()">🎴 抽一張牌</button>
-                        <!-- 💡 修復洗牌按鈕邏輯 -->
+                        <button class="btn btn-secondary" id="btn-draw-card" style="flex:1; padding:8px; font-size:13px;" onclick="drawCard()">🎴 抽牌</button>
                         <button class="btn btn-secondary" id="btn-shuffle-deck" style="flex:1; padding:8px; font-size:13px; color:#FFD700; border-color:#FFD700;" onclick="shuffleDeck()">🔀 洗牌</button>
                     </div>
                 </div>
@@ -781,6 +788,7 @@
             </div>
         </div>
         
+        <!-- 💡 圖一：修正歷史紀錄按鈕的絕對定位，作為教學 Step 6 的錨點 -->
         <div id="history-controls">
             <button class="history-btn" id="btn-export-game" onclick="exportGameState()">📤 分享對局</button>
             <button class="history-btn" id="btn-import-game" onclick="importGameState()">📥 載入對局</button>
@@ -882,7 +890,7 @@
                 <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用七天 (每日額度限制 30 次)</button>
                 <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">💎 2. 訂閱 1 個月 / 99 元</button>
                 <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">👑 3. 訂閱 3 個月 / 250 元</button>
-                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服\"私訊小章魚轉帳開通，或使用邀請碼兌換。')">🏆 4. 訂閱一年 / 599 元</button>
+                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">🏆 4. 訂閱一年 / 599 元</button>
                 <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入會員邀請碼</button>
             </div>
             
@@ -971,16 +979,6 @@
 
     <!-- 📜 核心 JavaScript -->
     <script>
-        // supabse 相關宣告移到前面
-        const API_BASE = "https://ptcg-octoplus-api.onrender.com";
-        const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuamFqaW13cHV1aGtkeGVsZ3dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNTg4MTQsImV4cCI6MjEwMDYzNDgxNH0.0HYCJC25Mgv5lkdt5BdoWO825wvtFLbjuS7pi1loSfg";
-
-        let supabaseClient = null;
-        try {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch (e) { console.error("Supabase 初始化失敗", e); }
-
         // 💡 圖二：開啟進階情境專用教學 Modal 函式
         function openProbTutorial() {
             document.getElementById('prob-tutorial-modal').style.display = 'flex';
@@ -994,7 +992,6 @@
             status: { top: '35px', left: '5px' }
         };
 
-        // 💡 圖四：指示物 HTML 生成
         function createCounterEl(type, val, cardId) {
             const div = document.createElement('div');
             div.id = `cntr_${Math.random().toString(36).substr(2, 9)}`;
@@ -1014,7 +1011,28 @@
             return div;
         }
 
-        // 🐙 小章魚吉祥物：語錄庫 & 點擊彈跳 & 自由拖曳邏輯
+        // 🔀 洗牌函式
+        function shuffleDeck() {
+            let deckCards = gameCards.filter(c => c.zone === 'deck');
+            if (deckCards.length <= 1) return alert("⚠️ 牌庫卡片不足（0 或 1 張），無需洗牌！");
+            
+            // 真實隨機打亂
+            deckCards.sort(() => Math.random() - 0.5);
+            
+            // 替換原本牌庫的順序
+            let otherCards = gameCards.filter(c => c.zone !== 'deck');
+            gameCards = otherCards.concat(deckCards);
+
+            saveState();
+            renderBoard();
+            
+            let msg = document.getElementById('marquee-text');
+            if (msg) {
+                msg.innerHTML = "🔀 牌庫已重新完成隨機洗牌！";
+                msg.style.color = "#FFD700";
+            }
+        }
+
         const octoQuotes = [
             "Replay. Analyze. Win More! 今天也要贏！",
             "萬次蒙地卡羅算力已就緒！",
@@ -1096,7 +1114,6 @@
             document.addEventListener('touchend', onEnd);
         }
 
-        // 🌟 開場 Splash 動畫 3 階段演展控制
         let splashDismissed = false;
 
         function dismissSplash() {
@@ -1148,15 +1165,14 @@
             }, intervalMs);
         }
 
-        // 🌟 新手引導導覽 6 步驟設定
+        // 💡 圖一修復：純粹 6 步驟，且歷史按鈕不會因為捲軸跑位
         const tourSteps = [
             { id: 'import-section', title: '💡 步驟 1/6：牌組匯入', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
             { id: 'btn-start-game', title: '🎲 步驟 2/6：開局沙盤', desc: '匯入好牌組就可以開局啦！系統會自動幫您隨機洗牌並發放手牌與獎賞卡。' },
             { id: 'cloud-save-section', title: '💾 步驟 3/6：雲端牌組紀錄', desc: '可以記錄牌組，節省時間。隨時儲存最愛的卡組，跨裝置一鍵載入！' },
             { id: 'battle-board-area', title: '⚔️ 步驟 4/6：覆盤戰場', desc: '設定覆盤戰場，卡片可以自動拖曳呦！支援完美疊放與錯位排列。' },
-            // 💡 新功能引導：情境教學與道具箱
-            { id: 'btn-prob-tut', title: '🎯 步驟 5/6：萬次蒙地卡羅推演教學', desc: '這裡有專門的教學，教你如何精算複雜 Combo 機率！點擊按鈕開啟教學。' },
-            { id: 'accessory-panel', title: '🎲 步驟 6/6：道具箱', desc: '內建小章魚硬幣、客製骰子與傷害/狀態指示物，真實還原對局體驗！指示物拖曳至卡片上即可依附，卡片移開會自動清空喔。' }
+            { id: 'prob-panel', title: '🎯 步驟 5/6：萬次蒙地卡羅推演', desc: '複雜機率運算、情境分析沒煩惱！一鍵精算極限對局手牌率。' },
+            { id: 'history-controls', title: '📤 步驟 6/6：一鍵對局分享', desc: '想跟朋友分享嗎？這裡可以一秒分享～產生 6 位數短代碼還原戰局與機率推演！' }
         ];
 
         let currentTourIndex = 0;
@@ -1182,37 +1198,25 @@
             if (targetEl) {
                 targetEl.classList.add('tour-active-target');
                 
-                // 非固定定位元素進行捲動定位
-                if (step.id !== 'history-controls') {
+                // 💡 圖一修復：如果定位是 fixed (像歷史按鈕)，不依賴 scrollIntoView 避免偏移
+                if (step.id === 'history-controls') {
+                    box.style.display = 'block';
+                    let boxHeight = box.offsetHeight || 220;
+                    let boxWidth = box.offsetWidth || 320;
+                    
+                    // 強制固定在螢幕右下角分享按鈕的上方
+                    box.style.top = (window.innerHeight - boxHeight - 80) + 'px';
+                    box.style.left = (window.innerWidth - boxWidth - 30) + 'px';
+                } else {
                     targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
 
-                const rect = targetEl.getBoundingClientRect();
-                box.style.display = 'block';
+                    const rect = targetEl.getBoundingClientRect();
+                    box.style.display = 'block';
 
-                let boxHeight = box.offsetHeight || 220;
-                let boxWidth = box.offsetWidth || 320;
-                let top, left;
-
-                // 💡 智慧定位與展開面板
-                if (step.id === 'btn-prob-tut') {
-                    // 自動展開進階情境面板
-                    const details = document.getElementById('prob-panel');
-                    if (details) details.open = true;
-                    setTimeout(() => {
-                        const newRect = targetEl.getBoundingClientRect();
-                        box.style.top = (newRect.top - boxHeight - 20) + 'px';
-                        box.style.left = (newRect.left + (newRect.width / 2) - (boxWidth / 2)) + 'px';
-                    }, 100);
-                } else if (step.id === 'accessory-panel') {
-                     const details = document.getElementById('accessory-panel');
-                    if (details) details.open = true;
-                     box.style.top = (rect.top - boxHeight - 20) + 'px';
-                     box.style.left = (rect.left + (rect.width / 2) - (boxWidth / 2)) + 'px';
-                }
-                else {
-                    top = rect.bottom + 15;
-                    left = rect.left;
+                    let boxHeight = box.offsetHeight || 220;
+                    let boxWidth = box.offsetWidth || 320;
+                    let top = rect.bottom + 15;
+                    let left = rect.left;
 
                     if (top + boxHeight > window.innerHeight) {
                         top = rect.top - boxHeight - 15;
@@ -1220,7 +1224,8 @@
                     if (left + boxWidth > window.innerWidth) {
                         left = window.innerWidth - boxWidth - 25;
                     }
-                     box.style.top = Math.max(20, top) + 'px';
+
+                    box.style.top = Math.max(20, top) + 'px';
                     box.style.left = Math.max(20, left) + 'px';
                 }
 
@@ -1456,7 +1461,7 @@
         let searchTimeout = null;
         let isDragging = false; 
         let benchSize = 5;
-        let isPrizeFaceUp = false; // 💡 圖二：獎賞卡是否全部正面朝上預設值
+        let isPrizeFaceUp = false;
         let historyStates = [];
         let historyPtr = -1;
 
@@ -1663,7 +1668,7 @@
         }
 
         const translations = {
-            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標\"與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
+            zh: { tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！", btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", btnTutReady: "我準備好了！", benchLabel: "格" },
             en: { tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", tabLink: "🔗 Official Code", tabText: "📝 Limitless Text", tabEdit: "🛠️ Search & Edit", phDeckCode: "Enter official deck code (e.g. uCRvSM...)", btnParseOfficial: "🌐 Parse Official Deck", phDeckText: "Paste Limitless deck text...", btnParseText: "📥 Parse Text Deck", lblSearchDb: "Database Search:", phSearchInput: "Type card name to search...", lblCustomCard: "Custom Proxy Card:", phCustomCard: "Proxy Card Name", btnAddCustom: "➕ Create Proxy", deckListTitle: "Deck List", btnPreviewDeck: "👁️ Preview", btnStartGame: "🎲 Lock & Start Game", btnSaveCloud: "💾 Save Cloud", optLoadCloud: "Load Cloud Deck...", disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.", lblZoom: "🔍 UI Zoom", summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)", txtToggleBadge: "Click to Expand/Collapse", lblStep1: "🔥 1. Direct Target Cards (Multi-select)", lblRuleAnd: "Require All (AND)", lblRuleOr: "Require Any (OR)", btnSelectDirect: "🖼️ Select Targets from Deck", lblDraw1: "First Draw Count:", lblDeadHand: "Existing Dead Cards in Hand:", lblStep2: "🔄 2. Chain Resources (Multi-card)", btnAddChain: "🖼️ Add Chain Card", btnRunSim: "🎲 Run Deep Simulation", btnSaveScenario: "📌 Save to Comparison", btnClearBoard: "🗑️ Clear Comparison", titlePrize: "🏆 Prize Cards", titleStadium: "🟠 Stadium", titleActive: "🔴 Active Spot", titleBench: "🔵 Bench", titleHand: "Hand", txtHandSub: "Fan view with drag-and-drop", btnHandShuffle: "🔄 Shuffle Back", btnHandDiscard: "🗑️ Discard All", titleDeck: "🗃️ Deck", btnDrawCard: "🎴 Draw 1 Card", titleDiscard: "🪦 Discard Pile", btnExportGame: "📤 Share Match", btnImportGame: "📥 Load Match", btnUndo: "↩ Undo", btnRedo: "Redo ↪", modalAuthTitle: "Unlock Sandbox Pro", btnCloseAuth: "Close", modalShareTitle: "📤 Share Game State", modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!", btnShareClose: "Close", btnShareCopy: "📋 Copy Short Code", btnGalleryClose: "Close", galleryConfirmBtn: "✅ Confirm Selection", tutMainTitle: "📖 PTCG Sandbox Tutorial", btnTut1: "🛠️ 1. Deck Builder", btnTut2: "⚔️ 2. Battle Board", btnTut3: "🎲 3. Probabilities", tut1Desc: "There are three ways to build/import a deck. Choose one to learn:", btnTut1A: "A. Official Code", btnTut1B: "B. Limitless Export", btnTut1C: "C. Search & Custom", tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.", tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.", tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", btnTutReady: "I'm Ready!", benchLabel: "Slots" }
         };
 
@@ -1691,14 +1696,6 @@
             setTxt('btn-add-custom', t.btnAddCustom); setTxt('txt-deck-list-title', t.deckListTitle); setTxt('btn-preview-deck', t.btnPreviewDeck); setTxt('btn-start-game', t.btnStartGame); setTxt('btn-save-cloud', t.btnSaveCloud); setTxt('opt-load-cloud', t.optLoadCloud); setTxt('txt-disclaimer', t.disclaimer, true); setTxt('lbl-zoom', t.lblZoom); setTxt('summary-prob-title', t.summaryProbTitle); setTxt('txt-toggle-badge', t.txtToggleBadge); setTxt('lbl-step1', t.lblStep1); setTxt('lbl-rule-and', t.lblRuleAnd); setTxt('lbl-rule-or', t.lblRuleOr); setTxt('btn-select-direct', t.btnSelectDirect); setTxt('lbl-draw1', t.lblDraw1); setTxt('lbl-dead-hand', t.lblDeadHand); setTxt('lbl-step2', t.lblStep2); setTxt('btn-add-chain', t.btnAddChain); setTxt('btn-run-sim', t.btnRunSim); setTxt('btn-save-scenario', t.btnSaveScenario); setTxt('btn-clear-board', t.btnClearBoard); setTxt('title-prize', t.titlePrize); setTxt('title-stadium', t.titleStadium); setTxt('title-active', t.titleActive); setTxt('title-bench', t.titleBench); setTxt('title-hand', t.titleHand); setTxt('txt-hand-sub', t.txtHandSub); setTxt('btn-hand-shuffle', t.btnHandShuffle); setTxt('btn-hand-discard', t.btnHandDiscard); setTxt('title-deck', t.titleDeck); setTxt('btn-draw-card', t.btnDrawCard); setTxt('title-discard', t.titleDiscard); setTxt('btn-export-game', t.btnExportGame); setTxt('btn-import-game', t.btnImportGame); setTxt('btn-undo', t.btnUndo); setTxt('btn-redo', t.btnRedo); setTxt('modal-auth-title', t.modalAuthTitle); setTxt('btnCloseAuth', t.btnCloseAuth); setTxt('modal-share-title', t.modalShareTitle); setTxt('modal-share-desc', t.modalShareDesc); setTxt('btn-share-close', t.btnShareClose); setTxt('btn-share-copy', t.btnShareCopy); setTxt('btn-gallery-close', t.btnGalleryClose); setTxt('gallery-confirm-btn', t.galleryConfirmBtn); setTxt('tut-main-title', t.tutMainTitle); setTxt('btn-tut1', t.btnTut1); setTxt('btn-tut2', t.btnTut2); setTxt('btn-tut3', t.btnTut3); setTxt('tut1-desc', t.tut1Desc); setTxt('btn-tut1-a', t.btnTut1A); setTxt('btn-tut1-b', t.btnTut1B); setTxt('btn-tut1-c', t.btnTut1C); setTxt('tut1-a-desc', t.tut1ADesc); setTxt('tut1-b-desc', t.tut1BDesc); setTxt('tut1-c-desc', t.tut1CDesc); setTxt('tut2-h4', t.tut2H4); setTxt('tut2-desc', t.tut2Desc); setTxt('tut3-h4', t.tut3H4); setTxt('tut3-desc', t.tut3Desc); setTxt('btn-tut-ready', t.btnTutReady); setTxt('bench-size-label', `${benchSize} ${t.benchLabel}`);
             renderTargetUI(); renderChainUI(); renderBoard();
         }
-
-        // 💡 招牌小章魚 LOGO Card Back
-        function getCardBackSVG(color) {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><g transform="translate(16, 28) scale(0.3)"><text x="0" y="48" font-size="100">🐙</text></g></svg>`;
-            return `data:image/svg+xml;base64,${btoa(svg)}`;
-        }
-        
-        let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
 
         function toggleSidebar() { const sb = document.getElementById('sidebar'); const btn = document.getElementById('sidebar-toggle-btn'); if(sb.style.width === '0px') { sb.style.width = '360px'; btn.innerText = '«'; } else { sb.style.width = '0px'; btn.innerText = '»'; } }
         function switchTab(tabId) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); event.target.classList.add('active'); document.getElementById(tabId).classList.add('active'); }
@@ -1855,7 +1852,7 @@
 
         function addCustomCard() { const name = document.getElementById('custom-card-input').value; if(!name) return; if(!deckDict[name]) deckDict[name] = {qty:0, img: "default_back", name: name, fallback_img: DEFAULT_CARDBACK}; deckDict[name].qty++; updateDeckUI(); document.getElementById('custom-card-input').value = ""; }
         function debounceSearch(val) { clearTimeout(searchTimeout); if(!val) { document.getElementById('search-results').style.display='none'; return; } searchTimeout = setTimeout(() => { fetch(`${API_BASE}/api/v1/search_db?q=${val}`).then(r=>r.json()).then(d=>{ let resBox = document.getElementById('search-results'); resBox.innerHTML = ""; if(d.results && d.results.length > 0) { d.results.forEach(c => { let div = document.createElement('div'); div.className = 'search-result-item'; div.innerHTML = `<img src="${c.img}" onerror="this.onerror=null; this.src='${DEFAULT_CARDBACK}'"> <span style="font-size:13px;">${c.name}</span>`; div.onclick = () => { if(!deckDict[c.key]) deckDict[c.key] = {qty:0, img: c.img, name: c.name, fallback_img: DEFAULT_CARDBACK}; deckDict[c.key].qty++; updateDeckUI(); document.getElementById('search-input').value = ""; resBox.style.display='none'; }; resBox.appendChild(div); }); resBox.style.display = 'block'; } else { resBox.style.display = 'none'; } }); }, 300); }
-        function changeCardBack(color) { DEFAULT_CARDBACK = getCardBackSVG(color); renderBoard(); if(document.getElementById('gallery-modal').style.display === 'flex') { let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : []; if(items.length) renderGalleryItems(items); } }
+        function changeCardBack(color) { currentCardBackColor = color; DEFAULT_CARDBACK = getCardBackSVG(color); renderBoard(); if(document.getElementById('gallery-modal').style.display === 'flex') { let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : []; if(items.length) renderGalleryItems(items); } }
         function closeGalleryModal(e) { if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none'; }
         
         function handleCardClick(imgUrl, fallbackUrl) { 
@@ -1952,7 +1949,7 @@
                 let c = chainList[k]; let div = document.createElement('div'); div.className = 'target-row'; div.style.flexDirection = 'column'; div.style.alignItems = 'stretch'; div.style.borderLeftColor = '#FFD700'; 
                 let isSearch = c.type.includes('檢索') || c.type.includes('Search'); 
                 let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let imgHtml = `<img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:26px;height:36px;margin-right:8px; border-radius:3px;">`; 
-                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
+                let optsZH = `<option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>`; 
                 
                 let safeKey = k.replace(/'/g, "\\\\'");
                 let tgNames = Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...';
@@ -1983,7 +1980,6 @@
         function removeChain(k) { delete chainList[k]; renderChainUI(); }
         function openChainTargetSelector(parentKey) { currentModalMode = 'chain_target_' + parentKey; tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : []; document.getElementById('gallery-title').innerText = "🎯 選擇檢索目標卡 (可多選)"; document.getElementById('gallery-confirm-btn').style.display = 'block'; renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }))); document.getElementById('gallery-modal').style.display = 'flex'; }
         
-        // 🚀【對局與機率推演一鍵全打包分享】
         function exportGameState() { 
             if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。"); 
             
@@ -2029,7 +2025,6 @@
             loadSharedGameByCode(code); 
         }
         
-        // 🚀【一鍵全還原：戰場卡片 + 牌組 + 進階機率連鎖分析】
         function loadSharedGameByCode(code) { 
             fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => { 
                 if(d.success) { 
@@ -2102,7 +2097,6 @@
         function undo() { if(historyPtr > 0) { historyPtr--; gameCards = JSON.parse(JSON.stringify(historyStates[historyPtr])); renderBoard(); } updateHistoryBtns(); saveLocalData(); }
         function redo() { if(historyPtr < historyStates.length - 1) { historyPtr++; gameCards = JSON.parse(JSON.stringify(historyStates[historyPtr])); renderBoard(); } updateHistoryBtns(); saveLocalData(); }
         function updateHistoryBtns() { document.getElementById('btn-undo').disabled = (historyPtr <= 0); document.getElementById('btn-redo').disabled = (historyPtr >= historyStates.length - 1); }
-        // 💡 圖四：最少減少至1格
         function changeBenchSize(delta) { benchSize = Math.max(1, Math.min(8, benchSize + delta)); document.getElementById('bench-size-label').innerText = `${benchSize} 格`; renderBenchSlots(); renderBoard(); }
         
         function renderBenchSlots() { 
@@ -2128,7 +2122,6 @@
                     gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck', counters: [] }); 
                 } 
             }); 
-            // 💡 真實洗牌
             gameCards.sort(() => Math.random() - 0.5); 
             for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand'; 
             for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`; 
@@ -2138,14 +2131,12 @@
             renderBoard(); 
         }
         
-        // 💡 圖三：卡背招牌化，修正 HTML 結構供指示物附著
         function createCardEl(c, isField=false) { 
             const div = document.createElement('div'); 
-            div.className = 'card-wrapper field-card'; // 💡 field-card 供 CSS 和 JS 判斷
+            div.className = 'card-wrapper field-card'; 
             div.id = c.id; 
             div.draggable = true; 
             div.ondragstart = (e) => { 
-                // 💡 判斷是否為卡片拖曳而非指示物拖曳
                 if (e.target.classList.contains('field-card')) {
                     isDragging = true; 
                     e.dataTransfer.setData("text/cardId", c.id); 
@@ -2163,7 +2154,6 @@
             let fallback = c.fallback_img || DEFAULT_CARDBACK;
             let isDefault = safeImg === DEFAULT_CARDBACK;
             
-            // 💡 圖二/三：處理卡片正反面 (獎賞卡邏輯)
             if (c.zone.startsWith('prize_') && !isPrizeFaceUp) {
                 safeImg = DEFAULT_CARDBACK;
                 isDefault = true;
@@ -2174,7 +2164,6 @@
             
             if(isField) { inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`; } 
             
-            // 💡 圖四：渲染依附在卡片上的指示物
             if (isField && c.counters && c.counters.length > 0) {
                 let dmgCount = 0;
                 c.counters.forEach(cntr => {
@@ -2184,7 +2173,7 @@
                              cntrEl.style.top = counterPositions[`dmg_${dmgCount}`].top;
                              cntrEl.style.left = counterPositions[`dmg_${dmgCount}`].left;
                              dmgCount++;
-                        } else { return; } // 最多顯示3個 dmg
+                        } else { return; }
                     } else {
                         cntrEl.style.top = counterPositions.status.top;
                         cntrEl.style.left = counterPositions.status.left;
@@ -2199,79 +2188,9 @@
 
         function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(idx, 1)[0]); saveState(); renderBoard(); } }
         
-        // 💡 圖二：Toggle 獎賞卡正反面
         function togglePrizeFaceUp() {
             isPrizeFaceUp = !isPrizeFaceUp;
             renderBoard();
-        }
-
-        // 💡 招牌洗牌算法與視覺提示
-        function shuffleDeck() {
-            let deckCards = gameCards.filter(c => c.zone === 'deck');
-            if (deckCards.length <= 1) return alert("⚠️ 牌庫卡片不足（0 或 1 張），無需洗牌！");
-            
-            deckCards.sort(() => Math.random() - 0.5);
-            
-            // 更新狀態
-            deckCards.forEach((c, idx) => {
-                let realIdx = gameCards.findIndex(orig => orig.id === c.id);
-                if (realIdx > -1) gameCards.splice(realIdx, 1);
-            });
-            gameCards = gameCards.concat(deckCards);
-
-            saveState();
-            renderBoard();
-            
-            let msg = document.getElementById('marquee-text');
-            if (msg) {
-                msg.innerHTML = "🔀 牌庫已重新完成隨機洗牌！";
-                msg.style.color = "#FFD700";
-            }
-        }
-
-        // 💡 道具箱投擲
-        function flipCoin() {
-            const result = Math.random() > 0.5 ? 'heads' : 'tails';
-            const overlay = document.getElementById('coin-overlay');
-            const visual = document.getElementById('coin-visual');
-            const text = document.getElementById('coin-result-text');
-            overlay.style.display = 'flex';
-            
-            let count = 0;
-            let timer = setInterval(() => {
-                visual.innerText = count % 2 === 0 ? '🐙' : '卡';
-                text.innerText = '投擲中...';
-                count++;
-                if (count > 6) {
-                    clearInterval(timer);
-                    if (result === 'heads') { visual.innerText = '🐙'; text.innerText = '正面 (小章魚)'; }
-                    else { visual.innerText = '卡'; text.innerText = '反面 (卡背)'; }
-                    let msg = document.getElementById('marquee-text');
-                    msg.innerHTML = `🪙 硬幣投擲結果：${result==='heads'?'正面 (小章魚)':'反面 (卡背)'}`;
-                    saveState(); // 紀錄硬幣投擲
-                }
-            }, 100);
-        }
-
-        function rollDice() {
-            const overlay = document.getElementById('dice-overlay');
-            const visual = document.getElementById('dice-visual');
-            overlay.style.display = 'flex';
-            
-            const results = ['🐙', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
-            let count = 0;
-            let timer = setInterval(() => {
-                visual.innerText = results[count % 6];
-                count++;
-                if (count > 6) {
-                    clearInterval(timer);
-                    const final = Math.ceil(Math.random() * 6);
-                    visual.innerText = results[final - 1];
-                    let msg = document.getElementById('marquee-text');
-                    msg.innerHTML = `🎲 骰子投擲結果：${final}`;
-                    saveState(); // 紀錄骰子投擲
-                }
-            }, 100);
         }
 
         function renderBoard() { 
@@ -2285,8 +2204,7 @@
             fieldZones.forEach(zName => { let domId = 'zone-' + zName.replace('_','-'); let domEl = document.getElementById(domId); if(!domEl) return; let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2; arr.forEach((c, idx) => { let el = createCardEl(c, true); el.style.position = 'absolute'; el.style.top = '50%'; el.style.left = '50%'; el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`; el.style.zIndex = idx; domEl.appendChild(el); }); }); 
             for(let i=0; i<6; i++) { let arr = zones['prize_'+i]||[]; if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false)); } 
             
-            // 💡 圖三：修正張數顯示與牌堆樣式
-            let deckArr = zones['deck']||[]; document.getElementById('deck-count').innerText = deckArr.length; if(deckArr.length > 0) { let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; el.innerHTML = `<img src="${getCardBackSVG(currentCardBackColor||'#2B579A')}" style="pointer-events:none;">`; document.getElementById('zone-deck').appendChild(el); } 
+            let deckArr = zones['deck']||[]; document.getElementById('deck-count').innerText = deckArr.length; if(deckArr.length > 0) { let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; el.innerHTML = `<img src="${DEFAULT_CARDBACK}" style="pointer-events:none;">`; document.getElementById('zone-deck').appendChild(el); } 
             
             let discArr = zones['discard']||[]; document.getElementById('discard-count').innerText = discArr.length; 
             if(discArr.length > 0) { 
@@ -2303,33 +2221,27 @@
         
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('dragover'); }
         
-        // 💡 圖四：智慧拖曳核心邏輯 (卡片 vs 指示物)
         function drop(ev) { 
             ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); 
             const cardId = ev.dataTransfer.getData("text/cardId");
             const counterType = ev.dataTransfer.getData("text/counterType");
 
-            // 💡 處理卡片拖曳
             if (cardId) {
                 let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_'); 
                 let c = gameCards.find(c => c.id === cardId); 
                 if(c) { 
                     if(targetZone.startsWith('prize_')) { let occupier = gameCards.find(card => card.zone === targetZone); if(occupier) occupier.zone = c.zone; } 
                     c.zone = targetZone; 
-                    // 💡 圖四：移出戰鬥/備戰區自動消失指示物
                     if (targetZone !== 'active' && !targetZone.startsWith('bench_')) {
                         c.counters = []; 
                     }
                     gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]); saveState(); setTimeout(() => renderBoard(), 10); 
                 } 
             }
-            // 💡 處理指示物拖曳
             else if (counterType) {
                 const targetZone = ev.currentTarget.id;
-                // 只有戰鬥區或備戰區才能放置
                 if (targetZone === 'zone-active' || targetZone.startsWith('zone-bench-')) {
                     const counterVal = ev.dataTransfer.getData("text/counterVal");
-                    // 獲取滑鼠點擊座標，檢測下方卡片
                     const elements = document.elementsFromPoint(ev.clientX, ev.clientY);
                     let targetCardId = null;
                     for (let el of elements) {
@@ -2349,7 +2261,6 @@
         }
         document.querySelectorAll('.drop-zone, .drop-zone-stacked').forEach(z => z.addEventListener('dragleave', (e) => e.currentTarget.classList.remove('dragover')));
         
-        // 💡 圖四：指示物來源堆拖曳設定
         document.querySelectorAll('.source-counter').forEach(el => {
             el.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData("text/counterType", e.target.dataset.type);
@@ -2434,12 +2345,23 @@
             } catch (err) { alert("載入失敗：" + err.message); }
         }
 
-        let currentCardBackColor = '#2B579A'; // 💡 紀錄目前卡背顏色
-        function changeCardBack(color) { 
-            currentCardBackColor = color; // 💡 更新
-            DEFAULT_CARDBACK = getCardBackSVG(color); renderBoard(); if(document.getElementById('gallery-modal').style.display === 'flex') { let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : []; if(items.length) renderGalleryItems(items); } 
+        async function fetchMarquee() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/v1/marquee`);
+                const data = await resp.json();
+                let text = data.text || "歡迎使用 PTCG 小章魚";
+                let el = document.getElementById('marquee-text');
+                el.innerHTML = text;
+                let duration = Math.max(text.length * 0.45, 20);
+                el.style.animationDuration = duration + 's';
+            } catch (e) {
+                let el = document.getElementById('marquee-text');
+                el.innerHTML = "歡迎使用 PTCG 小章魚";
+                el.style.animationDuration = '20s';
+            }
         }
-
+        
+        window.addEventListener('load', fetchMarquee);
     </script>
 </body>
 </html>
