@@ -23,7 +23,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; position: relative; }
 
-        /* 🌟 電競級震撼 Splash 開場動畫 (100% 無版權問題) */
+        /* 🌟 電競級震撼 Splash 開場動畫 */
         #octopus-splash {
             position: fixed;
             top: 0; left: 0;
@@ -160,7 +160,7 @@
             transition: width 0.03s linear;
         }
 
-        /* 🐙 獨立懸浮 3D 可拖曳小章魚吉祥物 (完全不干涉戰場版型) */
+        /* 🐙 獨立懸浮 3D 可拖曳小章魚吉祥物 */
         #octo-mascot-wrapper {
             position: fixed;
             bottom: 25px;
@@ -327,7 +327,6 @@
         .ab-item { min-width: 180px; background: #21262D; border-top: 4px solid #444; border-radius: 6px; padding: 12px; flex-shrink: 0; position: relative; cursor: pointer; transition: 0.2s; }
         .ab-item:hover { background: #30363D; transform: translateY(-2px); }
         
-        /* 🌟 戰場原始完美比例 (完全還原) */
         .battle-container { display: flex; gap: 30px; flex: 1; min-height: 600px; overflow-x: auto; }
         .col-left { width: 280px; flex-shrink: 0; }
         .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
@@ -508,8 +507,8 @@
                     </div>
                 </div>
 
-                <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center;">
-                    <span id="txt-status">目前狀態：未登入</span> <br>
+                <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center; border: 1px solid #30363D;">
+                    <span id="txt-status">目前狀態：載入中...</span> <br>
                     <button class="btn" id="btn-unlock" style="background:#E34C26; padding:6px; margin-top:8px;" onclick="document.getElementById('sub-modal').style.display='flex'">訂閱、輸入邀請碼</button>
                 </div>
 
@@ -1324,21 +1323,69 @@
             });
         }
 
-        function handleSession(session) {
+        // 👑【會員狀態與到期日即時讀取與智慧顯示機制】
+        async function handleSession(session) {
             document.getElementById('gate-overlay').style.display = 'none';
             document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
-            document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
-            document.getElementById('auth-status-bar').style.background = "rgba(35, 134, 54, 0.2)";
             document.getElementById('btn-unlock').innerText = "訂閱、輸入邀請碼";
-            
+
+            try {
+                if (supabaseClient) {
+                    const { data, error } = await supabaseClient
+                        .from('profiles')
+                        .select('is_pro, pro_expires_at')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (data) {
+                        let isPro = data.is_pro;
+                        let expiresAt = data.pro_expires_at;
+                        let hasActiveSub = false;
+
+                        if (expiresAt) {
+                            let expDate = new Date(expiresAt.replace("Z", "+00:00"));
+                            if (new Date() < expDate) hasActiveSub = true;
+                        }
+
+                        if (isPro || hasActiveSub) {
+                            let expStr = "";
+                            if (expiresAt) {
+                                let d = new Date(expiresAt.replace("Z", "+00:00"));
+                                if (d.getFullYear() >= 2090) {
+                                    expStr = "終身尊榮 VIP ♾️";
+                                } else {
+                                    let month = String(d.getMonth() + 1).padStart(2, '0');
+                                    let day = String(d.getDate()).padStart(2, '0');
+                                    expStr = `${d.getFullYear()}-${month}-${day}`;
+                                }
+                            } else {
+                                expStr = "終身尊榮 VIP ♾️";
+                            }
+
+                            document.getElementById('txt-status').innerHTML = `👑 <b>Pro 專業會員</b><br><span style="font-size:11px; color:#FFD700;">(有效期限: ${expStr})</span>`;
+                            document.getElementById('auth-status-bar').style.background = "rgba(255, 215, 0, 0.12)";
+                            document.getElementById('auth-status-bar').style.border = "1px solid rgba(255, 215, 0, 0.5)";
+                        } else {
+                            document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(每日 30 次額度)</span>`;
+                            document.getElementById('auth-status-bar').style.background = "rgba(33, 38, 44, 1)";
+                            document.getElementById('auth-status-bar').style.border = "1px solid #30363D";
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Profile status fetch error:", err);
+                document.getElementById('txt-status').innerText = "已登入：" + (session.user.email || session.user.id.substring(0, 8));
+            }
+
             fetchSavedDecks(); 
+
+            if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
+                setTimeout(() => {
+                    startInteractiveTour();
+                }, 600);
+            }
         }
-// 🌟 【新增】登入成功後，如果是第一次使用的玩家，自動開啟 6 步驟引導！
-        if (localStorage.getItem('octoplus_tour_done') !== 'Y') {
-            setTimeout(() => {
-                startInteractiveTour();
-            }, 600);
-        }
+
         async function loginWithMagicLink() {
             let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
             let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
@@ -1418,6 +1465,10 @@
                     alert(data.detail);
                     document.getElementById('auth-overlay').style.display = 'none';
                     document.getElementById('sub-modal').style.display = 'none';
+                    
+                    // 重新刷新權限顯示
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session) handleSession(session);
                 } else {
                     alert(data.detail || "❌ 兌換失敗");
                 }
@@ -1436,6 +1487,10 @@
                 if (resp.ok) {
                     alert(data.detail);
                     document.getElementById('sub-modal').style.display = 'none';
+                    
+                    // 重新刷新權限顯示
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session) handleSession(session);
                 } else {
                     alert("❌ 失敗：" + data.detail);
                 }
@@ -1995,6 +2050,11 @@
                         resultEl.innerText = `${d.prob.toFixed(1)} %`; 
                         resultEl.style.color = "#00E5FF"; 
                         resultEl.style.fontSize = "46px";
+
+                        // ⚡ 免費玩家：即時更新左側狀態欄剩餘次數
+                        if (!d.is_pro && d.remaining_today !== undefined) {
+                            document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
+                        }
                     } else {
                         throw new Error(d.detail || "運算失敗");
                     }
