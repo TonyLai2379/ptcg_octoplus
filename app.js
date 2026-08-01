@@ -1621,8 +1621,15 @@ function calcPrizeProb() {
     let prizePool = prizeCards.map(c => c.key);
     
     for (let i = 0; i < simCount; i++) {
-        // 洗牌並抽出 d 張
-        let shuffled = prizePool.slice().sort(() => Math.random() - 0.5);
+        // 💡 這次是真的！套用數學絕對公平的 Fisher-Yates 洗牌演算法
+        let shuffled = [...prizePool];
+        for (let j = shuffled.length - 1; j > 0; j--) {
+            let r = Math.floor(Math.random() * (j + 1));
+            let tmp = shuffled[j];
+            shuffled[j] = shuffled[r];
+            shuffled[r] = tmp;
+        }
+        
         let drawnCards = shuffled.slice(0, draws);
         
         if (rule === 'AND') {
