@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PTCG 小章魚 - 覆盤最佳工具</title>
 
-    <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析、Limitless 英文牌組匯入與萬次蒙地卡羅手牌率精確推演。">
+    <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ptcg-octoplus.com/">
     <meta property="og:title" content="PTCG 小章魚 - Replay. Analyze. Win More.">
@@ -80,7 +80,6 @@
             </div>
             <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>✨ 發送驗證連結</button>
             <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
-            
             <button class="btn btn-secondary" onclick="document.getElementById('gate-overlay').style.display='none'" style="margin-top: 15px; font-size: 12px;">返回訪客沙盤</button>
         </div>
     </div>
@@ -226,12 +225,13 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
-                <!-- 💡 獎賞卡標題列：新增抽獎與機率算盤按鈕 -->
+                <!-- 💡 補回獎賞卡的抽獎與機率按鈕 -->
                 <div class="zone-title" id="title-prize">
                     <span>🏆 獎賞卡 (Prize)</span>
                     <div style="display: flex; gap: 4px;">
                         <button class="q-btn" style="padding: 2px 8px; font-size: 11px; background: linear-gradient(145deg, #8E2DE2, #4A00E0); color: white;" onclick="drawRandomPrize()">🎲 盲抽</button>
                         <button class="q-btn" style="padding: 2px 8px; font-size: 11px; background: linear-gradient(145deg, #00C9FF, #92FE9D); color: #000;" onclick="openPrizeProbModal()">📊 機率</button>
+                        <button class="q-btn" style="padding: 2px 8px; font-size: 11px;" onclick="togglePrizes()">🐙 翻面</button>
                     </div>
                 </div>
                 <div class="prize-grid">
@@ -245,9 +245,8 @@
             </div>
 
             <div class="col-center">
-                <!-- 戰鬥場絕對居中對齊結構 -->
                 <div class="field-row">
-                    <!-- 左：場地 (絕對定位於戰鬥場左側 30px 處) -->
+                    <!-- 左：場地 -->
                     <div class="stadium-wrapper">
                         <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
                         <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -259,7 +258,7 @@
                         <div id="zone-active" class="active-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     
-                    <!-- 右：戰術指示物 (靠右邊緣浮動放置) -->
+                    <!-- 右：戰術指示物面板 -->
                     <div class="tactical-toolbox vertical">
                         <div style="color:#00E5FF; font-weight:bold; font-size: 14px; margin-bottom: 2px;">🛠️ 戰術指示物</div>
                         <div style="font-size:11px; color:#aaa; margin-bottom: 12px;">(請拖曳至寶可夢)</div>
@@ -315,7 +314,6 @@
                 </div>
             </div>
 
-            <!-- 右側牌庫 -->
             <div class="col-right">
                 <div style="margin-bottom: 8px;">
                     <div class="zone-title-compact">
@@ -357,7 +355,7 @@
         </div>
     </div>
 
-    <!-- 💡 獎賞卡機率計算 Modal -->
+    <!-- 💡 補回獎賞卡機率算盤 Modal -->
     <div id="prize-prob-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 10015; display: none;">
         <div class="modal-card" style="width: 500px; text-align: center; border: 2px solid #00E5FF; background: #161B22; box-shadow: 0 10px 40px rgba(0, 229, 255, 0.2);" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -366,7 +364,7 @@
             </div>
             
             <div class="modal-body" style="padding-top: 10px;">
-                <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">從目前剩餘的獎賞卡中，抽中目標卡的極限機率！</p>
+                <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">從目前剩餘的獎賞卡中，抽中目標卡的機率！</p>
                 
                 <div style="background: #21262D; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 15px;">
                     <b style="font-size: 14px; color: #FFF;">🎯 想抽到什麼？ (目標卡)：</b>
@@ -391,7 +389,6 @@
             <h2 style="color: #FF5252; margin-bottom: 10px;">🐙 備戰區縮小啦！</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">場地空間受到擠壓，請選擇一格移至棄牌區：</p>
             <div id="bench-shrink-options" style="display: flex; gap: 12px; justify-content: center; overflow-x: auto; padding-bottom: 10px;">
-                <!-- JS 動態插入寶可夢 -->
             </div>
             <button class="btn btn-secondary" style="margin-top:15px; width: 100px; margin-left: auto; margin-right: auto;" onclick="document.getElementById('bench-shrink-modal').style.display='none'">取消</button>
         </div>
@@ -410,21 +407,16 @@
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🎯</div>
                     <h3 style="color:#FF5252; margin-bottom:8px; font-size:16px;">第 1 步：設定「直接解牌」目標</h3>
                     <p style="margin-bottom:6px;">你想抽到什麼卡？點擊 <b>「從牌組多選目標牌」</b> 挑選你的勝利關鍵！</p>
-                    <p style="color:#aaa; font-size: 13px;">👉 <b>AND (條件皆要有)</b>：適合 Combo 組合，例如「我要同時抽到能量 + 戰術寶可夢」。</p>
-                    <p style="color:#aaa; font-size: 13px;">👉 <b>OR (任一張達成)</b>：適合替代方案，例如「抽到 巢穴球 或 VIP 都可以」。</p>
                 </div>
                 <div style="background:#21262D; border-left:4px solid #00E5FF; padding:15px; border-radius:8px; margin-bottom:12px; position:relative;">
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🔄</div>
                     <h3 style="color:#00E5FF; margin-bottom:8px; font-size:16px;">第 2 步：設定「延續解牌」 (資源連鎖)</h3>
                     <p style="margin-bottom:6px;">沒抽到關鍵卡怎麼辦？靠過牌資源！點擊 <b>「新增連鎖牌」</b> 加入過牌手段。</p>
-                    <p style="color:#aaa; font-size: 13px;">👉 系統會聰明地使用「物品」或「支援者」繼續抽牌，甚至使用檢索卡把目標找出來！</p>
-                    <p style="color:#FFD700; font-size: 13px; font-weight: bold; margin-top: 4px;">✅ 神秘秘技：「已在手上/場上」打勾的話，代表這招保證能發動 (例如場上已有一隻能過牌的寶可夢)！</p>
                 </div>
                 <div style="background:#21262D; border-left:4px solid #FFD700; padding:15px; border-radius:8px; position:relative;">
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🎲</div>
                     <h3 style="color:#FFD700; margin-bottom:8px; font-size:16px;">第 3 步：執行深度推演</h3>
                     <p style="margin-bottom:6px;">設定完畢後，點擊 <b>「執行深度推演」</b>，小章魚會在 <b>0.1 秒內為你模擬 10,000 場真實洗抽！</b></p>
-                    <p style="color:#aaa; font-size: 13px;">👉 將結果 <b>「紀錄至比較板」</b>，就能輕鬆比較牌組微調後，勝率提升的實質差距！用數據輾壓對手！</p>
                 </div>
             </div>
             <div class="modal-footer"><button class="btn" style="width:100%; background:#238636; font-size:15px;" onclick="document.getElementById('prob-tutorial-modal').style.display='none'">瞭解！開始推演</button></div>
@@ -538,7 +530,7 @@
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
-    <!-- 強制載入最新版 v=14 -->
-    <script src="app.js?v=14"></script>
+    <!-- 強制載入最新版 v=15 -->
+    <script src="app.js?v=15"></script>
 </body>
 </html>
