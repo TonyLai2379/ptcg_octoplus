@@ -855,7 +855,39 @@ function changeCardBack(color) {
 function closeGalleryModal(e) {
     if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none';
 }
+// 💡 獎賞卡機率面板控制
+function openPrizeProbModal() {
+    document.getElementById('prize-prob-modal').style.display = 'flex';
+    renderPrizeTargetUI();
+    document.getElementById('prize-prob-result').innerText = '0.0 %';
+    document.getElementById('prize-prob-result').style.color = '#FFD700';
+}
 
+function renderPrizeTargetUI() {
+    const container = document.getElementById('prize-target-display');
+    container.innerHTML = "";
+    let keys = Object.keys(prizeTargetList);
+    if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; }
+    keys.forEach(k => {
+        let c = prizeTargetList[k];
+        let div = document.createElement('div');
+        div.className = 'target-row';
+        let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:30px;height:42px;margin-right:10px;">
+                <span style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">${c.name}</span>
+            </div> 
+            <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; display:flex; justify-content:center; align-items:center;" onclick="removePrizeTarget('${k.replace(/'/g, "\\\\'")}')">✕</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function removePrizeTarget(k) {
+    delete prizeTargetList[k];
+    renderPrizeTargetUI();
+}
 function handleCardClick(imgUrl, fallbackUrl) {
     if(!isDragging) {
         let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK;
@@ -878,6 +910,7 @@ function openPreviewModal() {
 function openSelector(type) {
     currentModalMode = type;
     
+    // 💡 新增獎賞卡模式判斷
     if (type === 'direct') tempSelectedKeys = Object.keys(targetList);
     else if (type === 'prize_target') tempSelectedKeys = Object.keys(prizeTargetList);
     else if (type.startsWith('chain_target_')) {
@@ -927,6 +960,8 @@ function renderGalleryItems(items) {
         div.innerHTML = inner;
         div.onclick = () => {
             if(currentModalMode === 'preview' || currentModalMode.startsWith('search_multi')) return handleCardClick(item.img, item.fallback_img);
+            
+            // 💡 確保 prize_target 模式支援多選點擊
             if(currentModalMode === 'direct' || currentModalMode.startsWith('chain_target_') || currentModalMode === 'prize_target') {
                 if(tempSelectedKeys.includes(item.key)) {
                     tempSelectedKeys = tempSelectedKeys.filter(k=>k!==item.key);
@@ -967,7 +1002,7 @@ function confirmGallerySelection() {
         targetList = newList;
         renderTargetUI();
     } else if (currentModalMode === 'prize_target') {
-        // 💡 獎賞卡目標選取
+        // 💡 處理獎賞卡目標選取
         let newList = {};
         tempSelectedKeys.forEach(k => { newList[k] = prizeTargetList[k] || { name: deckDict[k].name, img: deckDict[k].img }; });
         prizeTargetList = newList;
