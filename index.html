@@ -366,8 +366,18 @@
                 <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">從目前剩餘的獎賞卡中，抽中目標卡的極限機率！</p>
                 
                 <div style="background: #21262D; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 15px;">
-                    <b style="font-size: 14px; color: #FFF;">🎯 想抽到什麼？ (目標卡)：</b>
-                    <button class="btn-secondary" style="width:100%; padding:8px; margin: 10px 0;" onclick="openSelector('prize_target')">🖼️ 從牌組選擇目標</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                        <b style="font-size: 14px; color: #FFF;">🎯 想抽到什麼？ (目標卡)：</b>
+                    </div>
+                    
+                    <!-- 💡 新增 AND / OR 邏輯選擇 -->
+                    <div style="display:flex; flex-direction: row; gap:25px; align-items:center; margin-bottom: 12px; font-size:13px; background:#161B22; padding:8px; border-radius:6px; border: 1px solid #30363D;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="radio" name="prize_rule" value="AND" checked> <span style="color:#00E5FF;">條件皆要有 (AND)</span></label>
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="radio" name="prize_rule" value="OR"> <span style="color:#FF5252;">任一張達成 (OR)</span></label>
+                    </div>
+                    
+                    <!-- 💡 修改按鈕文字與樣式 -->
+                    <button class="btn-secondary" style="width:100%; padding:8px; margin: 10px 0; border-color:#00E5FF; color:#00E5FF;" onclick="openSelector('prize_target')">🖼️ 選取目標獎賞卡</button>
                     <div id="prize-target-display" style="max-height: 150px; overflow-y: auto; margin-bottom: 10px;"></div>
                     
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; border-top: 1px solid #30363D; padding-top: 15px;">
