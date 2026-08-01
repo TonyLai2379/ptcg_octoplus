@@ -163,31 +163,36 @@
     <!-- 右側主視圖 -->
     <div id="main-view">
         
-        <!-- 頂部導覽列 -->
-        <div class="top-nav-bar" style="display:flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; background: #161B22; padding: 10px 20px; border-radius: 8px; border: 1px solid #30363D;">
-            <button class="q-btn" onclick="rollDice()">🎲 擲骰子</button>
-            <button class="q-btn" onclick="flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
-            <div style="width:1px; height:20px; background:#444;"></div>
-            <select id="lang-select" style="width: auto; padding: 3px 8px; font-size: 12px; background: #0D1117; color: #00E5FF; border: 1px solid #30363D; border-radius: 12px; cursor: pointer;" onchange="changeLanguage(this.value)">
-                <option value="zh">🌐 中文</option>
-                <option value="en">🌐 English</option>
-            </select>
-            <div style="width:1px; height:20px; background:#444;"></div>
-            <label id="lbl-zoom" style="font-size:12px; color:#aaa; white-space:nowrap;">🔍 介面縮放</label>
-            <input type="range" id="zoom-slider" min="0.5" max="1.3" step="0.05" value="1" style="margin:0; width:100px;" onchange="document.getElementById('main-view').style.zoom = this.value;">
-        </div>
-
+<!-- 進階情境面板 (導覽列與設定已完美融入) -->
         <details id="prob-panel">
-            <summary style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <summary style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px;">
                 <div style="display:flex; align-items:center; gap:12px;">
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
                     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
                 </div>
-                <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">
-                    🐙 萬次推演教學 (必看)
-                </button>
+                
+                <!-- 💡 原頂部設定移至此處，與標題同一排，並加入阻止事件冒泡以免點擊時折疊面板 -->
+                <div style="display:flex; align-items: center; gap: 12px;">
+                    <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); rollDice()">🎲 擲骰子</button>
+                    <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
+                    <div style="width:1px; height:20px; background:#444;"></div>
+                    <select id="lang-select" style="width: auto; padding: 3px 8px; font-size: 12px; background: #0D1117; color: #00E5FF; border: 1px solid #30363D; border-radius: 12px; cursor: pointer;" onchange="changeLanguage(this.value)" onclick="event.stopPropagation()">
+                        <option value="zh">🌐 中文</option>
+                        <option value="en">🌐 English</option>
+                    </select>
+                    <div style="width:1px; height:20px; background:#444;"></div>
+                    <label id="lbl-zoom" style="font-size:12px; color:#aaa; white-space:nowrap;">🔍 介面縮放</label>
+                    <input type="range" id="zoom-slider" min="0.5" max="1.3" step="0.05" value="1" style="margin:0; width:80px;" onchange="document.getElementById('main-view').style.zoom = this.value;" onclick="event.stopPropagation()">
+                </div>
             </summary>
             
+            <!-- 💡 教學按鈕移至面板內部上方 -->
+            <div style="display:flex; justify-content:flex-end; margin-top: 15px;">
+                <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="openProbTutorial()">
+                    🐙 萬次推演教學 (必看)
+                </button>
+            </div>
+
             <div class="prob-grid">
                 <div class="prob-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
