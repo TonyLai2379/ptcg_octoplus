@@ -1,7 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; overflow: hidden; font-size: 14px; position: relative; }
 
-/* 🌟 Splash 開場動畫 */
+/* Splash 開場動畫 */
 #octopus-splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at center, #161B22 0%, #090C10 100%); z-index: 99999; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: opacity 0.8s ease, visibility 0.8s ease; }
 .splash-content { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 15px; max-width: 600px; }
 .splash-slogan { font-size: 28px; font-weight: 900; letter-spacing: 4px; text-transform: uppercase; background: linear-gradient(90deg, #FFD700, #00E5FF, #FFD700); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shine-text 3s linear infinite; }
@@ -18,7 +18,7 @@ body { background-color: #0E1117; color: #FFFFFF; display: flex; height: 100vh; 
 .splash-progress-bar { width: 240px; height: 4px; background: #21262D; border-radius: 2px; overflow: hidden; margin-top: 5px; }
 .splash-progress-inner { height: 100%; width: 0%; background: linear-gradient(90deg, #00E5FF, #FFD700); transition: width 0.03s linear; }
 
-/* 🐙 獨立懸浮吉祥物 */
+/* 獨立懸浮吉祥物 */
 #octo-mascot-wrapper { position: fixed; bottom: 25px; left: 20px; z-index: 8000; user-select: none; cursor: grab; display: flex; flex-direction: column; align-items: center; pointer-events: auto; }
 #octo-mascot-wrapper:active { cursor: grabbing; }
 #octo-speech-bubble { background: #161B22; border: 2px solid #00E5FF; color: #FFF; padding: 8px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; white-space: nowrap; box-shadow: 0 5px 15px rgba(0, 229, 255, 0.3); margin-bottom: 8px; opacity: 0; transform: translateY(10px) scale(0.9); transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: none; position: relative; }
@@ -89,9 +89,9 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .ab-item { min-width: 180px; background: #21262D; border-top: 4px solid #444; border-radius: 6px; padding: 12px; flex-shrink: 0; position: relative; cursor: pointer; transition: 0.2s; }
 .ab-item:hover { background: #30363D; transform: translateY(-2px); }
 
-/* 💡 新增：垂直戰術工具箱與指示物排版 */
-.tactical-toolbox.vertical { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 8px; background: #161B22; padding: 12px; border-radius: 8px; border: 1px solid #30363D; box-shadow: 0 4px 15px rgba(0,0,0,0.4); width: 220px; z-index: 10; }
-.toolbox-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+/* 💡 新版左側垂直戰術工具箱：三行明確分類 */
+.tactical-toolbox.vertical { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 10px; background: #161B22; padding: 12px 15px; border-radius: 8px; border: 1px solid #30363D; box-shadow: 0 4px 15px rgba(0,0,0,0.4); width: 230px; z-index: 10; }
+.toolbox-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .tool-item { cursor: grab; padding: 4px 8px; border-radius: 20px; font-weight: bold; font-size: 12px; user-select: none; border: 2px solid transparent; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: 0.2s; }
 .tool-item:active { cursor: grabbing; transform: scale(1.1); }
 .tool-item.dmg { background: #FF5252; color: #FFF; border-color: #B71C1C; }
@@ -113,21 +113,21 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .col-left { width: 280px; flex-shrink: 0; }
 .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
 
-/* 💡 修改：右側牌庫與棄牌區稍微加寬至 160px，讓視野更大 */
-.col-right { width: 160px; flex-shrink: 0; }
+/* 💡 圖一右側加寬：讓牌庫與棄牌區視野更開闊 */
+.col-right { width: 190px; flex-shrink: 0; }
 
 .zone-title { font-weight: bold; color: #58A6FF; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
 .zone-title-compact { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #58A6FF; font-size: 16px; margin-bottom: 10px; flex-wrap: wrap; }
 
-.drop-zone { border: 2px dashed #30363D; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; min-height: 195px; }
+/* 💡 備戰區統一無背景色且使用單純淺灰虛線 */
+.drop-zone { border: 2px dashed #444; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; min-height: 195px; }
 .drop-zone.dragover { border-color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
 
 .drop-zone-stacked { position: relative; display: flex; justify-content: center; align-items: center; overflow: visible; min-height: 195px; }
 .prize-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 12px; border: none; padding: 0; }
-.prize-slot { border: 2px dashed #30363D; border-radius: 6px; height: 183px; display: flex; align-items: center; justify-content: center; }
+.prize-slot { border: 2px dashed #444; border-radius: 6px; height: 183px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); }
 
-/* 💡 修改：加入 relative 定位與 min-height 讓左側指示物可以完美貼齊 */
-.field-row { display: flex; position: relative; justify-content: center; gap: 30px; min-height: 220px; }
+.field-row { display: flex; position: relative; justify-content: center; gap: 30px; min-height: 220px; padding-left: 240px; } /* 留空間給左側 toolbox */
 .stadium-zone { width: 150px; border: 2px dashed #FF9800; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(255, 152, 0, 0.05); }
 .active-zone { width: 150px; border: 2px dashed #E53935; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(229, 57, 53, 0.05); }
 #bench-container { display: flex; gap: 12px; justify-content: center; margin-top: 10px; min-height: 195px; }
@@ -136,13 +136,17 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .card-wrapper:hover { transform: translateY(-5px) scale(1.05); z-index: 900 !important; }
 .card-wrapper img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 2px 2px 8px rgba(0,0,0,0.6); pointer-events: none; }
 .card-name-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; color: #FFF; text-shadow: 1px 1px 3px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; font-weight: bold; font-size: 14px; text-align: center; pointer-events: none; }
-.card-action-menu { display: none; position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: #161B22; border: 1px solid #58A6FF; border-radius: 6px; padding: 4px; z-index: 950; white-space: nowrap; gap: 4px; }
-.card-wrapper:hover .card-action-menu { display: flex; }
-.card-btn { background: #30363D; color: white; border: none; padding: 4px 8px; font-size: 12px; cursor: pointer; border-radius: 4px; font-weight: bold; }
-.card-btn:hover { background: #58A6FF; }
+
+/* 💡 優化置頂按鈕：固定顯示在右上角，點擊更直覺 */
+.bring-front-btn { position: absolute; top: -8px; right: -8px; background: #30363D; color: white; border: 2px solid #58A6FF; width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 50; transition: 0.2s; }
+.bring-front-btn:hover { background: #58A6FF; transform: scale(1.1); }
+
+/* 💡 新增：群組拖曳手把 (出現在有多張卡的格子上方) */
+.stack-drag-handle { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background: #E91E63; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: grab; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 800; white-space: nowrap; }
+.stack-drag-handle:active { cursor: grabbing; }
 
 .hand-badge { position: absolute; top: -8px; left: -8px; background: #FFD700; color: #000; border-radius: 12px; padding: 4px 8px; font-weight: bold; font-size: 15px; z-index: 20; box-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; }
-#zone-hand { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; padding: 40px 20px 20px 20px; min-height: 250px; border: 2px dashed #30363D; border-radius: 8px; background: rgba(255,255,255,0.02); overflow: visible; }
+#zone-hand { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; padding: 40px 20px 20px 20px; min-height: 250px; border: 2px dashed #444; border-radius: 8px; background: rgba(255,255,255,0.02); overflow: visible; }
 #zone-hand .card-wrapper { margin-left: -60px; transform-origin: bottom center; transform: translateY(var(--fan-y, 0)) rotate(var(--fan-rot, 0)); transition: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: -4px 0 10px rgba(0,0,0,0.6); }
 #zone-hand .card-wrapper:first-child { margin-left: 0; box-shadow: 2px 2px 8px rgba(0,0,0,0.6); }
 #zone-hand .card-wrapper:hover { transform: translateY(calc(var(--fan-y, 0) - 40px)) scale(1.2) rotate(0deg); z-index: 1000 !important; box-shadow: 0 15px 30px rgba(0,0,0,0.8); }
@@ -190,4 +194,6 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     #sidebar { width: 100% !important; height: auto; border-right: none; border-bottom: 1px solid #30363D; }
     #main-view { min-width: 100%; zoom: 0.85; padding: 10px; }
     .battle-container { min-height: 500px; }
+    .field-row { padding-left: 0; }
+    .tactical-toolbox.vertical { position: relative; width: 100%; margin-bottom: 15px; }
 }
