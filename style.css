@@ -199,3 +199,5 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     .tactical-toolbox.vertical { position: relative; left: auto; top: auto; width: 100%; margin-bottom: 15px; }
     .stadium-wrapper { position: relative; right: auto; top: auto; margin-bottom: 15px; }
 }
+/* 確保圖庫選擇器永遠在最上層，不會被其他 Modal 擋住 */
+#gallery-modal { z-index: 20000 !important; }
