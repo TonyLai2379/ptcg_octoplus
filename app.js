@@ -909,15 +909,33 @@ function openPreviewModal() {
 
 function openSelector(type) {
     currentModalMode = type;
+    let itemsToRender = []; 
     
-    // 💡 新增獎賞卡模式判斷
-    if (type === 'direct') tempSelectedKeys = Object.keys(targetList);
-    else if (type === 'prize_target') tempSelectedKeys = Object.keys(prizeTargetList);
-    else if (type.startsWith('chain_target_')) {
+    if (type === 'direct') {
+        tempSelectedKeys = Object.keys(targetList);
+        itemsToRender = Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }));
+    } else if (type === 'prize_target') {
+        tempSelectedKeys = Object.keys(prizeTargetList);
+        // 💡 嚴格篩選：只抓取「現在還在獎賞卡區」的卡片
+        let prizeCards = gameCards.filter(c => c.zone.startsWith('prize_'));
+        let prizeGroups = {};
+        prizeCards.forEach(c => {
+            if (!prizeGroups[c.key]) prizeGroups[c.key] = { key: c.key, name: c.name, img: c.img, fallback_img: c.fallback_img, qty: 0 };
+            prizeGroups[c.key].qty++;
+        });
+        itemsToRender = Object.values(prizeGroups);
+        
+        if (itemsToRender.length === 0) {
+            alert("⚠️ 獎賞卡區已經沒有卡片囉！");
+            return;
+        }
+    } else if (type.startsWith('chain_target_')) {
         let parentKey = type.replace('chain_target_', '');
         tempSelectedKeys = chainList[parentKey].targets ? Object.keys(chainList[parentKey].targets) : [];
+        itemsToRender = Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }));
     } else {
         tempSelectedKeys = [];
+        itemsToRender = Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }));
     }
     
     let title = "🔍 選取卡片";
@@ -928,7 +946,7 @@ function openSelector(type) {
     
     document.getElementById('gallery-title').innerText = title;
     document.getElementById('gallery-confirm-btn').style.display = 'block';
-    renderGalleryItems(Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })));
+    renderGalleryItems(itemsToRender); 
     document.getElementById('gallery-modal').style.display = 'flex';
 }
 
@@ -1587,23 +1605,42 @@ function calcPrizeProb() {
     let N = prizeCards.length;
     if (N === 0) return alert("⚠️ 獎賞卡已為空！");
     
-    let keys = Object.keys(prizeTargetList);
-    if (keys.length === 0) return alert("⚠️ 請先選擇至少一張目標卡！");
+    let targetKeys = Object.keys(prizeTargetList);
+    if (targetKeys.length === 0) return alert("⚠️ 請先選擇至少一張目標卡！");
     
     let draws = parseInt(document.getElementById('prize-draw-qty').value) || 1;
     if (draws > N) draws = N;
+
+    // 💡 取得 AND/OR 設定
+    let rule = document.querySelector('input[name="prize_rule"]:checked').value;
+    let simCount = 10000; // 一萬次蒙地卡羅
+    let success = 0;
     
-    let K = prizeCards.filter(c => keys.includes(c.key)).length; 
-    let prob = 0;
+    let prizePool = prizeCards.map(c => c.key);
     
-    if (K === 0) {
-        prob = 0;
-    } else if (draws >= N - K + 1) {
-        prob = 100;
-    } else {
-        let pX0 = combination(N - K, draws) / combination(N, draws);
-        prob = (1 - pX0) * 100;
+    for (let i = 0; i < simCount; i++) {
+        // 洗牌並抽出 d 張
+        let shuffled = prizePool.slice().sort(() => Math.random() - 0.5);
+        let drawnCards = shuffled.slice(0, draws);
+        
+        if (rule === 'AND') {
+            // AND：必須包含「所有」目標卡種類
+            let pass = true;
+            for (let key of targetKeys) {
+                if (!drawnCards.includes(key)) { pass = false; break; }
+            }
+            if (pass) success++;
+        } else {
+            // OR：只要抽到「任何一張」目標卡即算成功
+            let pass = false;
+            for (let key of targetKeys) {
+                if (drawnCards.includes(key)) { pass = true; break; }
+            }
+            if (pass) success++;
+        }
     }
+    
+    let prob = (success / simCount) * 100;
     
     let resEl = document.getElementById('prize-prob-result');
     resEl.innerText = `${prob.toFixed(1)} %`;
