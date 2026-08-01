@@ -241,21 +241,21 @@
             </div>
 
             <div class="col-center">
-                <!-- 💡 圖二完美排版：場地 (左)、戰鬥區 (中)、指示物 (右) -->
+                <!-- 💡 戰鬥場絕對居中對齊結構 -->
                 <div class="field-row">
-                    <!-- 左：場地 -->
-                    <div>
+                    <!-- 左：場地 (絕對定位於戰鬥場左側 30px 處) -->
+                    <div class="stadium-wrapper">
                         <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
                         <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     
-                    <!-- 中：戰鬥場 -->
-                    <div>
+                    <!-- 中：戰鬥場 (固定絕對居中) -->
+                    <div class="active-wrapper">
                         <div class="zone-title" id="title-active" style="color:#FF5252; justify-content:center;">🔴 戰鬥場 (Active)</div>
                         <div id="zone-active" class="active-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     
-                    <!-- 右：戰術指示物垂直面板 -->
+                    <!-- 右：戰術指示物 (靠右邊緣浮動放置) -->
                     <div class="tactical-toolbox vertical">
                         <div style="color:#00E5FF; font-weight:bold; font-size: 14px; margin-bottom: 2px;">🛠️ 戰術指示物</div>
                         <div style="font-size:11px; color:#aaa; margin-bottom: 12px;">(請拖曳至寶可夢)</div>
@@ -311,6 +311,7 @@
                 </div>
             </div>
 
+            <!-- 右側牌庫 -->
             <div class="col-right">
                 <div style="margin-bottom: 8px;">
                     <div class="zone-title-compact">
@@ -352,7 +353,7 @@
         </div>
     </div>
 
-    <!-- 💡 圖一：備戰區縮小選擇 Modal (文案更新) -->
+    <!-- 備戰區縮小選擇 Modal -->
     <div id="bench-shrink-modal" class="modal-overlay" style="z-index: 10010; display: none;">
         <div class="modal-card" style="width: 480px; text-align: center; border: 2px solid #E91E63; background: #161B22; box-shadow: 0 10px 40px rgba(233, 30, 99, 0.4);">
             <h2 style="color: #FF5252; margin-bottom: 10px;">🐙 備戰區縮小啦！</h2>
@@ -505,7 +506,7 @@
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
-    <!-- 💡 強制載入最新版 v=12 -->
-    <script src="app.js?v=12"></script>
+    <!-- 強制載入最新版 v=13 -->
+    <script src="app.js?v=13"></script>
 </body>
 </html>
