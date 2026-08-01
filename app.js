@@ -889,14 +889,16 @@ function removePrizeTarget(k) {
     renderPrizeTargetUI();
 }
 function handleCardClick(imgUrl, fallbackUrl) {
-    if(!isDragging) {
-        let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK;
-        let fUrl = (fallbackUrl && fallbackUrl.startsWith('http')) ? fallbackUrl : DEFAULT_CARDBACK;
-        let lbImg = document.getElementById('lightbox-img');
-        lbImg.src = safeImg;
-        lbImg.onerror = function() { this.onerror = null; this.src = fUrl; };
-        document.getElementById('lightbox-modal').style.display = 'flex';
-    }
+    isDragging = false; // 💡 強制解除偶發卡死的拖曳狀態
+    let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK;
+    let fUrl = (fallbackUrl && fallbackUrl.startsWith('http')) ? fallbackUrl : DEFAULT_CARDBACK;
+    let lbImg = document.getElementById('lightbox-img');
+    lbImg.src = safeImg;
+    lbImg.onerror = function() { this.onerror = null; this.src = fUrl; };
+    
+    let modal = document.getElementById('lightbox-modal');
+    modal.style.display = 'flex';
+    modal.style.zIndex = "30000"; // 💡 確保圖層絕對蓋在所有物件的最上方
 }
 
 function openPreviewModal() {
@@ -1314,7 +1316,7 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
         div.style.opacity = '1';
         renderBoard();
     };
-    div.onclick = () => { if(!isDragging) handleCardClick(c.img, c.fallback_img); };
+    div.onclick = () => { handleCardClick(c.img, c.fallback_img); };
 
     let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
     let fallback = c.fallback_img || DEFAULT_CARDBACK;
