@@ -71,7 +71,7 @@ input, textarea, select { width: 100%; background: #0D1117; border: 1px solid #3
 @keyframes marquee-anim { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 .disclaimer-box { margin-top: 5px; padding: 8px; background-color: rgba(0, 0, 0, 0.4); border-left: 3px solid #E53935; border-radius: 4px; font-size: 11px; color: #999; line-height: 1.4; }
 
-/* 💡 新增：全域 Zoom 適應支援 */
+/* 全域 Zoom 適應支援 */
 #main-view { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: auto; padding: 20px; gap: 15px; background: #0D1117; position: relative; min-width: 900px; transform-origin: top left; }
 
 details#prob-panel { background: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 15px; transition: 0.3s ease; }
@@ -90,8 +90,8 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .ab-item { min-width: 180px; background: #21262D; border-top: 4px solid #444; border-radius: 6px; padding: 12px; flex-shrink: 0; position: relative; cursor: pointer; transition: 0.2s; }
 .ab-item:hover { background: #30363D; transform: translateY(-2px); }
 
-/* 💡 垂直戰術工具箱：三行明確分類，回血改為正圓形 */
-.tactical-toolbox.vertical { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 10px; background: #161B22; padding: 12px 15px; border-radius: 8px; border: 1px solid #30363D; box-shadow: 0 4px 15px rgba(0,0,0,0.4); width: 230px; z-index: 10; }
+/* 💡 垂直戰術工具箱：加寬至 265px，讓睡眠可以塞進同一排 */
+.tactical-toolbox.vertical { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; gap: 10px; background: #161B22; padding: 12px 15px; border-radius: 8px; border: 1px solid #30363D; box-shadow: 0 4px 15px rgba(0,0,0,0.4); width: 265px; z-index: 10; }
 .toolbox-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .tool-item { cursor: grab; border-radius: 50%; display: flex; justify-content: center; align-items: center; user-select: none; font-weight: 900; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: 0.2s; }
 .tool-item:active { cursor: grabbing; transform: scale(1.1); }
@@ -99,7 +99,7 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .tool-item.dmg, .tool-item.heal { width: 34px; height: 34px; font-size: 13px; padding: 0; border: 2px solid transparent; }
 .tool-item.dmg { background: #FF5252; color: #FFF; border-color: #B71C1C; }
 .tool-item.heal { background: #4CAF50; color: #FFF; border-color: #2E7D32; }
-.tool-item.status { background: #222; border-color: #555; width: 30px; height: 30px; font-size: 16px; border: 1px solid #555; }
+.tool-item.status { background: #222; border-color: #555; width: 34px; height: 34px; font-size: 17px; border: 1px solid #555; }
 
 /* 寶可夢卡片上的指示物圖層 */
 .token-dmg { position: absolute; top: -10px; right: -10px; background: #FF5252; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.8); z-index: 100; cursor: pointer; border: 2px solid #fff; transition: 0.2s; }
@@ -115,14 +115,11 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .battle-container { display: flex; gap: 30px; flex: 1; min-height: 600px; overflow-x: auto; }
 .col-left { width: 280px; flex-shrink: 0; }
 .col-center { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 820px; padding: 0 10px; } 
-
-/* 💡 右側牌庫與棄牌區加寬至 190px，避免擁擠 */
 .col-right { width: 190px; flex-shrink: 0; }
 
 .zone-title { font-weight: bold; color: #58A6FF; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
 .zone-title-compact { display: flex; align-items: center; gap: 6px; font-weight: bold; color: #58A6FF; font-size: 16px; margin-bottom: 10px; flex-wrap: wrap; }
 
-/* 💡 備戰區統一無背景色且使用單純淺灰虛線 */
 .drop-zone { border: 2px dashed #444; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; min-height: 195px; }
 .drop-zone.dragover { border-color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
 
@@ -130,7 +127,7 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .prize-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 12px; border: none; padding: 0; }
 .prize-slot { border: 2px dashed #444; border-radius: 6px; height: 183px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); }
 
-.field-row { display: flex; position: relative; justify-content: center; gap: 30px; min-height: 220px; padding-left: 240px; } /* 留空間給左側 toolbox */
+.field-row { display: flex; position: relative; justify-content: center; gap: 30px; min-height: 220px; padding-left: 280px; } 
 .stadium-zone { width: 150px; border: 2px dashed #FF9800; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(255, 152, 0, 0.05); }
 .active-zone { width: 150px; border: 2px dashed #E53935; border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; background: rgba(229, 57, 53, 0.05); }
 #bench-container { display: flex; gap: 12px; justify-content: center; margin-top: 10px; min-height: 195px; }
@@ -140,11 +137,11 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .card-wrapper img { width: 100%; height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 2px 2px 8px rgba(0,0,0,0.6); pointer-events: none; }
 .card-name-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; color: #FFF; text-shadow: 1px 1px 3px #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; font-weight: bold; font-size: 14px; text-align: center; pointer-events: none; }
 
-/* 💡 優化置頂按鈕：固定顯示在左上角，極度好點擊 */
+/* 置頂按鈕 */
 .bring-front-btn { position: absolute; top: -12px; left: -12px; background: #0D47A1; color: white; border: 2px solid #58A6FF; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; z-index: 150; box-shadow: 0 2px 6px rgba(0,0,0,0.8); transition: 0.2s; }
 .bring-front-btn:hover { background: #1976D2; transform: scale(1.1); }
 
-/* 💡 群組拖曳手把 */
+/* 群組拖曳手把 */
 .stack-drag-handle { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); background: #E91E63; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: grab; box-shadow: 0 2px 5px rgba(0,0,0,0.5); z-index: 800; white-space: nowrap; }
 .stack-drag-handle:active { cursor: grabbing; }
 
