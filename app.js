@@ -33,7 +33,6 @@ let historyPtr = -1;
 let prizesFaceUp = false;
 let feedbackBase64 = "";
 
-// 💡 終極卡背產生器：使用 var 防止重複宣告的 SyntaxError，且完全避開 btoa
 var DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -1074,7 +1073,7 @@ function redo() {
     saveLocalData();
 }
 
-// 💡 縮減備戰區：小章魚專屬選擇對話框
+// 💡 圖一文案優化：縮減備戰區防呆提示
 function changeBenchSize(delta) {
     if (delta < 0) {
         let benchedCards = gameCards.filter(c => c.zone.startsWith('bench_'));
@@ -1305,7 +1304,7 @@ function renderBoard() {
             domEl.appendChild(el);
         });
 
-        // 💡 群組拖曳手把 (當有多張牌時出現)
+        // 💡 群組拖曳手把
         if (arr.length > 1) {
             let dragHandle = document.createElement('div');
             dragHandle.className = 'stack-drag-handle';
@@ -1369,7 +1368,6 @@ function drop(ev) {
 
     let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_');
 
-    // 💡 處理群組拖曳 (整疊拖曳)
     let stackZone = ev.dataTransfer.getData("stack_zone");
     if (stackZone) {
         if (stackZone !== targetZone) {
