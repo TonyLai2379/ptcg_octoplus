@@ -20,7 +20,7 @@ let gameCards = [];
 let lastSimResult = null;
 let targetList = {};
 let chainList = {};
-let prizeTargetList = {}; // 💡 新增：獎賞卡目標清單
+let prizeTargetList = {}; // 💡 獎賞卡目標清單
 let tempSelectedKeys = [];
 let searchMultiSelection = {};
 let currentModalMode = "";
@@ -29,6 +29,7 @@ let isDragging = false;
 let benchSize = 5;
 let historyStates = [];
 let historyPtr = -1;
+let prizesFaceUp = true; // 💡 獎賞卡預設全部正面朝上
 let feedbackBase64 = "";
 
 var DEFAULT_CARDBACK = (function(color) {
@@ -39,6 +40,7 @@ var DEFAULT_CARDBACK = (function(color) {
 // ==========================================
 // 2. 數學函式與 Auto Zoom
 // ==========================================
+// 💡 超幾何分配組合公式 (用於獎賞卡機率計算)
 function combination(n, k) {
     if (k < 0 || k > n) return 0;
     if (k === 0 || k === n) return 1;
@@ -543,6 +545,7 @@ function renderBenchSlots() {
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     gameCards = [];
+    prizesFaceUp = true; // 💡 獎賞卡預設正面朝上！
     Object.keys(deckDict).forEach(k => { for(let i=0; i<deckDict[k].qty; i++) { gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck', damage: 0, status: [] }); } });
     gameCards.sort(() => Math.random() - 0.5);
     for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand';
@@ -558,8 +561,8 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
 
     let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK; let fallback = c.fallback_img || DEFAULT_CARDBACK;
 
-    // 💡 獎賞卡固定為正面朝上 (只有牌庫才是背面)
-    if (c.zone === 'deck') { safeImg = DEFAULT_CARDBACK; fallback = DEFAULT_CARDBACK; }
+    if (c.zone === 'deck') { safeImg = DEFAULT_CARDBACK; fallback = DEFAULT_CARDBACK; } 
+    else if (c.zone.startsWith('prize_')) { if (isPrizeFaceUp !== true) { safeImg = DEFAULT_CARDBACK; fallback = DEFAULT_CARDBACK; } }
 
     let isDefault = safeImg === DEFAULT_CARDBACK;
     let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`;
@@ -570,11 +573,11 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
 }
 
 function bringToFront(cardId) { let idx = gameCards.findIndex(c => c.id === cardId); if(idx > -1) { gameCards.push(gameCards.splice(idx, 1)[0]); saveState(); renderBoard(); } }
+function togglePrizes() { prizesFaceUp = !prizesFaceUp; renderBoard(); }
 
 function renderBoard() {
     if(!document.getElementById('zone-bench-0')) renderBenchSlots();
-    let zList = ['zone-hand', 'zone-stadium', 'zone-active', 'zone-deck', 'zone-discard']; for(let i=0; i<8; i++) zList.push(`zone-bench-${i}`); for(let i=0; i<6; i++) zList.push(`zone-prize-${i}`);
-    zList.forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = ""; });
+    let zList = ['zone-hand', 'zone-stadium', 'zone-active', 'zone-deck', 'zone-discard']; for(let i=0; i<8; i++) zList.push(`zone-bench-${i}`); for(let i=0; i<6; i++) zList.push(`zone-prize-${i}`); zList.forEach(id => { let el = document.getElementById(id); if(el) el.innerHTML = ""; });
     
     let zones = {}; gameCards.forEach(c => { if(!zones[c.zone]) zones[c.zone]=[]; zones[c.zone].push(c); });
 
@@ -584,8 +587,7 @@ function renderBoard() {
 
     let fieldZones = ['active', 'stadium']; for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`);
     fieldZones.forEach(zName => {
-        let domEl = document.getElementById('zone-' + zName.replace('_','-')); if(!domEl) return;
-        let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2;
+        let domEl = document.getElementById('zone-' + zName.replace('_','-')); if(!domEl) return; let arr = zones[zName]||[]; let centerOffset = (arr.length - 1) / 2;
         
         arr.forEach((c, idx) => {
             let el = createCardEl(c, true); el.style.position = 'absolute'; el.style.top = '50%'; el.style.left = '50%'; el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`; el.style.zIndex = idx;
@@ -605,8 +607,7 @@ function renderBoard() {
         }
     });
 
-    // 💡 獎賞卡固定渲染正面 (傳入 true)
-    for(let i=0; i<6; i++) { let arr = zones['prize_'+i]||[]; if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false, true)); }
+    for(let i=0; i<6; i++) { let arr = zones['prize_'+i]||[]; if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false, prizesFaceUp)); }
 
     let deckArr = zones['deck']||[]; document.getElementById('deck-count').innerText = deckArr.length;
     if(deckArr.length > 0) { let el = document.createElement('div'); el.className = 'card-wrapper'; el.style.position = 'absolute'; el.innerHTML = `<img src="${DEFAULT_CARDBACK}" style="pointer-events:none;">`; document.getElementById('zone-deck').appendChild(el); }
@@ -660,7 +661,7 @@ function drawCard() { let dc = gameCards.filter(c => c.zone === 'deck'); if(dc.l
 function moveZoneTo(fromZone, toZone) { gameCards.filter(c => c.zone === fromZone).forEach(c => { c.zone = toZone; c.damage = 0; c.status = []; }); if(toZone === 'deck') { let d = gameCards.filter(c => c.zone === 'deck').sort(() => Math.random()-0.5); gameCards = gameCards.filter(c => c.zone !== 'deck').concat(d); } saveState(); renderBoard(); }
 function openSearchModal(zone) { let arr = gameCards.filter(c => c.zone === zone); if(arr.length === 0) return; currentModalMode = 'search_multi_' + zone; searchMultiSelection = {}; document.getElementById('gallery-title').innerText = `🔍 檢索${zone === 'deck' ? '牌庫' : '棄牌'} (可多選回手牌)`; document.getElementById('gallery-confirm-btn').style.display = 'block'; let groups = {}; arr.forEach(c => { if(!groups[c.key]) groups[c.key] = {max_qty:0, img:c.img, name:c.name, key:c.key}; groups[c.key].max_qty++; }); renderGalleryItems(Object.values(groups)); document.getElementById('gallery-modal').style.display = 'flex'; }
 
-// 💡 獎賞卡抽取與機率系統
+// 💡 獎賞卡抽取與機率系統 (補回)
 function drawRandomPrize() {
     let prizeCards = gameCards.filter(c => c.zone.startsWith('prize_'));
     if (prizeCards.length === 0) return alert("⚠️ 獎賞卡已經全部抽完囉！");
