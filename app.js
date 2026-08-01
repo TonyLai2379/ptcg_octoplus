@@ -205,7 +205,7 @@ function changeLanguage(lang) {
     setTxt('btn-run-sim', t.btnRunSim); 
     setTxt('btn-save-scenario', t.btnSaveScenario); 
     setTxt('btn-clear-board', t.btnClearBoard); 
-    setTxt('title-prize', t.titlePrize); 
+    setTxt('title-prize-text', t.titlePrize);
     setTxt('title-stadium', t.titleStadium); 
     setTxt('title-active', t.titleActive); 
     setTxt('title-bench', t.titleBench); 
