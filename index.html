@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PTCG 小章魚 - 覆盤最佳工具</title>
 
-    <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！">
+    <meta name="description" content="專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！支援官方代碼解析、Limitless 英文牌組匯入與萬次蒙地卡羅手牌率精確推演。">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://ptcg-octoplus.com/">
     <meta property="og:title" content="PTCG 小章魚 - Replay. Analyze. Win More.">
@@ -80,6 +80,7 @@
             </div>
             <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>✨ 發送驗證連結</button>
             <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
+            
             <button class="btn btn-secondary" onclick="document.getElementById('gate-overlay').style.display='none'" style="margin-top: 15px; font-size: 12px;">返回訪客沙盤</button>
         </div>
     </div>
@@ -225,7 +226,7 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
-                <!-- 💡 補回獎賞卡的抽獎與機率按鈕 -->
+                <!-- 💡 獎賞卡區塊：包含盲抽與機率按鈕 -->
                 <div class="zone-title" id="title-prize">
                     <span>🏆 獎賞卡 (Prize)</span>
                     <div style="display: flex; gap: 4px;">
@@ -246,7 +247,7 @@
 
             <div class="col-center">
                 <div class="field-row">
-                    <!-- 左：場地 -->
+                    <!-- 左：場地 (絕對定位於戰鬥場左側 30px 處) -->
                     <div class="stadium-wrapper">
                         <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
                         <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -258,7 +259,7 @@
                         <div id="zone-active" class="active-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                     </div>
                     
-                    <!-- 右：戰術指示物面板 -->
+                    <!-- 右：戰術指示物 (靠右邊緣浮動放置) -->
                     <div class="tactical-toolbox vertical">
                         <div style="color:#00E5FF; font-weight:bold; font-size: 14px; margin-bottom: 2px;">🛠️ 戰術指示物</div>
                         <div style="font-size:11px; color:#aaa; margin-bottom: 12px;">(請拖曳至寶可夢)</div>
@@ -355,7 +356,7 @@
         </div>
     </div>
 
-    <!-- 💡 補回獎賞卡機率算盤 Modal -->
+    <!-- 💡 獎賞卡機率計算 Modal -->
     <div id="prize-prob-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 10015; display: none;">
         <div class="modal-card" style="width: 500px; text-align: center; border: 2px solid #00E5FF; background: #161B22; box-shadow: 0 10px 40px rgba(0, 229, 255, 0.2);" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -364,7 +365,7 @@
             </div>
             
             <div class="modal-body" style="padding-top: 10px;">
-                <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">從目前剩餘的獎賞卡中，抽中目標卡的機率！</p>
+                <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">從目前剩餘的獎賞卡中，抽中目標卡的極限機率！</p>
                 
                 <div style="background: #21262D; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 15px;">
                     <b style="font-size: 14px; color: #FFF;">🎯 想抽到什麼？ (目標卡)：</b>
@@ -389,6 +390,7 @@
             <h2 style="color: #FF5252; margin-bottom: 10px;">🐙 備戰區縮小啦！</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">場地空間受到擠壓，請選擇一格移至棄牌區：</p>
             <div id="bench-shrink-options" style="display: flex; gap: 12px; justify-content: center; overflow-x: auto; padding-bottom: 10px;">
+                <!-- JS 動態插入寶可夢 -->
             </div>
             <button class="btn btn-secondary" style="margin-top:15px; width: 100px; margin-left: auto; margin-right: auto;" onclick="document.getElementById('bench-shrink-modal').style.display='none'">取消</button>
         </div>
@@ -429,22 +431,20 @@
     </div>
     <div id="support-modal" class="modal-overlay">
         <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
-            <h2 style="color: #00E5FF; margin-bottom: 8px;">💬 聯絡小章魚客服</h2>
-            <p style="color: #ccc; font-size: 13px; margin-bottom: 12px; text-align: left; line-height: 1.5;">遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息，小章魚會收到您的工單：<br><span style="color: #FF5252; font-size: 12px;">(提示：送出後，您的回報將上傳至系統資料庫供開發團隊查閱)</span></p>
+            <h2 style="color: #00E5FF; margin: 0; font-size: 20px;">💬 聯絡小章魚客服</h2>
+            <p style="color: #ccc; font-size: 13px; margin: 12px 0; text-align: left; line-height: 1.5;">遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息：</p>
             <div style="text-align: left; display: flex; flex-direction: column; gap: 10px;">
                 <textarea id="feedback-msg-input" rows="4" placeholder="請描述您遇到的問題或建議..." style="resize: vertical; font-size: 13px;"></textarea>
                 <div>
-                    <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📸 附加截圖 (選填，最大 5MB)：</label>
+                    <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📸 附加截圖 (選填)：</label>
                     <input type="file" id="feedback-img-input" accept="image/*" style="font-size: 12px; padding: 4px; background: #21262D;" onchange="previewFeedbackImage(this)">
                     <img id="feedback-img-preview" src="" style="display: none; max-height: 120px; border-radius: 6px; margin-top: 6px; border: 1px solid #30363D;">
                 </div>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px;">
                 <button class="btn" id="btn-submit-feedback" style="background: #238636; flex: 2;" onclick="submitSupportFeedback()">🚀 立即發送給小章魚</button>
-                <button class="btn btn-secondary" style="flex: 1; font-size: 13px; color: #00E5FF;" onclick="navigator.clipboard.writeText('loganlai0422@gmail.com').then(()=>{alert('✅ 信箱已複製：loganlai0422@gmail.com');})">📋 複製信箱</button>
                 <button class="btn btn-secondary" style="flex: 1;" onclick="closeSupportModal()">返回</button>
             </div>
-            <p id="feedback-status-msg" style="font-size: 12px; margin-top: 8px; display: none; text-align: center;"></p>
         </div>
     </div>
     <div id="auth-overlay" class="modal-overlay">
@@ -494,43 +494,8 @@
             </div>
         </div>
     </div>
-    <div id="tutorial-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
-        <div class="modal-card tutorial-card" onclick="event.stopPropagation()">
-            <div class="modal-header"><h2 style="color:#FFD700; margin:0;" id="tut-main-title">📖 PTCG 覆盤工具教學</h2></div>
-            <div class="modal-body">
-                <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:5px;">
-                    <button class="tab-btn active" onclick="switchTutTab('tut1')" id="btn-tut1">🛠️ 1. 編輯牌組</button>
-                    <button class="tab-btn" onclick="switchTutTab('tut2')" id="btn-tut2">⚔️ 2. 戰場操作</button>
-                    <button class="tab-btn" onclick="switchTutTab('tut3')" id="btn-tut3">🎲 3. 機率運算</button>
-                </div>
-                <div id="tut1" class="tut-content">
-                    <p style="margin-bottom:15px; font-size:15px;" id="tut1-desc">建立牌組有三種方式，請選擇你想了解的匯入方式：</p>
-                    <div style="display:flex; gap:10px; margin-bottom:20px;">
-                        <button class="sub-tab-btn" id="btn-tut1-a" onclick="switchSubTutTab('tut1-a')" style="flex:1; padding:10px; background:#21262D; border:1px solid #00E5FF; color:#00E5FF; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">A. 官方代碼匯入</button>
-                        <button class="sub-tab-btn" id="btn-tut1-b" onclick="switchSubTutTab('tut1-b')" style="flex:1; padding:10px; background:#21262D; border:1px solid #30363D; color:#888; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">B. Limitless 英文匯入</button>
-                        <button class="sub-tab-btn" id="btn-tut1-c" onclick="switchSubTutTab('tut1-c')" style="flex:1; padding:10px; background:#21262D; border:1px solid #30363D; color:#888; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">C. 搜尋與自訂卡片</button>
-                    </div>
-                    <div id="tut1-a" class="sub-tut-content"><img src="tutor_pic/tut_official_1.jpg" class="tut-img"><img src="tutor_pic/tut_official_2.jpg" class="tut-img"></div>
-                    <div id="tut1-b" class="sub-tut-content" style="display:none;"><img src="tutor_pic/tut_import.jpg" class="tut-img"></div>
-                    <div id="tut1-c" class="sub-tut-content" style="display:none;"><img src="tutor_pic/tut_edit.jpg" class="tut-img"></div>
-                </div>
-                <div id="tut2" class="tut-content" style="display:none;">
-                    <div style="background:#21262D; border-left:4px solid #58A6FF; padding:12px; border-radius:6px; margin-bottom:15px;"><h4 style="color:#58A6FF; margin-bottom:5px;" id="tut2-h4">⚔️ 戰場沙盤互動指南：</h4><p style="font-size:14px; color:#ccc; line-height:1.5;" id="tut2-desc">點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。</p></div>
-                    <img src="tutor_pic/tut_battle.jpg" class="tut-img">
-                </div>
-                <div id="tut3" class="tut-content" style="display:none;">
-                    <div style="background:#21262D; border-left:4px solid #FFD700; padding:12px; border-radius:6px; margin-bottom:15px;"><h4 style="color:#FFD700; margin-bottom:5px;" id="tut3-h4">🎲 蒙地卡羅機率算力：</h4><p style="font-size:14px; color:#ccc; line-height:1.5;" id="tut3-desc">設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！</p></div>
-                    <img src="tutor_pic/tut_prob.jpg" class="tut-img">
-                </div>
-            </div>
-            <div class="modal-footer"><button class="btn" style="width:100%; font-size:16px;" id="btn-tut-ready" onclick="closeTutorial()">我準備好了！</button></div>
-        </div>
-    </div>
-    <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10000;">
-        <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
-    </div>
 
-    <!-- 強制載入最新版 v=15 -->
-    <script src="app.js?v=15"></script>
+    <!-- 強制載入最新版 v=16 -->
+    <script src="app.js?v=16"></script>
 </body>
 </html>
