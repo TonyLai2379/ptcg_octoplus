@@ -65,24 +65,23 @@
         </div>
     </div>
 
-    <!-- 未登入護城河 Modal -->
-    <div id="gate-overlay" class="modal-overlay" style="display: flex; z-index: 15000; backdrop-filter: blur(8px);">
+    <!-- 💡 登入護城河 (預設隱藏，支援訪客試玩沙盤) -->
+    <div id="gate-overlay" class="modal-overlay" style="display: none; z-index: 15000; backdrop-filter: blur(8px);">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
             <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
-            <p style="color: #AAA; font-size: 13px; margin-bottom: 20px;">覆盤最佳工具 - 請先登入以解鎖專業功能</p>
+            <p style="color: #AAA; font-size: 13px; margin-bottom: 20px;">此為進階功能，請先登入帳號以解鎖！</p>
             <div style="text-align: left; margin-bottom: 12px;">
                 <label style="font-size: 12px; color: #888; margin-bottom: 5px; display: block;">使用信箱登入 (無須密碼)：</label>
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
             <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left; line-height: 1.8; border: 1px solid #30363D;">
-                <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">點此閱讀服務條款</a></div>
-                <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">點此閱讀隱私權政策</a></div>
-                <div id="read-reminder" style="color: #FF5252; font-size: 12px; margin-top: 10px; font-weight: bold; text-align: center; border-top: 1px dashed #444; padding-top: 8px;">
-                    ⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送
-                </div>
+                <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">閱讀服務條款</a></div>
+                <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">閱讀隱私權政策</a></div>
             </div>
             <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>✨ 發送驗證連結</button>
             <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
+            
+            <button class="btn btn-secondary" onclick="document.getElementById('gate-overlay').style.display='none'" style="margin-top: 15px; font-size: 12px;">返回訪客沙盤</button>
         </div>
     </div>
 
@@ -93,7 +92,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:5px;">
                         <span style="font-size:12px; color:#888;">ID:</span>
-                        <input type="text" id="user-id-input" value="Player1" readonly style="width:110px; padding:4px; font-size:12px; text-align:center; background:#161B22;">
+                        <input type="text" id="user-id-input" value="Guest" readonly style="width:110px; padding:4px; font-size:12px; text-align:center; background:#161B22;">
                     </div>
                     <div style="display:flex; gap: 5px;">
                         <button class="btn-secondary" style="width:auto; padding:4px 8px; font-size:11px; color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
@@ -102,7 +101,7 @@
                 </div>
 
                 <div id="auth-status-bar" style="background:#21262D; padding:10px; border-radius:6px; font-size:13px; text-align:center; border: 1px solid #30363D;">
-                    <span id="txt-status">目前狀態：載入中...</span> <br>
+                    <span id="txt-status">訪客試玩模式</span> <br>
                     <button class="btn" id="btn-unlock" style="background:#E34C26; padding:6px; margin-top:8px;" onclick="document.getElementById('sub-modal').style.display='flex'">訂閱、輸入邀請碼</button>
                 </div>
 
@@ -164,7 +163,7 @@
     <!-- 右側主視圖 -->
     <div id="main-view">
         
-        <!-- 💡 圖一、圖二優化：頂部導覽與設定區塊 -->
+        <!-- 💡 頂部導覽列：統一集中設定按鈕 -->
         <div class="top-nav-bar" style="display:flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; background: #161B22; padding: 10px 20px; border-radius: 8px; border: 1px solid #30363D;">
             <button class="q-btn" onclick="rollDice()">🎲 擲骰子</button>
             <button class="q-btn" onclick="flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
@@ -175,7 +174,7 @@
             </select>
             <div style="width:1px; height:20px; background:#444;"></div>
             <label id="lbl-zoom" style="font-size:12px; color:#aaa; white-space:nowrap;">🔍 介面縮放</label>
-            <input type="range" min="0.7" max="1.3" step="0.05" value="1" style="margin:0; width:100px;" onchange="document.getElementById('main-view').style.zoom = this.value;">
+            <input type="range" id="zoom-slider" min="0.5" max="1.3" step="0.05" value="1" style="margin:0; width:100px;" onchange="document.getElementById('main-view').style.zoom = this.value;">
         </div>
 
         <details id="prob-panel">
@@ -184,7 +183,6 @@
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
                     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
                 </div>
-                <!-- 💡 圖二優化：教學按鈕移到這裡，避免遮擋 -->
                 <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">
                     🐙 萬次推演教學 (必看)
                 </button>
@@ -244,14 +242,14 @@
             </div>
 
             <div class="col-center">
-                <!-- 💡 圖一優化：戰術指示物垂直排列於左方，分為三行 -->
+                <!-- 💡 戰術指示物垂直排列於戰鬥區左側 -->
                 <div class="field-row">
                     <div class="tactical-toolbox vertical">
                         <div style="color:#00E5FF; font-weight:bold; font-size: 14px; margin-bottom: 2px;">🛠️ 戰術指示物</div>
-                        <div style="font-size:11px; color:#aaa; margin-bottom: 8px;">(請拖曳至寶可夢)</div>
+                        <div style="font-size:11px; color:#aaa; margin-bottom: 12px;">(請拖曳至寶可夢)</div>
                         
                         <div class="toolbox-row">
-                            <span style="font-size:12px; color:#FF5252; font-weight:bold; width: 35px;">傷害</span>
+                            <span class="tool-label" style="color:#FF5252;">傷害</span>
                             <div class="tool-item dmg" draggable="true" ondragstart="event.dataTransfer.setData('token', 'dmg_10')">10</div>
                             <div class="tool-item dmg" draggable="true" ondragstart="event.dataTransfer.setData('token', 'dmg_20')">20</div>
                             <div class="tool-item dmg" draggable="true" ondragstart="event.dataTransfer.setData('token', 'dmg_50')">50</div>
@@ -259,15 +257,15 @@
                         </div>
                         
                         <div class="toolbox-row">
-                            <span style="font-size:12px; color:#4CAF50; font-weight:bold; width: 35px;">回血</span>
-                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_10')">+10</div>
-                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_20')">+20</div>
-                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_50')">+50</div>
-                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_100')">+100</div>
+                            <span class="tool-label" style="color:#4CAF50;">回血</span>
+                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_10')">10</div>
+                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_20')">20</div>
+                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_50')">50</div>
+                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_100')">100</div>
                         </div>
                 
                         <div class="toolbox-row">
-                            <span style="font-size:12px; color:#E0E0E0; font-weight:bold; width: 35px;">狀態</span>
+                            <span class="tool-label" style="color:#E0E0E0;">狀態</span>
                             <div class="tool-item status" draggable="true" ondragstart="event.dataTransfer.setData('token', 'status_poison')" title="中毒">☠️</div>
                             <div class="tool-item status" draggable="true" ondragstart="event.dataTransfer.setData('token', 'status_burn')" title="灼燒">🔥</div>
                             <div class="tool-item status" draggable="true" ondragstart="event.dataTransfer.setData('token', 'status_confusion')" title="混亂">💫</div>
@@ -276,7 +274,7 @@
                         </div>
                     </div>
 
-                    <div style="display:flex; gap: 30px; margin-left: auto; margin-right: auto;">
+                    <div style="display:flex; gap: 30px;">
                         <div>
                             <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
                             <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -312,7 +310,7 @@
                 </div>
             </div>
 
-            <!-- 💡 圖一優化：右側牌庫與棄牌區加寬，留出更舒適的空間 -->
+            <!-- 💡 牌庫與棄牌區加寬留空，避免視覺擁擠 -->
             <div class="col-right">
                 <div style="margin-bottom: 8px;">
                     <div class="zone-title-compact">
@@ -362,9 +360,7 @@
                 <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('prob-tutorial-modal').style.display='none'">✕</button>
             </div>
             <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD; padding-right:10px;">
-                <p style="margin-bottom: 15px; font-size: 15px; color: #00E5FF; text-align: center; font-weight: bold;">
-                    掌握「進階情境」，讓小章魚幫你算出極限勝率！只需簡單三步驟：
-                </p>
+                <p style="margin-bottom: 15px; font-size: 15px; color: #00E5FF; text-align: center; font-weight: bold;">掌握「進階情境」，讓小章魚幫你算出極限勝率！只需簡單三步驟：</p>
                 <div style="background:#21262D; border-left:4px solid #FF5252; padding:15px; border-radius:8px; margin-bottom:12px; position:relative;">
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🎯</div>
                     <h3 style="color:#FF5252; margin-bottom:8px; font-size:16px;">第 1 步：設定「直接解牌」目標</h3>
@@ -386,9 +382,7 @@
                     <p style="color:#aaa; font-size: 13px;">👉 將結果 <b>「紀錄至比較板」</b>，就能輕鬆比較牌組微調後，勝率提升的實質差距！用數據輾壓對手！</p>
                 </div>
             </div>
-            <div class="modal-footer" style="padding-top:10px; margin-top:10px;">
-                <button class="btn" style="width:100%; background:#238636; font-size:15px;" onclick="document.getElementById('prob-tutorial-modal').style.display='none'">瞭解！開始推演</button>
-            </div>
+            <div class="modal-footer"><button class="btn" style="width:100%; background:#238636; font-size:15px;" onclick="document.getElementById('prob-tutorial-modal').style.display='none'">瞭解！開始推演</button></div>
         </div>
     </div>
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
@@ -463,9 +457,7 @@
     </div>
     <div id="tutorial-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
         <div class="modal-card tutorial-card" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <h2 style="color:#FFD700; margin:0;" id="tut-main-title">📖 PTCG 覆盤工具教學</h2>
-            </div>
+            <div class="modal-header"><h2 style="color:#FFD700; margin:0;" id="tut-main-title">📖 PTCG 覆盤工具教學</h2></div>
             <div class="modal-body">
                 <div style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:5px;">
                     <button class="tab-btn active" onclick="switchTutTab('tut1')" id="btn-tut1">🛠️ 1. 編輯牌組</button>
@@ -479,45 +471,27 @@
                         <button class="sub-tab-btn" id="btn-tut1-b" onclick="switchSubTutTab('tut1-b')" style="flex:1; padding:10px; background:#21262D; border:1px solid #30363D; color:#888; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">B. Limitless 英文匯入</button>
                         <button class="sub-tab-btn" id="btn-tut1-c" onclick="switchSubTutTab('tut1-c')" style="flex:1; padding:10px; background:#21262D; border:1px solid #30363D; color:#888; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">C. 搜尋與自訂卡片</button>
                     </div>
-                    <div id="tut1-a" class="sub-tut-content">
-                        <p style="margin-bottom:10px; font-size:14px; color:#aaa;" id="tut1-a-desc">前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。</p>
-                        <img src="tutor_pic/tut_official_1.jpg" class="tut-img" alt="教學圖片 1">
-                        <img src="tutor_pic/tut_official_2.jpg" class="tut-img" alt="教學圖片 2">
-                    </div>
-                    <div id="tut1-b" class="sub-tut-content" style="display:none;">
-                        <p style="margin-bottom:10px; font-size:14px; color:#aaa;" id="tut1-b-desc">複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。</p>
-                        <img src="tutor_pic/tut_import.jpg" class="tut-img" alt="教學圖片 3">
-                    </div>
-                    <div id="tut1-c" class="sub-tut-content" style="display:none;">
-                        <p style="margin-bottom:10px; font-size:14px; color:#aaa;" id="tut1-c-desc">若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。</p>
-                        <img src="tutor_pic/tut_edit.jpg" class="tut-img" alt="教學圖片 4">
-                    </div>
+                    <div id="tut1-a" class="sub-tut-content"><img src="tutor_pic/tut_official_1.jpg" class="tut-img"><img src="tutor_pic/tut_official_2.jpg" class="tut-img"></div>
+                    <div id="tut1-b" class="sub-tut-content" style="display:none;"><img src="tutor_pic/tut_import.jpg" class="tut-img"></div>
+                    <div id="tut1-c" class="sub-tut-content" style="display:none;"><img src="tutor_pic/tut_edit.jpg" class="tut-img"></div>
                 </div>
                 <div id="tut2" class="tut-content" style="display:none;">
-                    <div style="background:#21262D; border-left:4px solid #58A6FF; padding:12px; border-radius:6px; margin-bottom:15px;">
-                        <h4 style="color:#58A6FF; margin-bottom:5px;" id="tut2-h4">⚔️ 戰場沙盤互動指南：</h4>
-                        <p style="font-size:14px; color:#ccc; line-height:1.5;" id="tut2-desc">點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。</p>
-                    </div>
-                    <img src="tutor_pic/tut_battle.jpg" class="tut-img" alt="教學圖片 5">
+                    <div style="background:#21262D; border-left:4px solid #58A6FF; padding:12px; border-radius:6px; margin-bottom:15px;"><h4 style="color:#58A6FF; margin-bottom:5px;" id="tut2-h4">⚔️ 戰場沙盤互動指南：</h4><p style="font-size:14px; color:#ccc; line-height:1.5;" id="tut2-desc">點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。</p></div>
+                    <img src="tutor_pic/tut_battle.jpg" class="tut-img">
                 </div>
                 <div id="tut3" class="tut-content" style="display:none;">
-                    <div style="background:#21262D; border-left:4px solid #FFD700; padding:12px; border-radius:6px; margin-bottom:15px;">
-                        <h4 style="color:#FFD700; margin-bottom:5px;" id="tut3-h4">🎲 蒙地卡羅機率算力：</h4>
-                        <p style="font-size:14px; color:#ccc; line-height:1.5;" id="tut3-desc">設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！</p>
-                    </div>
-                    <img src="tutor_pic/tut_prob.jpg" class="tut-img" alt="教學圖片 6">
+                    <div style="background:#21262D; border-left:4px solid #FFD700; padding:12px; border-radius:6px; margin-bottom:15px;"><h4 style="color:#FFD700; margin-bottom:5px;" id="tut3-h4">🎲 蒙地卡羅機率算力：</h4><p style="font-size:14px; color:#ccc; line-height:1.5;" id="tut3-desc">設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！</p></div>
+                    <img src="tutor_pic/tut_prob.jpg" class="tut-img">
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn" style="width:100%; font-size:16px;" id="btn-tut-ready" onclick="closeTutorial()">我準備好了！</button>
-            </div>
+            <div class="modal-footer"><button class="btn" style="width:100%; font-size:16px;" id="btn-tut-ready" onclick="closeTutorial()">我準備好了！</button></div>
         </div>
     </div>
     <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10000;">
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
-    <!-- 強制載入最新版 -->
-    <script src="app.js?v=8"></script>
+    <!-- 💡 強制載入最新版 v=10 -->
+    <script src="app.js?v=10"></script>
 </body>
 </html>
