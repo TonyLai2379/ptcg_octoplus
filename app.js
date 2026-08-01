@@ -300,12 +300,15 @@ async function activateTrial() {
     } catch (e) { alert("連線錯誤"); }
 }
 
-// 💡 修正：專屬小章魚設計卡背 (加入 Unicode 編碼保護，防止 Emoji 造成 btoa 崩潰)
+// 💡 終極修正版：直接使用 UTF-8 URL 編碼，完全棄用容易報錯的 btoa Base64
 function getCardBackSVG(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
-    // 使用 unescape(encodeURIComponent()) 將 Emoji 安全轉換後再進行 Base64 編碼
-    return `data:image/svg+xml;base64,` + btoa(unescape(encodeURIComponent(svg)));
+    
+    // 改用 charset=utf-8 搭配 encodeURIComponent，對任何 Emoji 都 100% 免疫
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
+
+let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
 let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
 
 function toggleSidebar() { const sb = document.getElementById('sidebar'); const btn = document.getElementById('sidebar-toggle-btn'); if(sb.style.width === '0px') { sb.style.width = '360px'; btn.innerText = '«'; } else { sb.style.width = '0px'; btn.innerText = '»'; } }
