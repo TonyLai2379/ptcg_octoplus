@@ -33,7 +33,6 @@ let historyPtr = -1;
 let prizesFaceUp = false;
 let feedbackBase64 = "";
 
-// 💡 終極卡背產生器：使用 var 防止重複宣告的 SyntaxError，且完全避開 btoa
 var DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -41,7 +40,7 @@ var DEFAULT_CARDBACK = (function(color) {
 
 
 // ==========================================
-// 2. 多國語言支援 (翻譯字典) 🚨 完整補回！
+// 2. 多國語言支援 (翻譯字典)
 // ==========================================
 const translations = {
     zh: { 
@@ -435,8 +434,18 @@ function startMascotDrag(e) {
 }
 
 // ==========================================
-// 5. 登入、會員與表單機制
+// 5. 客服、登入、會員與表單機制
 // ==========================================
+// 💡 補回上次遺漏的客服關閉函式
+function closeSupportModal() {
+    document.getElementById('support-modal').style.display = 'none';
+    document.getElementById('feedback-msg-input').value = "";
+    document.getElementById('feedback-img-input').value = "";
+    document.getElementById('feedback-img-preview').style.display = 'none';
+    document.getElementById('feedback-status-msg').style.display = 'none';
+    feedbackBase64 = "";
+}
+
 function checkAgreements() {
     let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
     let privacyAgreed = localStorage.getItem('octoplus_privacy_agreed') === 'Y';
@@ -1065,25 +1074,82 @@ function redo() {
     saveLocalData();
 }
 
-// 💡 防呆：減少備戰區時，自動丟棄殘留的卡片
+// 💡 防呆：減少備戰區時，自動丟棄殘留的卡片 (自訂章魚風格選擇)
 function changeBenchSize(delta) {
     if (delta < 0) {
-        let zoneToCheck = `bench_${benchSize - 1}`;
-        let cardsInZone = gameCards.filter(c => c.zone === zoneToCheck);
-        if (cardsInZone.length > 0) {
-            if (confirm(`⚠️ 第 ${benchSize} 格備戰區內還有卡片，是否將它們全部移入「棄牌區」？\n(若選取消，則不會縮減格子)`)) {
-                cardsInZone.forEach(c => { c.zone = 'discard'; c.damage = 0; c.status = []; });
-                saveState();
-            } else {
-                return;
-            }
+        let benchedCards = gameCards.filter(c => c.zone.startsWith('bench_'));
+        let newSize = benchSize - 1;
+        let occupiedSlots = new Set(benchedCards.map(c => c.zone));
+        
+        // 如果目前佔用的格數大於縮減後的大小，強制要求選擇丟棄
+        if (occupiedSlots.size > newSize) {
+            showBenchShrinkModal(benchedCards, newSize);
+            return; 
         }
     }
+    
     benchSize = Math.max(1, Math.min(8, benchSize + delta));
     document.getElementById('bench-size-label').innerText = `${benchSize} 格`;
     renderBenchSlots();
     renderBoard();
 }
+
+// 💡 專屬小章魚風格：備戰區縮減選擇器
+function showBenchShrinkModal(benchedCards, newSize) {
+    let container = document.getElementById('bench-shrink-options');
+    container.innerHTML = '';
+    
+    let zones = {};
+    benchedCards.forEach(c => {
+        if(!zones[c.zone]) zones[c.zone] = [];
+        zones[c.zone].push(c);
+    });
+
+    Object.keys(zones).forEach(zName => {
+        let stack = zones[zName];
+        let topCard = stack[stack.length - 1]; 
+        
+        let div = document.createElement('div');
+        div.style = "cursor: pointer; transition: 0.2s; border: 2px solid transparent; border-radius: 6px; padding: 2px;";
+        div.onmouseover = () => div.style.borderColor = "#FF5252";
+        div.onmouseout = () => div.style.borderColor = "transparent";
+        
+        let safeImg = (topCard.img && topCard.img.startsWith('http')) ? topCard.img : DEFAULT_CARDBACK;
+        div.innerHTML = `<img src="${safeImg}" style="width: 80px; border-radius: 4px; pointer-events:none;">`;
+        
+        div.onclick = () => {
+            // 將選取的整疊丟入棄牌區
+            stack.forEach(c => {
+                c.zone = 'discard';
+                c.damage = 0;
+                c.status = [];
+            });
+            
+            document.getElementById('bench-shrink-modal').style.display = 'none';
+            
+            // 自動靠左重新排列剩餘的寶可夢
+            let remainingBenched = gameCards.filter(c => c.zone.startsWith('bench_'));
+            let currentZones = [...new Set(remainingBenched.map(c => c.zone))].sort();
+            currentZones.forEach((oldZone, idx) => {
+                let newZone = `bench_${idx}`;
+                if (oldZone !== newZone) {
+                    gameCards.filter(c => c.zone === oldZone).forEach(c => c.zone = newZone);
+                }
+            });
+
+            benchSize = newSize;
+            document.getElementById('bench-size-label').innerText = `${benchSize} 格`;
+            saveState();
+            renderBenchSlots();
+            renderBoard();
+        };
+        
+        container.appendChild(div);
+    });
+    
+    document.getElementById('bench-shrink-modal').style.display = 'flex';
+}
+
 
 function renderBenchSlots() {
     let container = document.getElementById('bench-container');
@@ -1103,7 +1169,7 @@ function renderBenchSlots() {
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     gameCards = [];
-    prizesFaceUp = false;
+    prizesFaceUp = false; // 初始化獎賞卡朝下
     
     Object.keys(deckDict).forEach(k => {
         for(let i=0; i<deckDict[k].qty; i++) {
@@ -1143,6 +1209,7 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
     let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
     let fallback = c.fallback_img || DEFAULT_CARDBACK;
 
+    // 處理蓋牌狀態
     if (c.zone === 'deck') {
         safeImg = DEFAULT_CARDBACK; fallback = DEFAULT_CARDBACK;
     } else if (c.zone.startsWith('prize_')) {
@@ -1189,6 +1256,7 @@ function renderBoard() {
         zones[c.zone].push(c);
     });
 
+    // 手牌渲染
     let handGroups = {};
     (zones['hand']||[]).forEach(c => {
         if(!handGroups[c.key]) handGroups[c.key] = { cards: [] };
@@ -1206,6 +1274,7 @@ function renderBoard() {
         document.getElementById('zone-hand').appendChild(el);
     });
 
+    // 戰鬥區、備戰區渲染
     let fieldZones = ['active', 'stadium'];
     for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`);
     fieldZones.forEach(zName => {
