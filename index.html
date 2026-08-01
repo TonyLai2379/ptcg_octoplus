@@ -226,9 +226,13 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
+                <!-- 💡 獎賞卡標題列：新增抽獎與機率算盤按鈕 -->
                 <div class="zone-title" id="title-prize">
                     <span>🏆 獎賞卡 (Prize)</span>
-                    <button class="q-btn" style="padding: 2px 8px; font-size: 11px;" onclick="togglePrizes()">🐙 翻面</button>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="q-btn" style="padding: 2px 8px; font-size: 11px; background: linear-gradient(145deg, #8E2DE2, #4A00E0); color: white;" onclick="drawRandomPrize()">🎲 盲抽</button>
+                        <button class="q-btn" style="padding: 2px 8px; font-size: 11px; background: linear-gradient(145deg, #00C9FF, #92FE9D); color: #000;" onclick="openPrizeProbModal()">📊 機率</button>
+                    </div>
                 </div>
                 <div class="prize-grid">
                     <div id="zone-prize-0" class="prize-slot drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
@@ -241,7 +245,7 @@
             </div>
 
             <div class="col-center">
-                <!-- 💡 戰鬥場絕對居中對齊結構 -->
+                <!-- 戰鬥場絕對居中對齊結構 -->
                 <div class="field-row">
                     <!-- 左：場地 (絕對定位於戰鬥場左側 30px 處) -->
                     <div class="stadium-wrapper">
@@ -350,6 +354,34 @@
             <button class="history-btn" id="btn-import-game" onclick="importGameState()">📥 載入對局</button>
             <button class="history-btn" id="btn-undo" onclick="undo()" disabled>↩ 上一步</button>
             <button class="history-btn" id="btn-redo" onclick="redo()" disabled>下一步 ↪</button>
+        </div>
+    </div>
+
+    <!-- 💡 獎賞卡機率計算 Modal -->
+    <div id="prize-prob-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 10015; display: none;">
+        <div class="modal-card" style="width: 500px; text-align: center; border: 2px solid #00E5FF; background: #161B22; box-shadow: 0 10px 40px rgba(0, 229, 255, 0.2);" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 style="color: #00E5FF; margin: 0; font-size: 20px;">🏆 獎賞卡機率算盤</h2>
+                <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('prize-prob-modal').style.display='none'">✕</button>
+            </div>
+            
+            <div class="modal-body" style="padding-top: 10px;">
+                <p style="color: #ccc; font-size: 13px; margin-bottom: 15px;">從目前剩餘的獎賞卡中，抽中目標卡的極限機率！</p>
+                
+                <div style="background: #21262D; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 15px;">
+                    <b style="font-size: 14px; color: #FFF;">🎯 想抽到什麼？ (目標卡)：</b>
+                    <button class="btn-secondary" style="width:100%; padding:8px; margin: 10px 0;" onclick="openSelector('prize_target')">🖼️ 從牌組選擇目標</button>
+                    <div id="prize-target-display" style="max-height: 150px; overflow-y: auto; margin-bottom: 10px;"></div>
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; border-top: 1px solid #30363D; padding-top: 15px;">
+                        <label style="color: #FFF; font-weight: bold;">預計抽取獎賞卡張數：</label>
+                        <input type="number" id="prize-draw-qty" value="1" min="1" max="6" style="width: 70px; text-align: center; padding: 6px; font-size: 16px; font-weight: bold; color: #00E5FF; background: #0D1117;">
+                    </div>
+                </div>
+                
+                <button class="btn" style="background: linear-gradient(90deg, #00C9FF, #92FE9D); color: #000; font-size: 18px; font-weight: bold; padding: 12px;" onclick="calcPrizeProb()">🎲 計算機率</button>
+                <div id="prize-prob-result" style="font-size: 46px; color: #FFD700; font-weight: bold; margin-top: 15px;">0.0 %</div>
+            </div>
         </div>
     </div>
 
@@ -506,7 +538,7 @@
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
-    <!-- 強制載入最新版 v=13 -->
-    <script src="app.js?v=13"></script>
+    <!-- 強制載入最新版 v=14 -->
+    <script src="app.js?v=14"></script>
 </body>
 </html>
