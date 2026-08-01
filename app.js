@@ -1,5 +1,5 @@
 // ==========================================
-// 1. 全域變數與 Supabase 初始化
+// 1. 全域變數與防呆宣告 (保證唯一)
 // ==========================================
 const API_BASE = "https://ptcg-octoplus-api.onrender.com";
 const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
@@ -33,6 +33,7 @@ let historyPtr = -1;
 let prizesFaceUp = false;
 let feedbackBase64 = "";
 
+// 💡 終極卡背產生器：使用 var 防止重複宣告的 SyntaxError，且完全避開 btoa
 var DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -436,7 +437,6 @@ function startMascotDrag(e) {
 // ==========================================
 // 5. 客服、登入、會員與表單機制
 // ==========================================
-// 💡 補回上次遺漏的客服關閉函式
 function closeSupportModal() {
     document.getElementById('support-modal').style.display = 'none';
     document.getElementById('feedback-msg-input').value = "";
@@ -1074,14 +1074,13 @@ function redo() {
     saveLocalData();
 }
 
-// 💡 防呆：減少備戰區時，自動丟棄殘留的卡片 (自訂章魚風格選擇)
+// 💡 縮減備戰區：小章魚專屬選擇對話框
 function changeBenchSize(delta) {
     if (delta < 0) {
         let benchedCards = gameCards.filter(c => c.zone.startsWith('bench_'));
         let newSize = benchSize - 1;
         let occupiedSlots = new Set(benchedCards.map(c => c.zone));
         
-        // 如果目前佔用的格數大於縮減後的大小，強制要求選擇丟棄
         if (occupiedSlots.size > newSize) {
             showBenchShrinkModal(benchedCards, newSize);
             return; 
@@ -1094,7 +1093,6 @@ function changeBenchSize(delta) {
     renderBoard();
 }
 
-// 💡 專屬小章魚風格：備戰區縮減選擇器
 function showBenchShrinkModal(benchedCards, newSize) {
     let container = document.getElementById('bench-shrink-options');
     container.innerHTML = '';
@@ -1118,7 +1116,6 @@ function showBenchShrinkModal(benchedCards, newSize) {
         div.innerHTML = `<img src="${safeImg}" style="width: 80px; border-radius: 4px; pointer-events:none;">`;
         
         div.onclick = () => {
-            // 將選取的整疊丟入棄牌區
             stack.forEach(c => {
                 c.zone = 'discard';
                 c.damage = 0;
@@ -1127,7 +1124,6 @@ function showBenchShrinkModal(benchedCards, newSize) {
             
             document.getElementById('bench-shrink-modal').style.display = 'none';
             
-            // 自動靠左重新排列剩餘的寶可夢
             let remainingBenched = gameCards.filter(c => c.zone.startsWith('bench_'));
             let currentZones = [...new Set(remainingBenched.map(c => c.zone))].sort();
             currentZones.forEach((oldZone, idx) => {
@@ -1150,7 +1146,6 @@ function showBenchShrinkModal(benchedCards, newSize) {
     document.getElementById('bench-shrink-modal').style.display = 'flex';
 }
 
-
 function renderBenchSlots() {
     let container = document.getElementById('bench-container');
     if (!container) return;
@@ -1169,7 +1164,7 @@ function renderBenchSlots() {
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     gameCards = [];
-    prizesFaceUp = false; // 初始化獎賞卡朝下
+    prizesFaceUp = false;
     
     Object.keys(deckDict).forEach(k => {
         for(let i=0; i<deckDict[k].qty; i++) {
@@ -1209,7 +1204,6 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
     let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
     let fallback = c.fallback_img || DEFAULT_CARDBACK;
 
-    // 處理蓋牌狀態
     if (c.zone === 'deck') {
         safeImg = DEFAULT_CARDBACK; fallback = DEFAULT_CARDBACK;
     } else if (c.zone.startsWith('prize_')) {
@@ -1220,7 +1214,6 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
     let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`;
     inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`;
     
-    // 💡 全新置頂按鈕：固定在左上角
     if(isField) {
         inner += `<div class="bring-front-btn" title="移到最上層" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</div>`;
     }
@@ -1256,7 +1249,6 @@ function renderBoard() {
         zones[c.zone].push(c);
     });
 
-    // 手牌渲染
     let handGroups = {};
     (zones['hand']||[]).forEach(c => {
         if(!handGroups[c.key]) handGroups[c.key] = { cards: [] };
@@ -1274,7 +1266,6 @@ function renderBoard() {
         document.getElementById('zone-hand').appendChild(el);
     });
 
-    // 戰鬥區、備戰區渲染
     let fieldZones = ['active', 'stadium'];
     for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`);
     fieldZones.forEach(zName => {
@@ -1483,7 +1474,6 @@ function openSearchModal(zone) {
 // 9. 萬次蒙地卡羅機率推演與分享系統
 // ==========================================
 async function runSimulation() {
-    // 💡 訪客防呆：要求登入才能執行萬次推演
     let token = await checkLoginStatus();
     if (!token) return;
 
@@ -1673,7 +1663,6 @@ function loadSharedGameByCode(code) {
 }
 
 async function saveDeckToDB() {
-    // 💡 訪客防呆：要求登入才能儲存雲端
     let token = await checkLoginStatus();
     if (!token) return;
 
