@@ -12,7 +12,7 @@
     <meta property="og:description" content="Replay. Analyze. Win More. 專為 PTCG 玩家打造的專業沙盤推演與覆盤神器！">
     <meta property="og:image" content="https://asia.pokemon-card.com/tw/assets/images/card-back.png">
 
-    <!-- 📱 手機觸控拖曳 Polyfill (安全載入版) -->
+    <!-- 📱 手機觸控拖曳 Polyfill -->
     <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/index.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0/default.css">
     <script>
@@ -24,51 +24,37 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- 引入獨立的 CSS 檔案 -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- 🐙 PTCG 小章魚：Replay. Analyze. Win More. 開場動畫 -->
+    <!-- 開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
         <div class="splash-content">
             <h2 style="color: #00E5FF; font-size: 20px; letter-spacing: 2px;">🐙 PTCG OCTOPLUS</h2>
             <div class="splash-slogan">Replay. Analyze. Win More.</div>
-
             <div class="splash-card-showcase">
-                <div class="splash-feat-card feat-1">
-                    <div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div>
-                </div>
+                <div class="splash-feat-card feat-1"><div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div></div>
                 <div class="splash-feat-card feat-main">
                     <div style="font-size: 28px; margin-bottom: 4px;">🎲</div>
                     <div style="font-size: 12px; color: #AAA;">首對局解牌率</div>
                     <div style="font-size: 22px; color: #FFD700; font-weight: bold;" id="splash-count">0.0%</div>
                 </div>
-                <div class="splash-feat-card feat-2">
-                    <div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div>
-                </div>
+                <div class="splash-feat-card feat-2"><div class="cardback-pattern"><span class="cardback-octo-logo">🐙</span></div></div>
             </div>
-
-            <div class="splash-counter-box" id="splash-phase-text">
-                ⚔️ 戰術沙盤 100% 還原
-            </div>
-
-            <div class="splash-progress-bar">
-                <div class="splash-progress-inner" id="splash-bar-inner"></div>
-            </div>
-
+            <div class="splash-counter-box" id="splash-phase-text">⚔️ 戰術沙盤 100% 還原</div>
+            <div class="splash-progress-bar"><div class="splash-progress-inner" id="splash-bar-inner"></div></div>
             <div class="splash-skip-tip">點擊任意處立即體驗 ➔</div>
         </div>
     </div>
 
-    <!-- 🐙 獨立懸浮：立體可拖曳點擊互動小章魚吉祥物 -->
+    <!-- 獨立懸浮吉祥物 -->
     <div id="octo-mascot-wrapper" onclick="triggerOctoMascotClick(event)" onmousedown="startMascotDrag(event)" ontouchstart="startMascotDrag(event)">
         <div id="octo-speech-bubble">Replay. Analyze. Win More!</div>
         <div class="octo-3d-body" id="octo-3d-body">🐙</div>
     </div>
 
-    <!-- 🌟 新手 6 步驟互動導覽提示框 -->
+    <!-- 新手導覽 -->
     <div id="tour-backdrop" class="modal-overlay" style="background: rgba(0,0,0,0.6); z-index: 10000; display: none;"></div>
     <div id="tour-tooltip-box">
         <h3 id="tour-step-title" style="color: #FFD700; margin-bottom: 8px; font-size: 16px;">💡 新手導覽 (1/6)</h3>
@@ -79,30 +65,23 @@
         </div>
     </div>
 
-    <!-- 🔒 未登入護城河 Modal -->
+    <!-- 未登入護城河 Modal -->
     <div id="gate-overlay" class="modal-overlay" style="display: flex; z-index: 15000; backdrop-filter: blur(8px);">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
             <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
             <p style="color: #AAA; font-size: 13px; margin-bottom: 20px;">覆盤最佳工具 - 請先登入以解鎖專業功能</p>
-            
             <div style="text-align: left; margin-bottom: 12px;">
                 <label style="font-size: 12px; color: #888; margin-bottom: 5px; display: block;">使用信箱登入 (無須密碼)：</label>
                 <input type="email" id="magic-email-input" placeholder="輸入您的 Email 信箱" style="font-size: 14px; padding: 10px;">
             </div>
-
             <div style="background: #21262D; padding: 12px; border-radius: 6px; font-size: 13px; color: #CCC; margin: 15px 0; text-align: left; line-height: 1.8; border: 1px solid #30363D;">
                 <div>狀態：<span id="terms-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="terms.html" target="_blank" class="legal-link">點此閱讀服務條款</a></div>
                 <div>狀態：<span id="privacy-status" class="status-badge" style="color: #FF5252;">❌ 尚未同意</span> 👉 <a href="privacy.html" target="_blank" class="legal-link">點此閱讀隱私權政策</a></div>
-                
                 <div id="read-reminder" style="color: #FF5252; font-size: 12px; margin-top: 10px; font-weight: bold; text-align: center; border-top: 1px dashed #444; padding-top: 8px;">
                     ⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送
                 </div>
             </div>
-
-            <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>
-                ✨ 發送驗證連結
-            </button>
-
+            <button id="send-verify-btn" class="login-btn" onclick="loginWithMagicLink()" disabled>✨ 發送驗證連結</button>
             <p id="magic-link-msg" style="font-size: 12px; margin-top: 12px; display: none; line-height: 1.4;"></p>
         </div>
     </div>
@@ -137,21 +116,13 @@
                     <div id="tab-link" class="tab-content active">
                         <input type="text" id="deck-code" placeholder="輸入官方牌組代碼 (例: uCRvSM...)">
                         <button class="btn" id="btn-parse-official" onclick="parseOfficial()">🌐 解析官方牌組</button>
-                        
-                        <div class="local-progress-container" id="prog-link">
-                            <span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span>
-                            <div class="local-progress-bar" id="bar-link"></div>
-                        </div>
+                        <div class="local-progress-container" id="prog-link"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-link"></div></div>
                     </div>
 
                     <div id="tab-text" class="tab-content">
                         <textarea id="deck-text" rows="4" placeholder="貼上 Limitless 內容..."></textarea>
                         <button class="btn" id="btn-parse-text" onclick="parseText()">📥 解析文字牌組</button>
-
-                        <div class="local-progress-container" id="prog-text">
-                            <span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span>
-                            <div class="local-progress-bar" id="bar-text"></div>
-                        </div>
+                        <div class="local-progress-container" id="prog-text"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-text"></div></div>
                     </div>
 
                     <div id="tab-edit" class="tab-content">
@@ -193,8 +164,8 @@
     <!-- 右側主視圖 -->
     <div id="main-view">
         
-        <!-- 💡 圖一、圖二優化：全新設計的置頂導覽列 (解決遮擋與重疊問題) -->
-        <div class="top-nav-bar" style="display:flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 15px; background: #161B22; padding: 10px 20px; border-radius: 8px; border: 1px solid #30363D;">
+        <!-- 💡 圖一、圖二優化：頂部導覽與設定區塊 -->
+        <div class="top-nav-bar" style="display:flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 10px; background: #161B22; padding: 10px 20px; border-radius: 8px; border: 1px solid #30363D;">
             <button class="q-btn" onclick="rollDice()">🎲 擲骰子</button>
             <button class="q-btn" onclick="flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
             <div style="width:1px; height:20px; background:#444;"></div>
@@ -213,8 +184,8 @@
                     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
                     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
                 </div>
-                <!-- 💡 進階教學 Q 版按鈕 -->
-                <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800);" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">
+                <!-- 💡 圖二優化：教學按鈕移到這裡，避免遮擋 -->
+                <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial();">
                     🐙 萬次推演教學 (必看)
                 </button>
             </summary>
@@ -237,13 +208,11 @@
                         <input type="number" id="dead-hand-qty" value="0" min="0" max="20">
                     </div>
                 </div>
-
                 <div class="prob-card">
                     <b style="font-size:15px;" id="lbl-step2">🔄 2. 延續解牌 (連鎖資源 - 支援多張)</b>
                     <button class="btn-secondary" id="btn-add-chain" style="width:100%; padding:8px; margin:12px 0;" onclick="openSelector('chain')">🖼️ 新增連鎖牌</button>
                     <div id="chain-display" style="margin-top:8px; font-size:14px; max-height:380px; overflow-y:auto;"></div>
                 </div>
-
                 <div class="prob-card" style="text-align:center;">
                     <button class="btn" id="btn-run-sim" style="background:linear-gradient(90deg, #FFD700, #FF8C00); color:#000; font-size:18px;" onclick="runSimulation()">🎲 執行深度推演</button>
                     <div id="sim-result" style="font-size: 46px; color: #00E5FF; font-weight: bold; margin-top: 15px;">0.0 %</div>
@@ -259,7 +228,7 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
-                <!-- 💡 翻轉改為「翻面」 -->
+                <!-- 💡 獎賞卡翻轉文字改為「翻面」 -->
                 <div class="zone-title" id="title-prize">
                     <span>🏆 獎賞卡 (Prize)</span>
                     <button class="q-btn" style="padding: 2px 8px; font-size: 11px;" onclick="togglePrizes()">🐙 翻面</button>
@@ -275,7 +244,7 @@
             </div>
 
             <div class="col-center">
-                <!-- 💡 圖一優化：戰術指示物垂直排列於戰鬥區左側 -->
+                <!-- 💡 圖一優化：戰術指示物垂直排列於左方，分為三行 -->
                 <div class="field-row">
                     <div class="tactical-toolbox vertical">
                         <div style="color:#00E5FF; font-weight:bold; font-size: 14px; margin-bottom: 2px;">🛠️ 戰術指示物</div>
@@ -292,7 +261,9 @@
                         <div class="toolbox-row">
                             <span style="font-size:12px; color:#4CAF50; font-weight:bold; width: 35px;">回血</span>
                             <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_10')">+10</div>
+                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_20')">+20</div>
                             <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_50')">+50</div>
+                            <div class="tool-item heal" draggable="true" ondragstart="event.dataTransfer.setData('token', 'heal_100')">+100</div>
                         </div>
                 
                         <div class="toolbox-row">
@@ -341,7 +312,7 @@
                 </div>
             </div>
 
-            <!-- 💡 圖一優化：牌庫與棄牌區加寬處理 -->
+            <!-- 💡 圖一優化：右側牌庫與棄牌區加寬，留出更舒適的空間 -->
             <div class="col-right">
                 <div style="margin-bottom: 8px;">
                     <div class="zone-title-compact">
@@ -383,19 +354,17 @@
         </div>
     </div>
 
-    <!-- 💡 進階情境機率推演專用教學 Modal -->
+    <!-- 教學 Modal 與其他彈窗 (維持原樣) -->
     <div id="prob-tutorial-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
         <div class="modal-card" style="width: 650px; max-width: 95vw;" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <h2 style="color:#FFD700; margin:0; font-size:18px;">🎯 萬次機率與連鎖分析指南</h2>
                 <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('prob-tutorial-modal').style.display='none'">✕</button>
             </div>
-            
             <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD; padding-right:10px;">
                 <p style="margin-bottom: 15px; font-size: 15px; color: #00E5FF; text-align: center; font-weight: bold;">
                     掌握「進階情境」，讓小章魚幫你算出極限勝率！只需簡單三步驟：
                 </p>
-                
                 <div style="background:#21262D; border-left:4px solid #FF5252; padding:15px; border-radius:8px; margin-bottom:12px; position:relative;">
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🎯</div>
                     <h3 style="color:#FF5252; margin-bottom:8px; font-size:16px;">第 1 步：設定「直接解牌」目標</h3>
@@ -403,7 +372,6 @@
                     <p style="color:#aaa; font-size: 13px;">👉 <b>AND (條件皆要有)</b>：適合 Combo 組合，例如「我要同時抽到能量 + 戰術寶可夢」。</p>
                     <p style="color:#aaa; font-size: 13px;">👉 <b>OR (任一張達成)</b>：適合替代方案，例如「抽到 巢穴球 或 VIP 都可以」。</p>
                 </div>
-
                 <div style="background:#21262D; border-left:4px solid #00E5FF; padding:15px; border-radius:8px; margin-bottom:12px; position:relative;">
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🔄</div>
                     <h3 style="color:#00E5FF; margin-bottom:8px; font-size:16px;">第 2 步：設定「延續解牌」 (資源連鎖)</h3>
@@ -411,7 +379,6 @@
                     <p style="color:#aaa; font-size: 13px;">👉 系統會聰明地使用「物品」或「支援者」繼續抽牌，甚至使用檢索卡把目標找出來！</p>
                     <p style="color:#FFD700; font-size: 13px; font-weight: bold; margin-top: 4px;">✅ 神秘秘技：「已在手上/場上」打勾的話，代表這招保證能發動 (例如場上已有一隻能過牌的寶可夢)！</p>
                 </div>
-
                 <div style="background:#21262D; border-left:4px solid #FFD700; padding:15px; border-radius:8px; position:relative;">
                     <div style="position:absolute; right:-10px; top:-10px; font-size:32px;">🎲</div>
                     <h3 style="color:#FFD700; margin-bottom:8px; font-size:16px;">第 3 步：執行深度推演</h3>
@@ -424,31 +391,21 @@
             </div>
         </div>
     </div>
-
-    <!-- 🎲 骰子與硬幣結果 Modal -->
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
         <div id="dice-result" class="bounce-in" style="font-size:140px; text-shadow: 0 10px 40px rgba(0,0,0,0.9); font-weight: bold;">🎲</div>
     </div>
-
-    <!-- 💡 客服 Modal -->
     <div id="support-modal" class="modal-overlay">
         <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
             <h2 style="color: #00E5FF; margin-bottom: 8px;">💬 聯絡小章魚客服</h2>
-            <p style="color: #ccc; font-size: 13px; margin-bottom: 12px; text-align: left; line-height: 1.5;">
-                遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息，小章魚會收到您的工單：<br>
-                <span style="color: #FF5252; font-size: 12px;">(提示：送出後，您的回報將上傳至系統資料庫供開發團隊查閱)</span>
-            </p>
-
+            <p style="color: #ccc; font-size: 13px; margin-bottom: 12px; text-align: left; line-height: 1.5;">遇到 Bug、卡牌圖片錯誤，或有許願功能？請直接在下方填寫訊息，小章魚會收到您的工單：<br><span style="color: #FF5252; font-size: 12px;">(提示：送出後，您的回報將上傳至系統資料庫供開發團隊查閱)</span></p>
             <div style="text-align: left; display: flex; flex-direction: column; gap: 10px;">
                 <textarea id="feedback-msg-input" rows="4" placeholder="請描述您遇到的問題或建議..." style="resize: vertical; font-size: 13px;"></textarea>
-
                 <div>
                     <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📸 附加截圖 (選填，最大 5MB)：</label>
                     <input type="file" id="feedback-img-input" accept="image/*" style="font-size: 12px; padding: 4px; background: #21262D;" onchange="previewFeedbackImage(this)">
                     <img id="feedback-img-preview" src="" style="display: none; max-height: 120px; border-radius: 6px; margin-top: 6px; border: 1px solid #30363D;">
                 </div>
             </div>
-
             <div style="margin-top: 15px; display: flex; gap: 10px;">
                 <button class="btn" id="btn-submit-feedback" style="background: #238636; flex: 2;" onclick="submitSupportFeedback()">🚀 立即發送給小章魚</button>
                 <button class="btn btn-secondary" style="flex: 1; font-size: 13px; color: #00E5FF;" onclick="navigator.clipboard.writeText('loganlai0422@gmail.com').then(()=>{alert('✅ 信箱已複製：loganlai0422@gmail.com');})">📋 複製信箱</button>
@@ -457,8 +414,6 @@
             <p id="feedback-status-msg" style="font-size: 12px; margin-top: 8px; display: none; text-align: center;"></p>
         </div>
     </div>
-
-    <!-- 會員彈窗 -->
     <div id="auth-overlay" class="modal-overlay">
         <div class="modal-card" style="width:400px; height:auto; text-align:center;">
             <h2 style="color:#FFF; margin-bottom:15px;" id="modal-auth-title">解鎖專業沙盤功能</h2>
@@ -469,8 +424,6 @@
             <button class="btn btn-secondary" style="margin-top:10px;" id="btn-close-auth" onclick="document.getElementById('auth-overlay').style.display='none'">關閉</button>
         </div>
     </div>
-
-    <!-- 分享對局 Modal -->
     <div id="share-modal" class="modal-overlay">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center;">
             <h2 style="color: #00E5FF; margin-bottom: 15px;" id="modal-share-title">📤 分享對局</h2>
@@ -480,13 +433,10 @@
             <button class="btn btn-secondary" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
         </div>
     </div>
-
-    <!-- 💳 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
             <h2 style="color: #FFD700; margin-bottom: 10px;">👑 訂閱方案與會員權限</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">請選擇以下方案解鎖「萬次深度推演」：</p>
-            
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
                 <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用七天 (每日額度限制 30 次)</button>
                 <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">💎 2. 訂閱 1 個月 / 99 元</button>
@@ -494,12 +444,9 @@
                 <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">🏆 4. 訂閱一年 / 599 元</button>
                 <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入會員邀請碼</button>
             </div>
-            
             <button class="btn btn-secondary" style="margin-top:15px;" onclick="document.getElementById('sub-modal').style.display='none'">先不要，返回</button>
         </div>
     </div>
-
-    <!-- 圖庫 Modal -->
     <div id="gallery-modal" class="modal-overlay" onclick="closeGalleryModal(event)">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -514,8 +461,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 新手教學 Modal -->
     <div id="tutorial-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
         <div class="modal-card tutorial-card" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -527,7 +472,6 @@
                     <button class="tab-btn" onclick="switchTutTab('tut2')" id="btn-tut2">⚔️ 2. 戰場操作</button>
                     <button class="tab-btn" onclick="switchTutTab('tut3')" id="btn-tut3">🎲 3. 機率運算</button>
                 </div>
-                
                 <div id="tut1" class="tut-content">
                     <p style="margin-bottom:15px; font-size:15px;" id="tut1-desc">建立牌組有三種方式，請選擇你想了解的匯入方式：</p>
                     <div style="display:flex; gap:10px; margin-bottom:20px;">
@@ -535,7 +479,6 @@
                         <button class="sub-tab-btn" id="btn-tut1-b" onclick="switchSubTutTab('tut1-b')" style="flex:1; padding:10px; background:#21262D; border:1px solid #30363D; color:#888; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">B. Limitless 英文匯入</button>
                         <button class="sub-tab-btn" id="btn-tut1-c" onclick="switchSubTutTab('tut1-c')" style="flex:1; padding:10px; background:#21262D; border:1px solid #30363D; color:#888; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px;">C. 搜尋與自訂卡片</button>
                     </div>
-                    
                     <div id="tut1-a" class="sub-tut-content">
                         <p style="margin-bottom:10px; font-size:14px; color:#aaa;" id="tut1-a-desc">前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。</p>
                         <img src="tutor_pic/tut_official_1.jpg" class="tut-img" alt="教學圖片 1">
@@ -550,7 +493,6 @@
                         <img src="tutor_pic/tut_edit.jpg" class="tut-img" alt="教學圖片 4">
                     </div>
                 </div>
-                
                 <div id="tut2" class="tut-content" style="display:none;">
                     <div style="background:#21262D; border-left:4px solid #58A6FF; padding:12px; border-radius:6px; margin-bottom:15px;">
                         <h4 style="color:#58A6FF; margin-bottom:5px;" id="tut2-h4">⚔️ 戰場沙盤互動指南：</h4>
@@ -558,7 +500,6 @@
                     </div>
                     <img src="tutor_pic/tut_battle.jpg" class="tut-img" alt="教學圖片 5">
                 </div>
-                
                 <div id="tut3" class="tut-content" style="display:none;">
                     <div style="background:#21262D; border-left:4px solid #FFD700; padding:12px; border-radius:6px; margin-bottom:15px;">
                         <h4 style="color:#FFD700; margin-bottom:5px;" id="tut3-h4">🎲 蒙地卡羅機率算力：</h4>
@@ -572,13 +513,11 @@
             </div>
         </div>
     </div>
-
-    <!-- Lightbox -->
     <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10000;">
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
-    <!-- 引入獨立的 JS 檔案 -->
-    <script src="app.js?v=6"></script>
+    <!-- 強制載入最新版 -->
+    <script src="app.js?v=8"></script>
 </body>
 </html>
