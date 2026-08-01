@@ -226,13 +226,11 @@
         <!-- 戰場 -->
         <div class="battle-container" id="battle-board-area">
             <div class="col-left">
-                <!-- 💡 獎賞卡區塊：包含盲抽與機率按鈕 -->
-                <div class="zone-title" id="title-prize">
-                    <span>🏆 獎賞卡 (Prize)</span>
+                <div class="zone-title">
+                    <span id="title-prize-text">🏆 獎賞卡 (Prize)</span>
                     <div style="display: flex; gap: 4px;">
                         <button class="q-btn" style="padding: 2px 8px; font-size: 11px; background: linear-gradient(145deg, #8E2DE2, #4A00E0); color: white;" onclick="drawRandomPrize()">🎲 盲抽</button>
                         <button class="q-btn" style="padding: 2px 8px; font-size: 11px; background: linear-gradient(145deg, #00C9FF, #92FE9D); color: #000;" onclick="openPrizeProbModal()">📊 機率</button>
-                        <button class="q-btn" style="padding: 2px 8px; font-size: 11px;" onclick="togglePrizes()">🐙 翻面</button>
                     </div>
                 </div>
                 <div class="prize-grid">
