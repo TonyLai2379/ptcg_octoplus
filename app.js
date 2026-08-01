@@ -1,5 +1,5 @@
 // ==========================================
-// 1. 全域變數與防呆宣告 (保證唯一)
+// 1. 全域變數與 Supabase 初始化
 // ==========================================
 const API_BASE = "https://ptcg-octoplus-api.onrender.com";
 const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
@@ -33,15 +33,213 @@ let historyPtr = -1;
 let prizesFaceUp = false;
 let feedbackBase64 = "";
 
-// 💡 終極卡背產生器：只宣告一次，絕對安全！
-const DEFAULT_CARDBACK = (function(color) {
+// 💡 終極卡背產生器：使用 var 防止重複宣告的 SyntaxError，且完全避開 btoa
+var DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 })("#2B579A");
 
+
 // ==========================================
-// 2. 教學導覽與 Splash 開場動畫
+// 2. 多國語言支援 (翻譯字典) 🚨 完整補回！
 // ==========================================
+const translations = {
+    zh: { 
+        tutBtn: "❓ 教學", statusNotLogin: "目前狀態：未登入", btnUnlock: "訂閱、輸入邀請碼", 
+        tabLink: "🔗 官方代碼", tabText: "📝 英文匯入", tabEdit: "🛠️ 搜尋編輯", 
+        phDeckCode: "輸入官方牌組代碼 (例: uCRvSM...)", btnParseOfficial: "🌐 解析官方牌組", 
+        phDeckText: "貼上 Limitless 內容...", btnParseText: "📥 解析文字牌組", 
+        lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", 
+        lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", 
+        btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", 
+        btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", 
+        disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", 
+        lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", 
+        txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", 
+        lblRuleAnd: "條件皆要有 (AND)", lblRuleOr: "任一張達成即可 (OR)", btnSelectDirect: "🖼️ 從牌組多選目標牌", 
+        lblDraw1: "第一波抽牌數：", lblDeadHand: "手牌原有廢牌張數 (洗回稀釋用)：", 
+        lblStep2: "🔄 2. 延續解牌 (連鎖資源 - 支援多張)", btnAddChain: "🖼️ 新增連鎖牌", 
+        btnRunSim: "🎲 執行深度推演", btnSaveScenario: "📌 紀錄至比較板", btnClearBoard: "🗑️ 清空比較板", 
+        titlePrize: "🏆 獎賞卡 (Prize)", titleStadium: "🟠 場地 (Stadium)", titleActive: "🔴 戰鬥場 (Active)", 
+        titleBench: "🔵 備戰區 (Bench)", titleHand: "手牌", txtHandSub: "扇形展開支援自由拖放", 
+        btnHandShuffle: "🔄 洗回", btnHandDiscard: "🗑️ 全棄", titleDeck: "🗃️ 牌庫", 
+        btnDrawCard: "🎴 抽一張牌", titleDiscard: "🪦 棄牌", btnExportGame: "📤 分享對局", 
+        btnImportGame: "📥 載入對局", btnUndo: "↩ 上一步", btnRedo: "下一步 ↪", 
+        modalAuthTitle: "解鎖專業沙盤功能", btnCloseAuth: "關閉", modalShareTitle: "📤 分享對局", 
+        modalShareDesc: "複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！", 
+        btnShareClose: "關閉", btnShareCopy: "📋 一鍵複製短代碼", btnGalleryClose: "關閉", 
+        galleryConfirmBtn: "✅ 確定選取", tutMainTitle: "📖 PTCG 覆盤工具教學", btnTut1: "🛠️ 1. 編輯牌組", 
+        btnTut2: "⚔️ 2. 戰場操作", btnTut3: "🎲 3. 機率運算", tut1Desc: "建立牌組有三種方式，請選擇你想了解的匯入方式：", 
+        btnTut1A: "A. 官方代碼匯入", btnTut1B: "B. Limitless 英文匯入", btnTut1C: "C. 搜尋與自訂卡片", 
+        tut1ADesc: "前往寶可夢繁體中文官方網站，組好牌組後複製代碼貼入即可。", 
+        tut1BDesc: "複製 Limitless 等賽事網站的英文牌組表 (Export Text)，一鍵解析匯入。", 
+        tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", 
+        tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", 
+        tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", 
+        btnTutReady: "我準備好了！", benchLabel: "格" 
+    },
+    en: { 
+        tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", 
+        tabLink: "🔗 Official Code", tabText: "📝 Limitless Text", tabEdit: "🛠️ Search & Edit", 
+        phDeckCode: "Enter official deck code (e.g. uCRvSM...)", btnParseOfficial: "🌐 Parse Official Deck", 
+        phDeckText: "Paste Limitless deck text...", btnParseText: "📥 Parse Text Deck", 
+        lblSearchDb: "Database Search:", phSearchInput: "Type card name to search...", 
+        lblCustomCard: "Custom Proxy Card:", phCustomCard: "Proxy Card Name", btnAddCustom: "➕ Create Proxy", 
+        deckListTitle: "Deck List", btnPreviewDeck: "👁️ Preview", btnStartGame: "🎲 Lock & Start Game", 
+        btnSaveCloud: "💾 Save Cloud", optLoadCloud: "Load Cloud Deck...", 
+        disclaimer: "<b>⚠️ Disclaimer:</b><br>Third-party TCG tactic tool. Not affiliated with Nintendo, Pokémon, or GAME FREAK.", 
+        lblZoom: "🔍 UI Zoom", summaryProbTitle: "🎯 Monte Carlo Probability & Chain Analysis (10,000 Sim)", 
+        txtToggleBadge: "Click to Expand/Collapse", lblStep1: "🔥 1. Direct Target Cards (Multi-select)", 
+        lblRuleAnd: "Require All (AND)", lblRuleOr: "Require Any (OR)", btnSelectDirect: "🖼️ Select Targets from Deck", 
+        lblDraw1: "First Draw Count:", lblDeadHand: "Existing Dead Cards in Hand:", 
+        lblStep2: "🔄 2. Chain Resources (Multi-card)", btnAddChain: "🖼️ Add Chain Card", 
+        btnRunSim: "🎲 Run Deep Simulation", btnSaveScenario: "📌 Save to Comparison", btnClearBoard: "🗑️ Clear Comparison", 
+        titlePrize: "🏆 Prize Cards", titleStadium: "🟠 Stadium", titleActive: "🔴 Active Spot", 
+        titleBench: "🔵 Bench", titleHand: "Hand", txtHandSub: "Fan view with drag-and-drop", 
+        btnHandShuffle: "🔄 Shuffle Back", btnHandDiscard: "🗑️ Discard All", titleDeck: "🗃️ Deck", 
+        btnDrawCard: "🎴 Draw 1 Card", titleDiscard: "🪦 Discard Pile", btnExportGame: "📤 Share Match", 
+        btnImportGame: "📥 Load Match", btnUndo: "↩ Undo", btnRedo: "Redo ↪", 
+        modalAuthTitle: "Unlock Sandbox Pro", btnCloseAuth: "Close", modalShareTitle: "📤 Share Game State", 
+        modalShareDesc: "Copy the 6-digit code below to share and restore this match on any device!", 
+        btnShareClose: "Close", btnShareCopy: "📋 Copy Short Code", btnGalleryClose: "Close", 
+        galleryConfirmBtn: "✅ Confirm Selection", tutMainTitle: "📖 PTCG Sandbox Tutorial", 
+        btnTut1: "🛠️ 1. Deck Builder", btnTut2: "⚔️ 2. Battle Board", btnTut3: "🎲 3. Probabilities", 
+        tut1Desc: "There are three ways to build/import a deck. Choose one to learn:", 
+        btnTut1A: "A. Official Code", btnTut1B: "B. Limitless Export", btnTut1C: "C. Search & Custom", 
+        tut1ADesc: "Go to official Pokémon TCG site, build a deck, and copy the deck code.", 
+        tut1BDesc: "Copy text list from Limitless TCG and paste to parse in one click.", 
+        tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", 
+        tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", 
+        tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", 
+        btnTutReady: "I'm Ready!", benchLabel: "Slots" 
+    }
+};
+
+function setTxt(id, val, isHTML=false) { 
+    let el = document.getElementById(id); 
+    if(el) { 
+        if(isHTML) el.innerHTML = val; 
+        else el.innerText = val; 
+    } 
+}
+
+function changeLanguage(lang) {
+    currentLang = lang; 
+    localStorage.setItem('app_lang', lang); 
+    document.getElementById('lang-select').value = lang; 
+    let t = translations[lang];
+    
+    setTxt('tut-btn', t.tutBtn); 
+    const statusEl = document.getElementById('txt-status');
+    if (statusEl && statusEl.innerText.includes("未登入")) setTxt('txt-status', t.statusNotLogin); 
+    
+    setTxt('btn-unlock', t.btnUnlock); 
+    setTxt('tab-btn-link', t.tabLink); 
+    setTxt('tab-btn-text', t.tabText); 
+    setTxt('tab-btn-edit', t.tabEdit);
+    
+    let dc = document.getElementById('deck-code'); 
+    if(dc) dc.placeholder = t.phDeckCode;
+    setTxt('btn-parse-official', t.btnParseOfficial);
+    
+    let dt = document.getElementById('deck-text'); 
+    if(dt) dt.placeholder = t.phDeckText;
+    setTxt('btn-parse-text', t.btnParseText); 
+    setTxt('lbl-search-db', t.lblSearchDb);
+    
+    let si = document.getElementById('search-input'); 
+    if(si) si.placeholder = t.phSearchInput;
+    setTxt('lbl-custom-card', t.lblCustomCard);
+    
+    let ci = document.getElementById('custom-card-input'); 
+    if(ci) ci.placeholder = t.phCustomCard;
+    setTxt('btn-add-custom', t.btnAddCustom); 
+    
+    setTxt('txt-deck-list-title', t.deckListTitle); 
+    setTxt('btn-preview-deck', t.btnPreviewDeck); 
+    setTxt('btn-start-game', t.btnStartGame); 
+    setTxt('btn-save-cloud', t.btnSaveCloud); 
+    setTxt('opt-load-cloud', t.optLoadCloud); 
+    setTxt('txt-disclaimer', t.disclaimer, true); 
+    setTxt('lbl-zoom', t.lblZoom); 
+    setTxt('summary-prob-title', t.summaryProbTitle); 
+    setTxt('txt-toggle-badge', t.txtToggleBadge); 
+    setTxt('lbl-step1', t.lblStep1); 
+    setTxt('lbl-rule-and', t.lblRuleAnd); 
+    setTxt('lbl-rule-or', t.lblRuleOr); 
+    setTxt('btn-select-direct', t.btnSelectDirect); 
+    setTxt('lbl-draw1', t.lblDraw1); 
+    setTxt('lbl-dead-hand', t.lblDeadHand); 
+    setTxt('lbl-step2', t.lblStep2); 
+    setTxt('btn-add-chain', t.btnAddChain); 
+    setTxt('btn-run-sim', t.btnRunSim); 
+    setTxt('btn-save-scenario', t.btnSaveScenario); 
+    setTxt('btn-clear-board', t.btnClearBoard); 
+    setTxt('title-prize', t.titlePrize); 
+    setTxt('title-stadium', t.titleStadium); 
+    setTxt('title-active', t.titleActive); 
+    setTxt('title-bench', t.titleBench); 
+    setTxt('title-hand', t.titleHand); 
+    setTxt('txt-hand-sub', t.txtHandSub); 
+    setTxt('btn-hand-shuffle', t.btnHandShuffle); 
+    setTxt('btn-hand-discard', t.btnHandDiscard); 
+    setTxt('title-deck', t.titleDeck); 
+    setTxt('btn-draw-card', t.btnDrawCard); 
+    setTxt('title-discard', t.titleDiscard); 
+    setTxt('btn-export-game', t.btnExportGame); 
+    setTxt('btn-import-game', t.btnImportGame); 
+    setTxt('btn-undo', t.btnUndo); 
+    setTxt('btn-redo', t.btnRedo); 
+    setTxt('modal-auth-title', t.modalAuthTitle); 
+    setTxt('btnCloseAuth', t.btnCloseAuth); 
+    setTxt('modal-share-title', t.modalShareTitle); 
+    setTxt('modal-share-desc', t.modalShareDesc); 
+    setTxt('btn-share-close', t.btnShareClose); 
+    setTxt('btn-share-copy', t.btnShareCopy); 
+    setTxt('btn-gallery-close', t.btnGalleryClose); 
+    setTxt('gallery-confirm-btn', t.galleryConfirmBtn); 
+    setTxt('tut-main-title', t.tutMainTitle); 
+    setTxt('btn-tut1', t.btnTut1); 
+    setTxt('btn-tut2', t.btnTut2); 
+    setTxt('btn-tut3', t.btnTut3); 
+    setTxt('tut1-desc', t.tut1Desc); 
+    setTxt('btn-tut1-a', t.btnTut1A); 
+    setTxt('btn-tut1-b', t.btnTut1B); 
+    setTxt('btn-tut1-c', t.btnTut1C); 
+    setTxt('tut1-a-desc', t.tut1ADesc); 
+    setTxt('tut1-b-desc', t.tut1BDesc); 
+    setTxt('tut1-c-desc', t.tut1CDesc); 
+    setTxt('tut2-h4', t.tut2H4); 
+    setTxt('tut2-desc', t.tut2Desc); 
+    setTxt('tut3-h4', t.tut3H4); 
+    setTxt('tut3-desc', t.tut3Desc); 
+    setTxt('btn-tut-ready', t.btnTutReady); 
+    setTxt('bench-size-label', `${benchSize} ${t.benchLabel}`);
+    
+    renderTargetUI(); 
+    renderChainUI(); 
+    renderBoard();
+}
+
+// ==========================================
+// 3. Auto Zoom 與開場動畫
+// ==========================================
+function applyAutoZoom() {
+    let width = window.innerWidth;
+    let targetZoom = 1;
+    if (width < 1400) targetZoom = 0.9;
+    if (width < 1200) targetZoom = 0.8;
+    if (width < 992) targetZoom = 0.7;
+    if (width < 768) targetZoom = 0.55;
+    
+    let mv = document.getElementById('main-view');
+    if (mv) mv.style.zoom = targetZoom;
+    
+    let slider = document.getElementById('zoom-slider');
+    if (slider) slider.value = targetZoom;
+}
+window.addEventListener('resize', applyAutoZoom);
+
 function openProbTutorial() {
     document.getElementById('prob-tutorial-modal').style.display = 'flex';
 }
@@ -148,7 +346,7 @@ function endTour() {
 }
 
 // ==========================================
-// 3. 戰術工具與吉祥物互動
+// 4. 戰術工具與吉祥物互動
 // ==========================================
 function rollDice() {
     let res = Math.floor(Math.random() * 6) + 1;
@@ -237,7 +435,7 @@ function startMascotDrag(e) {
 }
 
 // ==========================================
-// 4. 登入、會員與表單機制
+// 5. 登入、會員與表單機制
 // ==========================================
 function checkAgreements() {
     let termsAgreed = localStorage.getItem('octoplus_terms_agreed') === 'Y';
@@ -304,16 +502,22 @@ function startCooldownTimer(seconds) {
 window.addEventListener('load', () => {
     checkAgreements();
     checkCooldownOnLoad();
+    applyAutoZoom();
+    
+    changeLanguage(currentLang);
+    
     try {
         let savedDeck = localStorage.getItem('octoplus_deck');
         if (savedDeck) { deckDict = JSON.parse(savedDeck); updateDeckUI(); }
         let savedBoard = localStorage.getItem('octoplus_board');
         if (savedBoard) gameCards = JSON.parse(savedBoard);
     } catch(e) {}
+    
     renderBenchSlots();
     renderBoard();
     runSplashAnimation();
 });
+
 setInterval(checkAgreements, 1000);
 window.addEventListener('focus', checkAgreements);
 
@@ -327,7 +531,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange((event, session) => {
         if (session) handleSession(session);
-        else document.getElementById('gate-overlay').style.display = 'flex';
     });
 }
 
@@ -362,6 +565,7 @@ async function handleSession(session) {
             }
         }
     } catch (err) {}
+    
     fetchSavedDecks();
     if (localStorage.getItem('octoplus_tour_done') !== 'Y') setTimeout(() => { startInteractiveTour(); }, 600);
 }
@@ -409,20 +613,19 @@ async function loginWithMagicLink() {
     }
 }
 
-async function getFreshToken() {
-    if (!supabaseClient) return null;
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    if (error || !session) {
+// 💡 訪客模式防呆檢查
+async function checkLoginStatus() {
+    if (!supabaseClient) return false;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
         document.getElementById('gate-overlay').style.display = 'flex';
-        document.getElementById('sub-modal').style.display = 'none';
-        alert("請先完成信箱驗證登入！");
-        return null;
+        return false;
     }
     return session.access_token;
 }
 
 // ==========================================
-// 5. 牌組處理與 UI 邏輯
+// 6. 牌組處理與 UI 邏輯
 // ==========================================
 function toggleSidebar() {
     const sb = document.getElementById('sidebar');
@@ -454,9 +657,6 @@ function switchSubTutTab(subId) {
     document.getElementById(subId).style.display = 'block';
 }
 
-function openTutorial() { startInteractiveTour(); }
-function closeTutorial() { document.getElementById('tutorial-modal').style.display='none'; localStorage.setItem('tut_shown', 'true'); }
-
 function showProgress(id) {
     let prog = document.getElementById('prog-'+id);
     let bar = document.getElementById('bar-'+id);
@@ -478,6 +678,7 @@ function hideProgress(id) {
 }
 
 function getDeckTotal() { return Object.values(deckDict).reduce((sum, c) => sum + c.qty, 0); }
+
 function checkBlink() {
     let el = document.getElementById('import-section');
     if(getDeckTotal() < 60) el.classList.add('blink-yellow'); else el.classList.remove('blink-yellow');
@@ -617,7 +818,6 @@ function debounceSearch(val) {
 }
 
 function changeCardBack(color) {
-    // 🔥 不重複宣告，只重寫功能邏輯，並直接更新全域變數
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     DEFAULT_CARDBACK = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     
@@ -629,7 +829,7 @@ function changeCardBack(color) {
 }
 
 // ==========================================
-// 6. Modal 彈窗與卡牌圖庫
+// 7. Modal 彈窗與卡牌圖庫
 // ==========================================
 function closeGalleryModal(e) {
     if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none';
@@ -826,7 +1026,7 @@ function openChainTargetSelector(parentKey) {
 }
 
 // ==========================================
-// 7. 戰局系統 (戰場、拖曳、洗牌、還原)
+// 8. 戰局系統 (戰場、群組拖曳、洗牌、還原)
 // ==========================================
 function saveLocalData() {
     localStorage.setItem('octoplus_deck', JSON.stringify(deckDict));
@@ -865,7 +1065,7 @@ function redo() {
     saveLocalData();
 }
 
-// 💡 優化：縮減備戰區防呆提示
+// 💡 防呆：減少備戰區時，自動丟棄殘留的卡片
 function changeBenchSize(delta) {
     if (delta < 0) {
         let zoneToCheck = `bench_${benchSize - 1}`;
@@ -903,7 +1103,8 @@ function renderBenchSlots() {
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     gameCards = [];
-    prizesFaceUp = false; 
+    prizesFaceUp = false;
+    
     Object.keys(deckDict).forEach(k => {
         for(let i=0; i<deckDict[k].qty; i++) {
             gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck', damage: 0, status: [] });
@@ -914,8 +1115,11 @@ function startGame() {
     for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand';
     for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`;
     
-    historyStates = []; historyPtr = -1;
-    saveState(); renderBenchSlots(); renderBoard();
+    historyStates = [];
+    historyPtr = -1;
+    saveState();
+    renderBenchSlots();
+    renderBoard();
 }
 
 function createCardEl(c, isField=false, isPrizeFaceUp=null) {
@@ -949,9 +1153,9 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
     let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`;
     inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`;
     
-    // 💡 優化置頂按鈕：不再隱藏，直接變成右上角的超好按實用小按鈕
+    // 💡 全新置頂按鈕：固定在左上角
     if(isField) {
-        inner += `<div class="bring-front-btn" title="移到最上層" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼</div>`;
+        inner += `<div class="bring-front-btn" title="移到最上層" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</div>`;
     }
     div.innerHTML = inner;
     return div;
@@ -1002,7 +1206,6 @@ function renderBoard() {
         document.getElementById('zone-hand').appendChild(el);
     });
 
-    // 戰鬥區、備戰區渲染
     let fieldZones = ['active', 'stadium'];
     for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`);
     fieldZones.forEach(zName => {
@@ -1042,7 +1245,7 @@ function renderBoard() {
             domEl.appendChild(el);
         });
 
-        // 💡 新增：當備戰區有 2 張牌以上，上方顯示「🔗 整疊拖曳」手把
+        // 💡 群組拖曳手把 (當有多張牌時出現)
         if (arr.length > 1) {
             let dragHandle = document.createElement('div');
             dragHandle.className = 'stack-drag-handle';
@@ -1134,7 +1337,8 @@ function drop(ev) {
                     topCard.status = topCard.status || [];
                     if (!topCard.status.includes(tokenData)) topCard.status.push(tokenData);
                 }
-                saveState(); renderBoard();
+                saveState();
+                renderBoard();
             }
         }
         return;
@@ -1161,11 +1365,18 @@ document.querySelectorAll('.drop-zone').forEach(z => z.addEventListener('draglea
 function shuffleDeck() {
     let deckCards = gameCards.filter(c => c.zone === 'deck');
     if (deckCards.length <= 1) return alert("⚠️ 牌庫卡片不足（0 或 1 張），無需洗牌！");
+    
     deckCards.sort(() => Math.random() - 0.5);
     gameCards = gameCards.filter(c => c.zone !== 'deck').concat(deckCards);
-    saveState(); renderBoard();
+    
+    saveState();
+    renderBoard();
+    
     let msg = document.getElementById('marquee-text');
-    if (msg) { msg.innerHTML = "🔀 牌庫已重新完成隨機洗牌！"; msg.style.color = "#FFD700"; }
+    if (msg) {
+        msg.innerHTML = "🔀 牌庫已重新完成隨機洗牌！";
+        msg.style.color = "#FFD700";
+    }
 }
 
 function drawCard() {
@@ -1179,7 +1390,8 @@ function moveZoneTo(fromZone, toZone) {
         let d = gameCards.filter(c => c.zone === 'deck').sort(() => Math.random()-0.5);
         gameCards = gameCards.filter(c => c.zone !== 'deck').concat(d);
     }
-    saveState(); renderBoard();
+    saveState();
+    renderBoard();
 }
 
 function openSearchModal(zone) {
@@ -1199,53 +1411,89 @@ function openSearchModal(zone) {
 }
 
 // ==========================================
-// 8. 萬次蒙地卡羅機率推演與分享系統
+// 9. 萬次蒙地卡羅機率推演與分享系統
 // ==========================================
-function runSimulation() {
-    getFreshToken().then(token => {
-        if(!token) return;
-        let d1 = parseInt(document.getElementById('draw1-qty').value);
-        let targetRule = document.querySelector('input[name="target_rule"]:checked').value;
-        let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0;
-        
-        let directDict = {};
-        Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; });
-        if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！");
-        
-        let formattedChainDict = {};
-        Object.keys(chainList).forEach(k => {
-            formattedChainDict[k] = {
-                type: chainList[k].type,
-                val: chainList[k].val,
-                search_targets: Object.keys(chainList[k].targets),
-                guaranteed: chainList[k].guaranteed || false
-            };
-        });
+async function runSimulation() {
+    // 💡 訪客防呆：要求登入才能執行萬次推演
+    let token = await checkLoginStatus();
+    if (!token) return;
 
-        let resultEl = document.getElementById('sim-result');
-        resultEl.innerText = "運算中..."; resultEl.style.color = "#FFD700"; resultEl.style.fontSize = "32px";
-        
-        fetch(`${API_BASE}/api/v1/simulate`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({
-                deck_cards: gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})),
-                direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand
-            })
-        }).then(async r => {
-            if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
-            if(r.status === 403) { const d = await r.json(); if(d.detail === "LIMIT_REACHED") { document.getElementById('sub-modal').style.display='flex'; throw new Error("額度用盡"); } }
-            if(!r.ok) { const errData = await r.json().catch(() => ({})); throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); }
-            return r.json();
-        }).then(d => {
-            if(d.success) {
-                lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`, prob: d.prob };
-                resultEl.innerText = `${d.prob.toFixed(1)} %`; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px";
-                if (!d.is_pro && d.remaining_today !== undefined) document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
-            } else throw new Error(d.detail || "運算失敗");
-        }).catch(e => {
-            if(e.message !== "額度用盡" && e.message !== "請先登入") { resultEl.innerText = "❌ " + e.message; resultEl.style.color = "#FF5252"; resultEl.style.fontSize = "20px"; setTimeout(() => { resultEl.innerText = "0.0 %"; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px"; }, 4000); } 
-            else { resultEl.innerText = "0.0 %"; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px"; }
-        });
+    let d1 = parseInt(document.getElementById('draw1-qty').value);
+    let targetRule = document.querySelector('input[name="target_rule"]:checked').value;
+    let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0;
+    
+    let directDict = {};
+    Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; });
+    if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！");
+    
+    let formattedChainDict = {};
+    Object.keys(chainList).forEach(k => {
+        formattedChainDict[k] = {
+            type: chainList[k].type,
+            val: chainList[k].val,
+            search_targets: Object.keys(chainList[k].targets),
+            guaranteed: chainList[k].guaranteed || false
+        };
+    });
+
+    let resultEl = document.getElementById('sim-result');
+    resultEl.innerText = "運算中...";
+    resultEl.style.color = "#FFD700";
+    resultEl.style.fontSize = "32px";
+    
+    fetch(`${API_BASE}/api/v1/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+            deck_cards: gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})),
+            direct_targets: directDict,
+            chain_targets: formattedChainDict,
+            draw1: d1,
+            target_rule: targetRule,
+            dead_hand_size: deadHand
+        })
+    }).then(async r => {
+        if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
+        if(r.status === 403) {
+            const d = await r.json();
+            if(d.detail === "LIMIT_REACHED") { document.getElementById('sub-modal').style.display='flex'; throw new Error("額度用盡"); }
+        }
+        if(!r.ok) {
+            const errData = await r.json().catch(() => ({}));
+            throw new Error(errData.detail || `伺服器錯誤 (${r.status})`);
+        }
+        return r.json();
+    }).then(d => {
+        if(d.success) {
+            lastSimResult = {
+                title: `首波 ${d1} 抽`,
+                desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`,
+                prob: d.prob
+            };
+            resultEl.innerText = `${d.prob.toFixed(1)} %`;
+            resultEl.style.color = "#00E5FF";
+            resultEl.style.fontSize = "46px";
+            if (!d.is_pro && d.remaining_today !== undefined) {
+                document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
+            }
+        } else {
+            throw new Error(d.detail || "運算失敗");
+        }
+    }).catch(e => {
+        if(e.message !== "額度用盡" && e.message !== "請先登入") {
+            resultEl.innerText = "❌ " + e.message;
+            resultEl.style.color = "#FF5252";
+            resultEl.style.fontSize = "20px";
+            setTimeout(() => {
+                resultEl.innerText = "0.0 %";
+                resultEl.style.color = "#00E5FF";
+                resultEl.style.fontSize = "46px";
+            }, 4000);
+        } else {
+            resultEl.innerText = "0.0 %";
+            resultEl.style.color = "#00E5FF";
+            resultEl.style.fontSize = "46px";
+        }
     });
 }
 
@@ -1254,7 +1502,9 @@ function saveScenario() {
     const b = document.getElementById('ab-board');
     let maxProb = Math.max(...Array.from(b.children).map(c => parseFloat(c.dataset.prob)||0), lastSimResult.prob);
     let div = document.createElement('div');
-    div.className = 'ab-item'; div.dataset.prob = lastSimResult.prob; div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444';
+    div.className = 'ab-item';
+    div.dataset.prob = lastSimResult.prob;
+    div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444';
     div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`;
     div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`);
     b.appendChild(div);
@@ -1264,77 +1514,153 @@ function exportGameState() {
     if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。");
     let ruleEl = document.querySelector('input[name="target_rule"]:checked');
     fetch(`${API_BASE}/api/v1/share_game`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ game_data: { cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })), deck: deckDict, targets: targetList, chains: chainList, draw1: parseInt(document.getElementById('draw1-qty').value) || 7, rule: (ruleEl ? ruleEl.value : 'AND'), dead: parseInt(document.getElementById('dead-hand-qty').value) || 0 } })
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+            game_data: {
+                cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })),
+                deck: deckDict,
+                targets: targetList,
+                chains: chainList,
+                draw1: parseInt(document.getElementById('draw1-qty').value) || 7,
+                rule: (ruleEl ? ruleEl.value : 'AND'),
+                dead: parseInt(document.getElementById('dead-hand-qty').value) || 0
+            }
+        })
     }).then(r => r.json()).then(d => {
-        if(d.success) { document.getElementById('share-code-display').value = d.share_code; document.getElementById('share-modal').style.display = 'flex'; } 
-        else alert("分享失敗：" + (d.detail || "未知錯誤"));
+        if(d.success) {
+            document.getElementById('share-code-display').value = d.share_code;
+            document.getElementById('share-modal').style.display = 'flex';
+        } else {
+            alert("分享失敗：" + (d.detail || "未知錯誤"));
+        }
     }).catch(e => alert("連線失敗，請檢查網路。"));
 }
 
 function copyShareCode() {
-    let input = document.getElementById('share-code-display'); input.select();
-    navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局與機率推演！"); document.getElementById('share-modal').style.display = 'none'; });
+    let input = document.getElementById('share-code-display');
+    input.select();
+    navigator.clipboard.writeText(input.value).then(() => {
+        alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局與機率推演！");
+        document.getElementById('share-modal').style.display = 'none';
+    });
 }
 
 function importGameState() {
-    let input = prompt("請貼上 6 位數對局短代碼："); if(!input) return;
-    let code = input.trim(); if(code.includes('share=')) code = code.split('share=')[1].split('&')[0];
+    let input = prompt("請貼上 6 位數對局短代碼：");
+    if(!input) return;
+    let code = input.trim();
+    if(code.includes('share=')) code = code.split('share=')[1].split('&')[0];
     loadSharedGameByCode(code);
 }
 
 function loadSharedGameByCode(code) {
     fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => {
         if(d.success) {
-            let raw = d.game_data; deckDict = {};
+            let raw = d.game_data;
+            deckDict = {};
             if (Array.isArray(raw)) {
                 gameCards = raw.map(item => {
-                    let cardName = item.n || item.k.split(' [')[0]; let cardImg = item.i || DEFAULT_CARDBACK;
-                    if(!deckDict[item.k]) deckDict[item.k] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK }; deckDict[item.k].qty++;
+                    let cardName = item.n || item.k.split(' [')[0];
+                    let cardImg = item.i || DEFAULT_CARDBACK;
+                    if(!deckDict[item.k]) deckDict[item.k] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK };
+                    deckDict[item.k].qty++;
                     return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: item.k, name: cardName, img: cardImg, zone: item.z, damage: 0, status: [] };
                 });
             } else {
                 if (raw.deck) deckDict = raw.deck;
-                if (raw.cards) gameCards = raw.cards.map(item => ({ id: 'c_' + Math.random().toString(36).substr(2, 9), key: item.k, name: item.n || item.k.split(' [')[0], img: item.i || DEFAULT_CARDBACK, fallback_img: item.f || DEFAULT_CARDBACK, zone: item.z, damage: 0, status: [] }));
-                if (raw.targets) targetList = raw.targets; if (raw.chains) chainList = raw.chains;
-                if (raw.draw1) document.getElementById('draw1-qty').value = raw.draw1; if (raw.dead !== undefined) document.getElementById('dead-hand-qty').value = raw.dead;
-                if (raw.rule) { let radio = document.querySelector(`input[name="target_rule"][value="${raw.rule}"]`); if (radio) radio.checked = true; }
-                renderTargetUI(); renderChainUI();
+                if (raw.cards) {
+                    gameCards = raw.cards.map(item => ({
+                        id: 'c_' + Math.random().toString(36).substr(2, 9),
+                        key: item.k,
+                        name: item.n || item.k.split(' [')[0],
+                        img: item.i || DEFAULT_CARDBACK,
+                        fallback_img: item.f || DEFAULT_CARDBACK,
+                        zone: item.z,
+                        damage: 0,
+                        status: []
+                    }));
+                }
+                if (raw.targets) targetList = raw.targets;
+                if (raw.chains) chainList = raw.chains;
+                if (raw.draw1) document.getElementById('draw1-qty').value = raw.draw1;
+                if (raw.dead !== undefined) document.getElementById('dead-hand-qty').value = raw.dead;
+                if (raw.rule) {
+                    let radio = document.querySelector(`input[name="target_rule"][value="${raw.rule}"]`);
+                    if (radio) radio.checked = true;
+                }
+                renderTargetUI();
+                renderChainUI();
             }
-            updateDeckUI(); saveState(); renderBenchSlots(); renderBoard(); alert(`✅ 成功還原對局戰場與機率連鎖分析！`);
-        } else alert("載入失敗: " + (d.detail || "未知錯誤"));
+            updateDeckUI();
+            saveState();
+            renderBenchSlots();
+            renderBoard();
+            alert(`✅ 成功還原對局戰場與機率連鎖分析！`);
+        } else {
+            alert("載入失敗: " + (d.detail || "未知錯誤"));
+        }
     }).catch(e => alert("連線錯誤"));
 }
 
 async function saveDeckToDB() {
-    if (!supabaseClient) return alert("系統未初始化");
-    const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) { document.getElementById('gate-overlay').style.display = 'flex'; return alert("請先登入帳號！"); }
+    // 💡 訪客防呆：要求登入才能儲存雲端
+    let token = await checkLoginStatus();
+    if (!token) return;
+
     if (Object.keys(deckDict).length === 0) return alert("牌組是空的，無法儲存！");
-    let deckName = prompt("請為這副牌組取個名字：", "我的強力牌組"); if (!deckName) return;
-    try { const { error } = await supabaseClient.from('user_decks').insert([{ user_id: session.user.id, deck_name: deckName, deck_data: deckDict }]); if (error) throw error; alert("💾 牌組儲存成功！"); fetchSavedDecks(); } catch (err) { alert("儲存失敗：" + err.message); }
+    let deckName = prompt("請為這副牌組取個名字：", "我的強力牌組");
+    if (!deckName) return;
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const { error } = await supabaseClient.from('user_decks').insert([{ user_id: session.user.id, deck_name: deckName, deck_data: deckDict }]);
+        if (error) throw error;
+        alert("💾 牌組儲存成功！");
+        fetchSavedDecks();
+    } catch (err) { alert("儲存失敗：" + err.message); }
 }
 
 async function fetchSavedDecks() {
-    if (!supabaseClient) return; const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) return;
+    if (!supabaseClient) return;
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
     try {
-        const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name').order('created_at', { ascending: false }); if (error) throw error;
-        let select = document.getElementById('saved-decks-select'); select.innerHTML = `<option value="">載入雲端牌組...</option>`;
-        data.forEach(deck => { let opt = document.createElement('option'); opt.value = deck.id; opt.innerText = deck.deck_name; select.appendChild(opt); });
+        const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name').order('created_at', { ascending: false });
+        if (error) throw error;
+        let select = document.getElementById('saved-decks-select');
+        select.innerHTML = `<option value="">載入雲端牌組...</option>`;
+        data.forEach(deck => {
+            let opt = document.createElement('option');
+            opt.value = deck.id;
+            opt.innerText = deck.deck_name;
+            select.appendChild(opt);
+        });
     } catch (err) {}
 }
 
 async function loadDeckFromDB(deckId) {
     if (!deckId || !supabaseClient) return;
     try {
-        const { data, error } = await supabaseClient.from('user_decks').select('deck_data').eq('id', deckId).single(); if (error) throw error;
-        deckDict = data.deck_data; updateDeckUI(); alert("📥 牌組載入成功！"); document.getElementById('saved-decks-select').value = "";
+        const { data, error } = await supabaseClient.from('user_decks').select('deck_data').eq('id', deckId).single();
+        if (error) throw error;
+        deckDict = data.deck_data;
+        updateDeckUI();
+        alert("📥 牌組載入成功！");
+        document.getElementById('saved-decks-select').value = "";
     } catch (err) { alert("載入失敗：" + err.message); }
 }
 
 async function fetchMarquee() {
     try {
-        const resp = await fetch(`${API_BASE}/api/v1/marquee`); const data = await resp.json();
-        let text = data.text || "歡迎使用 PTCG 小章魚"; let el = document.getElementById('marquee-text'); el.innerHTML = text; el.style.animationDuration = Math.max(text.length * 0.45, 20) + 's';
-    } catch (e) { document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚"; }
+        const resp = await fetch(`${API_BASE}/api/v1/marquee`);
+        const data = await resp.json();
+        let text = data.text || "歡迎使用 PTCG 小章魚";
+        let el = document.getElementById('marquee-text');
+        el.innerHTML = text;
+        el.style.animationDuration = Math.max(text.length * 0.45, 20) + 's';
+    } catch (e) {
+        document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚";
+    }
 }
+
 window.addEventListener('load', fetchMarquee);
