@@ -65,7 +65,7 @@
         </div>
     </div>
 
-    <!-- 💡 登入護城河 (支援訪客試玩沙盤) -->
+    <!-- 登入護城河 (支援訪客試玩沙盤) -->
     <div id="gate-overlay" class="modal-overlay" style="display: none; z-index: 15000; backdrop-filter: blur(8px);">
         <div class="modal-card" style="width: 400px; height: auto; text-align: center; border: 1px solid #FFD700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);">
             <h2 style="color: #FFD700; font-size: 24px; margin-bottom: 5px;">🐙 PTCG 小章魚</h2>
@@ -241,8 +241,21 @@
             </div>
 
             <div class="col-center">
+                <!-- 💡 圖二完美排版：場地 (左)、戰鬥區 (中)、指示物 (右) -->
                 <div class="field-row">
-                    <!-- 💡 戰術指示物垂直面板 -->
+                    <!-- 左：場地 -->
+                    <div>
+                        <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
+                        <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    
+                    <!-- 中：戰鬥場 -->
+                    <div>
+                        <div class="zone-title" id="title-active" style="color:#FF5252; justify-content:center;">🔴 戰鬥場 (Active)</div>
+                        <div id="zone-active" class="active-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    </div>
+                    
+                    <!-- 右：戰術指示物垂直面板 -->
                     <div class="tactical-toolbox vertical">
                         <div style="color:#00E5FF; font-weight:bold; font-size: 14px; margin-bottom: 2px;">🛠️ 戰術指示物</div>
                         <div style="font-size:11px; color:#aaa; margin-bottom: 12px;">(請拖曳至寶可夢)</div>
@@ -272,17 +285,6 @@
                             <div class="tool-item status" draggable="true" ondragstart="event.dataTransfer.setData('token', 'status_sleep')" title="睡眠">💤</div>
                         </div>
                     </div>
-
-                    <div style="display:flex; gap: 30px; margin-left: auto; margin-right: auto;">
-                        <div>
-                            <div class="zone-title" id="title-stadium" style="color:#FF9800;">🟠 場地 (Stadium)</div>
-                            <div id="zone-stadium" class="stadium-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                        </div>
-                        <div>
-                            <div class="zone-title" id="title-active" style="color:#FF5252; justify-content:center;">🔴 戰鬥場 (Active)</div>
-                            <div id="zone-active" class="active-zone drop-zone-stacked" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                        </div>
-                    </div>
                 </div>
 
                 <div>
@@ -309,7 +311,6 @@
                 </div>
             </div>
 
-            <!-- 右側牌庫 -->
             <div class="col-right">
                 <div style="margin-bottom: 8px;">
                     <div class="zone-title-compact">
@@ -351,11 +352,11 @@
         </div>
     </div>
 
-    <!-- 💡 備戰區縮小選擇 Modal -->
+    <!-- 💡 圖一：備戰區縮小選擇 Modal (文案更新) -->
     <div id="bench-shrink-modal" class="modal-overlay" style="z-index: 10010; display: none;">
         <div class="modal-card" style="width: 480px; text-align: center; border: 2px solid #E91E63; background: #161B22; box-shadow: 0 10px 40px rgba(233, 30, 99, 0.4);">
             <h2 style="color: #FF5252; margin-bottom: 10px;">🐙 備戰區縮小啦！</h2>
-            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">場地空間受到擠壓，請選擇 <b>1</b> 隻寶可夢移至「棄牌區」：</p>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">場地空間受到擠壓，請選擇一格移至棄牌區：</p>
             <div id="bench-shrink-options" style="display: flex; gap: 12px; justify-content: center; overflow-x: auto; padding-bottom: 10px;">
                 <!-- JS 動態插入寶可夢 -->
             </div>
@@ -504,6 +505,7 @@
         <img id="lightbox-img" src="" style="max-height:90vh; max-width:90vw; border-radius:15px; box-shadow: 0 10px 50px rgba(0,0,0,0.9);">
     </div>
 
-    <script src="app.js?v=11"></script>
+    <!-- 💡 強制載入最新版 v=12 -->
+    <script src="app.js?v=12"></script>
 </body>
 </html>
