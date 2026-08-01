@@ -39,7 +39,6 @@ function getCardBackSVG(color) {
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-// 🚨 確保整個檔案只有這個地方宣告 DEFAULT_CARDBACK
 let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
 
 // ==========================================
@@ -1076,6 +1075,7 @@ function allowDrop(ev) {
     ev.currentTarget.classList.add('dragover');
 }
 
+// 💡 更新：支援回血拖曳計算 (heal_)
 function drop(ev) {
     ev.preventDefault();
     ev.currentTarget.classList.remove('dragover');
@@ -1089,6 +1089,8 @@ function drop(ev) {
             if (topCard) {
                 if (tokenData.startsWith('dmg_')) {
                     topCard.damage = (topCard.damage || 0) + parseInt(tokenData.split('_')[1]);
+                } else if (tokenData.startsWith('heal_')) {
+                    topCard.damage = Math.max(0, (topCard.damage || 0) - parseInt(tokenData.split('_')[1]));
                 } else if (tokenData.startsWith('status_')) {
                     topCard.status = topCard.status || [];
                     if (!topCard.status.includes(tokenData)) topCard.status.push(tokenData);
