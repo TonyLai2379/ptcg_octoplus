@@ -1,5 +1,5 @@
 // ==========================================
-// 1. 全域變數與 Supabase 初始化
+// 1. 全域變數與防呆宣告 (保證唯一)
 // ==========================================
 const API_BASE = "https://ptcg-octoplus-api.onrender.com";
 const SUPABASE_URL = "https://cnjajimwpuuhkdxelgwg.supabase.co";
@@ -33,13 +33,11 @@ let historyPtr = -1;
 let prizesFaceUp = false;
 let feedbackBase64 = "";
 
-// 💡 終極修正版：直接使用 UTF-8 URL 編碼，完全棄用容易報錯的 btoa Base64
-function getCardBackSVG(color) {
+// 💡 終極卡背產生器：只宣告一次，絕對安全！
+const DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-let DEFAULT_CARDBACK = getCardBackSVG("#2B579A");
+})("#2B579A");
 
 // ==========================================
 // 2. 教學導覽與 Splash 開場動畫
@@ -619,7 +617,10 @@ function debounceSearch(val) {
 }
 
 function changeCardBack(color) {
-    DEFAULT_CARDBACK = getCardBackSVG(color);
+    // 🔥 不重複宣告，只重寫功能邏輯，並直接更新全域變數
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
+    DEFAULT_CARDBACK = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    
     renderBoard();
     if(document.getElementById('gallery-modal').style.display === 'flex') {
         let items = currentModalMode === 'preview' ? Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] })) : [];
@@ -864,7 +865,20 @@ function redo() {
     saveLocalData();
 }
 
+// 💡 優化：縮減備戰區防呆提示
 function changeBenchSize(delta) {
+    if (delta < 0) {
+        let zoneToCheck = `bench_${benchSize - 1}`;
+        let cardsInZone = gameCards.filter(c => c.zone === zoneToCheck);
+        if (cardsInZone.length > 0) {
+            if (confirm(`⚠️ 第 ${benchSize} 格備戰區內還有卡片，是否將它們全部移入「棄牌區」？\n(若選取消，則不會縮減格子)`)) {
+                cardsInZone.forEach(c => { c.zone = 'discard'; c.damage = 0; c.status = []; });
+                saveState();
+            } else {
+                return;
+            }
+        }
+    }
     benchSize = Math.max(1, Math.min(8, benchSize + delta));
     document.getElementById('bench-size-label').innerText = `${benchSize} 格`;
     renderBenchSlots();
@@ -889,8 +903,7 @@ function renderBenchSlots() {
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     gameCards = [];
-    prizesFaceUp = false; // 初始化獎賞卡朝下
-    
+    prizesFaceUp = false; 
     Object.keys(deckDict).forEach(k => {
         for(let i=0; i<deckDict[k].qty; i++) {
             gameCards.push({ id: 'c_'+Math.random().toString(36).substr(2,9), key: k, name: deckDict[k].name, img: deckDict[k].img, fallback_img: deckDict[k].fallback_img, zone: 'deck', damage: 0, status: [] });
@@ -901,11 +914,8 @@ function startGame() {
     for(let i=0; i<7; i++) if(gameCards[i]) gameCards[i].zone = 'hand';
     for(let i=7; i<13; i++) if(gameCards[i]) gameCards[i].zone = `prize_${i-7}`;
     
-    historyStates = [];
-    historyPtr = -1;
-    saveState();
-    renderBenchSlots();
-    renderBoard();
+    historyStates = []; historyPtr = -1;
+    saveState(); renderBenchSlots(); renderBoard();
 }
 
 function createCardEl(c, isField=false, isPrizeFaceUp=null) {
@@ -929,7 +939,6 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
     let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
     let fallback = c.fallback_img || DEFAULT_CARDBACK;
 
-    // 處理蓋牌狀態 (牌庫、蓋著的獎賞卡)
     if (c.zone === 'deck') {
         safeImg = DEFAULT_CARDBACK; fallback = DEFAULT_CARDBACK;
     } else if (c.zone.startsWith('prize_')) {
@@ -940,8 +949,9 @@ function createCardEl(c, isField=false, isPrizeFaceUp=null) {
     let inner = `<img src="${safeImg}" onerror="this.onerror=function(){ this.onerror=null; this.src='${DEFAULT_CARDBACK}'; if(this.nextElementSibling) this.nextElementSibling.style.display='block'; }; this.src='${fallback}'; if(this.src==='${DEFAULT_CARDBACK}' && this.nextElementSibling) this.nextElementSibling.style.display='block';">`;
     inner += `<div class="card-name-overlay" style="display:${isDefault ? 'block' : 'none'};">${c.name}</div>`;
     
+    // 💡 優化置頂按鈕：不再隱藏，直接變成右上角的超好按實用小按鈕
     if(isField) {
-        inner += `<div class="card-action-menu"><button class="card-btn" title="置頂" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼置頂</button></div>`;
+        inner += `<div class="bring-front-btn" title="移到最上層" onclick="event.stopPropagation(); bringToFront('${c.id}')">🔼</div>`;
     }
     div.innerHTML = inner;
     return div;
@@ -975,7 +985,6 @@ function renderBoard() {
         zones[c.zone].push(c);
     });
 
-    // 手牌渲染 (扇形)
     let handGroups = {};
     (zones['hand']||[]).forEach(c => {
         if(!handGroups[c.key]) handGroups[c.key] = { cards: [] };
@@ -993,7 +1002,7 @@ function renderBoard() {
         document.getElementById('zone-hand').appendChild(el);
     });
 
-    // 戰鬥區、備戰區、場地渲染 (含 Token)
+    // 戰鬥區、備戰區渲染
     let fieldZones = ['active', 'stadium'];
     for(let i=0; i<benchSize; i++) fieldZones.push(`bench_${i}`);
     fieldZones.forEach(zName => {
@@ -1001,6 +1010,7 @@ function renderBoard() {
         if(!domEl) return;
         let arr = zones[zName]||[];
         let centerOffset = (arr.length - 1) / 2;
+        
         arr.forEach((c, idx) => {
             let el = createCardEl(c, true);
             el.style.position = 'absolute';
@@ -1009,7 +1019,6 @@ function renderBoard() {
             el.style.transform = `translate(calc(-50% + ${(idx - centerOffset)*15}px), calc(-50% + ${(idx - centerOffset)*15}px))`;
             el.style.zIndex = idx;
 
-            // 處理指示物
             if (c.damage > 0) {
                 let dmgEl = document.createElement('div');
                 dmgEl.className = 'token-dmg';
@@ -1032,15 +1041,32 @@ function renderBoard() {
             }
             domEl.appendChild(el);
         });
+
+        // 💡 新增：當備戰區有 2 張牌以上，上方顯示「🔗 整疊拖曳」手把
+        if (arr.length > 1) {
+            let dragHandle = document.createElement('div');
+            dragHandle.className = 'stack-drag-handle';
+            dragHandle.draggable = true;
+            dragHandle.innerHTML = '🔗 整疊拖曳';
+            dragHandle.ondragstart = (e) => {
+                isDragging = true;
+                e.dataTransfer.setData("stack_zone", zName);
+                setTimeout(() => { domEl.style.opacity = '0.3'; }, 0);
+            };
+            dragHandle.ondragend = () => {
+                isDragging = false;
+                domEl.style.opacity = '1';
+                renderBoard();
+            };
+            domEl.appendChild(dragHandle);
+        }
     });
 
-    // 獎賞卡渲染
     for(let i=0; i<6; i++) {
         let arr = zones['prize_'+i]||[];
         if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false, prizesFaceUp));
     }
 
-    // 牌庫渲染
     let deckArr = zones['deck']||[];
     document.getElementById('deck-count').innerText = deckArr.length;
     if(deckArr.length > 0) {
@@ -1051,7 +1077,6 @@ function renderBoard() {
         document.getElementById('zone-deck').appendChild(el);
     }
 
-    // 棄牌區渲染
     let discArr = zones['discard']||[];
     document.getElementById('discard-count').innerText = discArr.length;
     if(discArr.length > 0) {
@@ -1075,15 +1100,29 @@ function allowDrop(ev) {
     ev.currentTarget.classList.add('dragover');
 }
 
-// 💡 更新：支援回血拖曳計算 (heal_)
 function drop(ev) {
     ev.preventDefault();
     ev.currentTarget.classList.remove('dragover');
 
-    // 檢查是否為拖曳進來的「戰術指示物」
+    let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_');
+
+    // 💡 處理群組拖曳 (整疊拖曳)
+    let stackZone = ev.dataTransfer.getData("stack_zone");
+    if (stackZone) {
+        if (stackZone !== targetZone) {
+            gameCards.filter(c => c.zone === stackZone).forEach(c => {
+                c.zone = targetZone;
+                if (targetZone !== 'active' && !targetZone.startsWith('bench_')) { c.damage = 0; c.status = []; }
+                gameCards.push(gameCards.splice(gameCards.indexOf(c), 1)[0]);
+            });
+            saveState();
+            setTimeout(() => renderBoard(), 10);
+        }
+        return;
+    }
+
     let tokenData = ev.dataTransfer.getData("token");
     if (tokenData) {
-        let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_');
         if (targetZone === 'active' || targetZone.startsWith('bench_')) {
             let topCard = gameCards.slice().reverse().find(c => c.zone === targetZone);
             if (topCard) {
@@ -1095,17 +1134,14 @@ function drop(ev) {
                     topCard.status = topCard.status || [];
                     if (!topCard.status.includes(tokenData)) topCard.status.push(tokenData);
                 }
-                saveState();
-                renderBoard();
+                saveState(); renderBoard();
             }
         }
         return;
     }
 
-    // 處理一般卡片拖曳
     let cardId = ev.dataTransfer.getData("text");
     if (cardId) {
-        let targetZone = ev.currentTarget.id.replace('zone-', '').replace('-', '_');
         let c = gameCards.find(c => c.id === cardId);
         if(c) {
             if (targetZone !== 'active' && !targetZone.startsWith('bench_')) { c.damage = 0; c.status = []; }
@@ -1125,18 +1161,11 @@ document.querySelectorAll('.drop-zone').forEach(z => z.addEventListener('draglea
 function shuffleDeck() {
     let deckCards = gameCards.filter(c => c.zone === 'deck');
     if (deckCards.length <= 1) return alert("⚠️ 牌庫卡片不足（0 或 1 張），無需洗牌！");
-    
     deckCards.sort(() => Math.random() - 0.5);
     gameCards = gameCards.filter(c => c.zone !== 'deck').concat(deckCards);
-    
-    saveState();
-    renderBoard();
-    
+    saveState(); renderBoard();
     let msg = document.getElementById('marquee-text');
-    if (msg) {
-        msg.innerHTML = "🔀 牌庫已重新完成隨機洗牌！";
-        msg.style.color = "#FFD700";
-    }
+    if (msg) { msg.innerHTML = "🔀 牌庫已重新完成隨機洗牌！"; msg.style.color = "#FFD700"; }
 }
 
 function drawCard() {
@@ -1150,8 +1179,7 @@ function moveZoneTo(fromZone, toZone) {
         let d = gameCards.filter(c => c.zone === 'deck').sort(() => Math.random()-0.5);
         gameCards = gameCards.filter(c => c.zone !== 'deck').concat(d);
     }
-    saveState();
-    renderBoard();
+    saveState(); renderBoard();
 }
 
 function openSearchModal(zone) {
@@ -1195,63 +1223,28 @@ function runSimulation() {
         });
 
         let resultEl = document.getElementById('sim-result');
-        resultEl.innerText = "運算中...";
-        resultEl.style.color = "#FFD700";
-        resultEl.style.fontSize = "32px";
+        resultEl.innerText = "運算中..."; resultEl.style.color = "#FFD700"; resultEl.style.fontSize = "32px";
         
         fetch(`${API_BASE}/api/v1/simulate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
                 deck_cards: gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})),
-                direct_targets: directDict,
-                chain_targets: formattedChainDict,
-                draw1: d1,
-                target_rule: targetRule,
-                dead_hand_size: deadHand
+                direct_targets: directDict, chain_targets: formattedChainDict, draw1: d1, target_rule: targetRule, dead_hand_size: deadHand
             })
         }).then(async r => {
             if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
-            if(r.status === 403) {
-                const d = await r.json();
-                if(d.detail === "LIMIT_REACHED") { document.getElementById('sub-modal').style.display='flex'; throw new Error("額度用盡"); }
-            }
-            if(!r.ok) {
-                const errData = await r.json().catch(() => ({}));
-                throw new Error(errData.detail || `伺服器錯誤 (${r.status})`);
-            }
+            if(r.status === 403) { const d = await r.json(); if(d.detail === "LIMIT_REACHED") { document.getElementById('sub-modal').style.display='flex'; throw new Error("額度用盡"); } }
+            if(!r.ok) { const errData = await r.json().catch(() => ({})); throw new Error(errData.detail || `伺服器錯誤 (${r.status})`); }
             return r.json();
         }).then(d => {
             if(d.success) {
-                lastSimResult = {
-                    title: `首波 ${d1} 抽`,
-                    desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`,
-                    prob: d.prob
-                };
-                resultEl.innerText = `${d.prob.toFixed(1)} %`;
-                resultEl.style.color = "#00E5FF";
-                resultEl.style.fontSize = "46px";
-                if (!d.is_pro && d.remaining_today !== undefined) {
-                    document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
-                }
-            } else {
-                throw new Error(d.detail || "運算失敗");
-            }
+                lastSimResult = { title: `首波 ${d1} 抽`, desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`, prob: d.prob };
+                resultEl.innerText = `${d.prob.toFixed(1)} %`; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px";
+                if (!d.is_pro && d.remaining_today !== undefined) document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
+            } else throw new Error(d.detail || "運算失敗");
         }).catch(e => {
-            if(e.message !== "額度用盡" && e.message !== "請先登入") {
-                resultEl.innerText = "❌ " + e.message;
-                resultEl.style.color = "#FF5252";
-                resultEl.style.fontSize = "20px";
-                setTimeout(() => {
-                    resultEl.innerText = "0.0 %";
-                    resultEl.style.color = "#00E5FF";
-                    resultEl.style.fontSize = "46px";
-                }, 4000);
-            } else {
-                resultEl.innerText = "0.0 %";
-                resultEl.style.color = "#00E5FF";
-                resultEl.style.fontSize = "46px";
-            }
+            if(e.message !== "額度用盡" && e.message !== "請先登入") { resultEl.innerText = "❌ " + e.message; resultEl.style.color = "#FF5252"; resultEl.style.fontSize = "20px"; setTimeout(() => { resultEl.innerText = "0.0 %"; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px"; }, 4000); } 
+            else { resultEl.innerText = "0.0 %"; resultEl.style.color = "#00E5FF"; resultEl.style.fontSize = "46px"; }
         });
     });
 }
@@ -1261,9 +1254,7 @@ function saveScenario() {
     const b = document.getElementById('ab-board');
     let maxProb = Math.max(...Array.from(b.children).map(c => parseFloat(c.dataset.prob)||0), lastSimResult.prob);
     let div = document.createElement('div');
-    div.className = 'ab-item';
-    div.dataset.prob = lastSimResult.prob;
-    div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444';
+    div.className = 'ab-item'; div.dataset.prob = lastSimResult.prob; div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444';
     div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`;
     div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`);
     b.appendChild(div);
@@ -1273,151 +1264,77 @@ function exportGameState() {
     if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。");
     let ruleEl = document.querySelector('input[name="target_rule"]:checked');
     fetch(`${API_BASE}/api/v1/share_game`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-            game_data: {
-                cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })),
-                deck: deckDict,
-                targets: targetList,
-                chains: chainList,
-                draw1: parseInt(document.getElementById('draw1-qty').value) || 7,
-                rule: (ruleEl ? ruleEl.value : 'AND'),
-                dead: parseInt(document.getElementById('dead-hand-qty').value) || 0
-            }
-        })
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ game_data: { cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })), deck: deckDict, targets: targetList, chains: chainList, draw1: parseInt(document.getElementById('draw1-qty').value) || 7, rule: (ruleEl ? ruleEl.value : 'AND'), dead: parseInt(document.getElementById('dead-hand-qty').value) || 0 } })
     }).then(r => r.json()).then(d => {
-        if(d.success) {
-            document.getElementById('share-code-display').value = d.share_code;
-            document.getElementById('share-modal').style.display = 'flex';
-        } else {
-            alert("分享失敗：" + (d.detail || "未知錯誤"));
-        }
+        if(d.success) { document.getElementById('share-code-display').value = d.share_code; document.getElementById('share-modal').style.display = 'flex'; } 
+        else alert("分享失敗：" + (d.detail || "未知錯誤"));
     }).catch(e => alert("連線失敗，請檢查網路。"));
 }
 
 function copyShareCode() {
-    let input = document.getElementById('share-code-display');
-    input.select();
-    navigator.clipboard.writeText(input.value).then(() => {
-        alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局與機率推演！");
-        document.getElementById('share-modal').style.display = 'none';
-    });
+    let input = document.getElementById('share-code-display'); input.select();
+    navigator.clipboard.writeText(input.value).then(() => { alert("📋 短代碼已複製！朋友在任何電腦輸入即可還原戰局與機率推演！"); document.getElementById('share-modal').style.display = 'none'; });
 }
 
 function importGameState() {
-    let input = prompt("請貼上 6 位數對局短代碼：");
-    if(!input) return;
-    let code = input.trim();
-    if(code.includes('share=')) code = code.split('share=')[1].split('&')[0];
+    let input = prompt("請貼上 6 位數對局短代碼："); if(!input) return;
+    let code = input.trim(); if(code.includes('share=')) code = code.split('share=')[1].split('&')[0];
     loadSharedGameByCode(code);
 }
 
 function loadSharedGameByCode(code) {
     fetch(`${API_BASE}/api/v1/get_shared_game?code=${code}`).then(r => r.json()).then(d => {
         if(d.success) {
-            let raw = d.game_data;
-            deckDict = {};
+            let raw = d.game_data; deckDict = {};
             if (Array.isArray(raw)) {
                 gameCards = raw.map(item => {
-                    let cardName = item.n || item.k.split(' [')[0];
-                    let cardImg = item.i || DEFAULT_CARDBACK;
-                    if(!deckDict[item.k]) deckDict[item.k] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK };
-                    deckDict[item.k].qty++;
+                    let cardName = item.n || item.k.split(' [')[0]; let cardImg = item.i || DEFAULT_CARDBACK;
+                    if(!deckDict[item.k]) deckDict[item.k] = { qty: 0, img: cardImg, name: cardName, fallback_img: DEFAULT_CARDBACK }; deckDict[item.k].qty++;
                     return { id: 'c_' + Math.random().toString(36).substr(2, 9), key: item.k, name: cardName, img: cardImg, zone: item.z, damage: 0, status: [] };
                 });
             } else {
                 if (raw.deck) deckDict = raw.deck;
-                if (raw.cards) {
-                    gameCards = raw.cards.map(item => ({
-                        id: 'c_' + Math.random().toString(36).substr(2, 9),
-                        key: item.k,
-                        name: item.n || item.k.split(' [')[0],
-                        img: item.i || DEFAULT_CARDBACK,
-                        fallback_img: item.f || DEFAULT_CARDBACK,
-                        zone: item.z,
-                        damage: 0,
-                        status: []
-                    }));
-                }
-                if (raw.targets) targetList = raw.targets;
-                if (raw.chains) chainList = raw.chains;
-                if (raw.draw1) document.getElementById('draw1-qty').value = raw.draw1;
-                if (raw.dead !== undefined) document.getElementById('dead-hand-qty').value = raw.dead;
-                if (raw.rule) {
-                    let radio = document.querySelector(`input[name="target_rule"][value="${raw.rule}"]`);
-                    if (radio) radio.checked = true;
-                }
-                renderTargetUI();
-                renderChainUI();
+                if (raw.cards) gameCards = raw.cards.map(item => ({ id: 'c_' + Math.random().toString(36).substr(2, 9), key: item.k, name: item.n || item.k.split(' [')[0], img: item.i || DEFAULT_CARDBACK, fallback_img: item.f || DEFAULT_CARDBACK, zone: item.z, damage: 0, status: [] }));
+                if (raw.targets) targetList = raw.targets; if (raw.chains) chainList = raw.chains;
+                if (raw.draw1) document.getElementById('draw1-qty').value = raw.draw1; if (raw.dead !== undefined) document.getElementById('dead-hand-qty').value = raw.dead;
+                if (raw.rule) { let radio = document.querySelector(`input[name="target_rule"][value="${raw.rule}"]`); if (radio) radio.checked = true; }
+                renderTargetUI(); renderChainUI();
             }
-            updateDeckUI();
-            saveState();
-            renderBenchSlots();
-            renderBoard();
-            alert(`✅ 成功還原對局戰場與機率連鎖分析！`);
-        } else {
-            alert("載入失敗: " + (d.detail || "未知錯誤"));
-        }
+            updateDeckUI(); saveState(); renderBenchSlots(); renderBoard(); alert(`✅ 成功還原對局戰場與機率連鎖分析！`);
+        } else alert("載入失敗: " + (d.detail || "未知錯誤"));
     }).catch(e => alert("連線錯誤"));
 }
 
 async function saveDeckToDB() {
     if (!supabaseClient) return alert("系統未初始化");
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) { document.getElementById('gate-overlay').style.display = 'flex'; return alert("請先登入帳號！"); }
+    const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) { document.getElementById('gate-overlay').style.display = 'flex'; return alert("請先登入帳號！"); }
     if (Object.keys(deckDict).length === 0) return alert("牌組是空的，無法儲存！");
-    let deckName = prompt("請為這副牌組取個名字：", "我的強力牌組");
-    if (!deckName) return;
-    try {
-        const { error } = await supabaseClient.from('user_decks').insert([{ user_id: session.user.id, deck_name: deckName, deck_data: deckDict }]);
-        if (error) throw error;
-        alert("💾 牌組儲存成功！");
-        fetchSavedDecks();
-    } catch (err) { alert("儲存失敗：" + err.message); }
+    let deckName = prompt("請為這副牌組取個名字：", "我的強力牌組"); if (!deckName) return;
+    try { const { error } = await supabaseClient.from('user_decks').insert([{ user_id: session.user.id, deck_name: deckName, deck_data: deckDict }]); if (error) throw error; alert("💾 牌組儲存成功！"); fetchSavedDecks(); } catch (err) { alert("儲存失敗：" + err.message); }
 }
 
 async function fetchSavedDecks() {
-    if (!supabaseClient) return;
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return;
+    if (!supabaseClient) return; const { data: { session } } = await supabaseClient.auth.getSession(); if (!session) return;
     try {
-        const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name').order('created_at', { ascending: false });
-        if (error) throw error;
-        let select = document.getElementById('saved-decks-select');
-        select.innerHTML = `<option value="">載入雲端牌組...</option>`;
-        data.forEach(deck => {
-            let opt = document.createElement('option');
-            opt.value = deck.id;
-            opt.innerText = deck.deck_name;
-            select.appendChild(opt);
-        });
+        const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name').order('created_at', { ascending: false }); if (error) throw error;
+        let select = document.getElementById('saved-decks-select'); select.innerHTML = `<option value="">載入雲端牌組...</option>`;
+        data.forEach(deck => { let opt = document.createElement('option'); opt.value = deck.id; opt.innerText = deck.deck_name; select.appendChild(opt); });
     } catch (err) {}
 }
 
 async function loadDeckFromDB(deckId) {
     if (!deckId || !supabaseClient) return;
     try {
-        const { data, error } = await supabaseClient.from('user_decks').select('deck_data').eq('id', deckId).single();
-        if (error) throw error;
-        deckDict = data.deck_data;
-        updateDeckUI();
-        alert("📥 牌組載入成功！");
-        document.getElementById('saved-decks-select').value = "";
+        const { data, error } = await supabaseClient.from('user_decks').select('deck_data').eq('id', deckId).single(); if (error) throw error;
+        deckDict = data.deck_data; updateDeckUI(); alert("📥 牌組載入成功！"); document.getElementById('saved-decks-select').value = "";
     } catch (err) { alert("載入失敗：" + err.message); }
 }
 
 async function fetchMarquee() {
     try {
-        const resp = await fetch(`${API_BASE}/api/v1/marquee`);
-        const data = await resp.json();
-        let text = data.text || "歡迎使用 PTCG 小章魚";
-        let el = document.getElementById('marquee-text');
-        el.innerHTML = text;
-        el.style.animationDuration = Math.max(text.length * 0.45, 20) + 's';
-    } catch (e) {
-        document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚";
-    }
+        const resp = await fetch(`${API_BASE}/api/v1/marquee`); const data = await resp.json();
+        let text = data.text || "歡迎使用 PTCG 小章魚"; let el = document.getElementById('marquee-text'); el.innerHTML = text; el.style.animationDuration = Math.max(text.length * 0.45, 20) + 's';
+    } catch (e) { document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚"; }
 }
-
 window.addEventListener('load', fetchMarquee);
