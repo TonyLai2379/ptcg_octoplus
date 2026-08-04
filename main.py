@@ -99,13 +99,13 @@ def load_global_cards_to_cache():
     except Exception as e: print(f"❌ 快取失敗: {e}")
 
 load_global_cards_to_cache()
+
 def auto_save_new_cards_to_db(cards_to_upsert: list):
     """當使用者匯入資料庫沒有的新卡時，自動寫入 Supabase 全卡庫擴充"""
     if not cards_to_upsert:
         return
     try:
         supabase.table("global_cards").upsert(cards_to_upsert).execute()
-        # 同步更新後端記憶體快取
         for card in cards_to_upsert:
             c_key = card["card_key"]
             c_img = card["img_url"]
@@ -118,7 +118,7 @@ def auto_save_new_cards_to_db(cards_to_upsert: list):
     except Exception as e:
         print(f"⚠️ [自動擴充卡庫失敗]: {e}")
 
-# 🧠【Token 雙軌驗證】：同時提取 User ID 與 User Email
+# Token 雙軌驗證
 def get_user_and_email_from_token(auth_header: str):
     if not auth_header or not auth_header.startswith("Bearer "): 
         raise HTTPException(status_code=401, detail="請先登入帳號")
@@ -159,7 +159,6 @@ def verify_user_and_check_limit(authorization: Optional[str] = Header(None)):
         today_str = str(datetime.date.today())
         profile_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
         
-        # 💡 自動填補 profiles 中的 email 欄位！
         if not profile_res.data:
             supabase.table("profiles").insert({"id": user_id, "email": user_email, "is_pro": False, "trial_used": False}).execute()
             is_pro = False; expires_at = None
@@ -357,7 +356,6 @@ def api_activate_trial(authorization: Optional[str] = Header(None)):
     return {"success": True, "detail": "🎉 體驗開通成功！接下來 7 天每日可使用 30 次深度推演。"}
 
 @app.post("/api/v1/parse_official")
-@app.post("/api/v1/parse_official")
 def api_parse_official(req: ParseOfficialReq):
     code_match = re.search(r'([a-zA-Z0-9]{6}-[a-zA-Z0-9]{6}-[a-zA-Z0-9]{6})', req.deck_code)
     if not code_match: return {"success": False, "detail": "❌ 無效的代碼。"}
@@ -367,9 +365,8 @@ def api_parse_official(req: ParseOfficialReq):
         response = requests.get(worker_url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
         new_deck = {}
-        
-        # 💡 【新增】用來收集準備寫入 Supabase 的新卡資料
         cards_to_db = []
+        fallback_cards = []
 
         for item in soup.find_all('li', class_='card'):
             name_tag = item.find('p', class_='cardName'); qty_tag = item.find('div', class_='cardCount')
@@ -378,38 +375,56 @@ def api_parse_official(req: ParseOfficialReq):
                 try: qty = int(re.sub(r'\D', '', qty_tag.text)) if re.sub(r'\D', '', qty_tag.text) else 1
                 except: qty = 1
                 a_tag = name_tag.find('a'); unique_id = ""
+                card_href = ""
                 if a_tag and a_tag.get('href'):
-                    parts = [p for p in a_tag.get('href', '').split('/') if p]
+                    card_href = a_tag.get('href', '')
+                    parts = [p for p in card_href.split('/') if p]
                     if parts: unique_id = parts[-1]
+                
                 card_key = f"{name} [{unique_id}]" if unique_id else name
                 
-                # 💡 【新增】新卡標記
                 is_new_card = False
-                
-                img_url = LOCAL_CARD_DB.get(card_key.lower())
-                if not is_valid_url(img_url): img_url = LOCAL_CARD_DB.get(name.lower())
-                
-                if not is_valid_url(img_url):
-                    img_url = DEFAULT_CARDBACK
-                    if a_tag and a_tag.get('href'):
-                        try:
-                            worker_detail_url = f"https://ptcgmaster.loganlai0422.workers.dev/?path={a_tag['href']}"
-                            detail_resp = requests.get(worker_detail_url, headers=headers, timeout=5)
-                            all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
-                            for src in all_imgs:
-                                src_l = src.lower()
-                                if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
-                                    found_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
-                                    if is_valid_url(found_url):
-                                        img_url = found_url
-                                        # 💡 【新增】標記為爬抓到全新圖片
-                                        is_new_card = True
-                                    break
-                        except: pass
+                img_url = None
 
-                new_deck[card_key] = {'qty': new_deck.get(card_key, {}).get('qty', 0) + qty, 'img': img_url, 'name': name, 'fallback_img': DEFAULT_CARDBACK}
-                
-                # 💡 【新增】如果是資料庫沒有的新卡且圖片有效，存入準備陣列
+                # 1. 第一優先：精確比對完整 key「卡名 [卡號/ID]」
+                if card_key.lower() in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[card_key.lower()]):
+                    img_url = LOCAL_CARD_DB[card_key.lower()]
+
+                # 2. 第二優先：若快取沒有該 ID，且有官網連結，強制去官網抓專屬新圖
+                if not is_valid_url(img_url) and card_href:
+                    try:
+                        worker_detail_url = f"https://ptcgmaster.loganlai0422.workers.dev/?path={card_href}"
+                        detail_resp = requests.get(worker_detail_url, headers=headers, timeout=8)
+                        all_imgs = re.findall(r'(?:https?://|/)[^"\'\s<>\[\]]+\.(?:jpg|png|webp)', detail_resp.text.replace('\\/', '/'), re.IGNORECASE)
+                        for src in all_imgs:
+                            src_l = src.lower()
+                            if 'card' in src_l and 'ogp' not in src_l and 'icon' not in src_l and 'logo' not in src_l:
+                                found_url = src if src.startswith('http') else "https://asia.pokemon-card.com" + src
+                                if is_valid_url(found_url):
+                                    img_url = found_url
+                                    is_new_card = True
+                                    break
+                    except Exception as req_err:
+                        print(f"⚠️ 抓取官網單卡頁面失敗 ({card_key}): {req_err}")
+
+                # 3. 第三優先：若官網請求失敗，記錄並回退至舊同名卡或預設卡背
+                if not is_valid_url(img_url):
+                    fallback_img = LOCAL_CARD_DB.get(name.lower())
+                    if is_valid_url(fallback_img):
+                        img_url = fallback_img
+                        fallback_cards.append(f"{card_key}（改用同名卡圖代替）")
+                    else:
+                        img_url = DEFAULT_CARDBACK
+                        fallback_cards.append(f"{card_key}（改用預設卡背代替）")
+
+                new_deck[card_key] = {
+                    'qty': new_deck.get(card_key, {}).get('qty', 0) + qty,
+                    'img': img_url,
+                    'name': name,
+                    'fallback_img': DEFAULT_CARDBACK
+                }
+
+                # 4. 只要成功從官網抓到專屬新圖片，就加入自動寫入 Supabase 佇列
                 if is_new_card and is_valid_url(img_url) and img_url != DEFAULT_CARDBACK:
                     cards_to_db.append({
                         "card_key": card_key,
@@ -418,18 +433,20 @@ def api_parse_official(req: ParseOfficialReq):
                         "metadata": {"source": "official_import_auto"}
                     })
 
-        # 💡 【新增】若有新卡，非同步自動寫入 Supabase 擴充卡庫
+        # 自動擴充至 Supabase 全卡庫
         if cards_to_db:
             auto_save_new_cards_to_db(cards_to_db)
 
-        return {"success": True, "deck": new_deck}
+        return {
+            "success": True, 
+            "deck": new_deck, 
+            "fallback_cards": list(set(fallback_cards))
+        }
     except Exception as e: return {"success": False, "detail": f"例外錯誤: {str(e)}"}
-@app.post("/api/v1/parse_text")
+
 @app.post("/api/v1/parse_text")
 def api_parse_text(req: ParseTextReq):
     lines = req.text.split('\n'); new_deck = {}
-    
-    # 💡 【新增】初始化新卡收集陣列
     cards_to_db = []
     
     for line in lines:
@@ -452,8 +469,6 @@ def api_parse_text(req: ParseTextReq):
                 
                 img_url = None
                 fallback_url = DEFAULT_CARDBACK
-                
-                # 💡 【新增】新卡標記
                 is_new_discovery = False
                 
                 if target_set and target_number:
@@ -475,10 +490,8 @@ def api_parse_text(req: ParseTextReq):
                                 img_url = c['img']
                                 break
 
-                    # 若現有圖庫皆找不到，使用 Limitless 網址生成並標記為新發現卡片
                     if not is_valid_url(img_url):
                         img_url = f"https://limitlesstcg.s3.us-east-2.amazonaws.com/pokemon/pictures/eng/{set_low}/{clean_num}.png"
-                        # 💡 【新增】標記為新探索到的圖片
                         is_new_discovery = True
                         
                     fallback_url = BEST_FALLBACK_CACHE.get(search_name_clean.lower(), DEFAULT_CARDBACK)
@@ -494,7 +507,6 @@ def api_parse_text(req: ParseTextReq):
                     'fallback_img': fallback_url
                 }
 
-                # 💡 【新增】若為全新發現卡片，存入準備陣列
                 if is_new_discovery and is_valid_url(img_url) and img_url != DEFAULT_CARDBACK:
                     cards_to_db.append({
                         "card_key": final_card_key,
@@ -504,12 +516,12 @@ def api_parse_text(req: ParseTextReq):
                     })
         except: continue
         
-    # 💡 【新增】解析完成後，將新卡牌自動寫入 Supabase
     if cards_to_db:
         auto_save_new_cards_to_db(cards_to_db)
 
     if sum(info['qty'] for info in new_deck.values()) == 0: return {"success": False, "detail": "無法解析任何卡片，請檢查格式。"}
     return {"success": True, "deck": new_deck}
+
 @app.post("/api/v1/share_game")
 def api_share_game(req: ShareGameReq):
     try:
