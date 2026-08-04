@@ -442,6 +442,7 @@
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
         <div id="dice-result" class="bounce-in" style="font-size:140px; text-shadow: 0 10px 40px rgba(0,0,0,0.9); font-weight: bold;">🎲</div>
     </div>
+   <!-- 聯絡客服 Modal -->
     <div id="support-modal" class="modal-overlay">
         <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
             <h2 style="color: #00E5FF; margin: 0; font-size: 20px;">💬 聯絡小章魚客服</h2>
@@ -457,6 +458,11 @@
             <div style="margin-top: 15px; display: flex; gap: 10px;">
                 <button class="btn" id="btn-submit-feedback" style="background: #238636; flex: 2;" onclick="submitSupportFeedback()">🚀 立即發送給小章魚</button>
                 <button class="btn btn-secondary" style="flex: 1;" onclick="closeSupportModal()">返回</button>
+            </div>
+            
+            <!-- 綠界金流驗證客服信箱 -->
+            <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #30363D; font-size: 12px; color: #aaa;">
+                客服信箱：<a href="mailto:loganlai0422@gmail.com" style="color: #00E5FF; text-decoration: underline; font-weight: bold;">loganlai0422@gmail.com</a>
             </div>
         </div>
     </div>
@@ -479,17 +485,25 @@
             <button class="btn btn-secondary" id="btn-share-close" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
         </div>
     </div>
+    <!-- 訂閱方案 Modal -->
     <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
             <h2 style="color: #FFD700; margin-bottom: 10px;">👑 訂閱方案與會員權限</h2>
             <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">請選擇以下方案解鎖「萬次深度推演」：</p>
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
                 <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用七天 (每日額度限制 30 次)</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">💎 2. 訂閱 1 個月 / 99 元</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">👑 3. 訂閱 3 個月 / 250 元</button>
-                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">🏆 4. 訂閱一年 / 599 元</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">💎 2. 訂閱 1 個月 / 120 元</button>
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">👑 3. 訂閱 3 個月 / 299 元</button>
+                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">🏆 4. 訂閱一年 / 999 元</button>
                 <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入會員邀請碼</button>
             </div>
+            
+            <!-- 免責聲明 -->
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #30363D; text-align: left; font-size: 11px; color: #888; line-height: 1.4;">
+                <b>⚠️ 免責聲明：</b><br>
+                本服務提供之戰術分析數據僅供參考。本工具為第三方獨立開發之 TCG 數據工具，與 Nintendo、Pokémon 及 GAME FREAK 無關。
+            </div>
+
             <button class="btn btn-secondary" style="margin-top:15px;" onclick="document.getElementById('sub-modal').style.display='none'">先不要，返回</button>
         </div>
     </div>
@@ -510,5 +524,12 @@
 
     <!-- 強制載入最新版 v=19 -->
     <script src="app.js?v=19"></script>
+    <!-- 卡片大圖預覽 Modal -->
+    <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 30000; display: none;">
+        <div style="position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center;" onclick="event.stopPropagation()">
+            <img id="lightbox-img" src="" style="max-height: 80vh; max-width: 90vw; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9); object-fit: contain;">
+            <button class="btn btn-secondary" style="margin-top: 12px; width: 140px; cursor: pointer;" onclick="document.getElementById('lightbox-modal').style.display='none'">關閉大圖</button>
+        </div>
+    </div>
 </body>
 </html>
