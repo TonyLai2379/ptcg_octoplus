@@ -742,7 +742,16 @@ function parseOfficial() {
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({deck_code: document.getElementById('deck-code').value})
     }).then(r=>r.json()).then(d=>{
-        if(d.success){ deckDict=d.deck; updateDeckUI(); }
+        if(d.success){ 
+            deckDict = d.deck; 
+            updateDeckUI(); 
+            
+            // 💡 【新增】若有替代卡牌，跳出視窗提醒使用者
+            if (d.fallback_cards && d.fallback_cards.length > 0) {
+                let msgList = d.fallback_cards.map(item => "• " + item).join("\n");
+                alert("⚠️ 以下卡牌未能在官網取得精確專屬卡圖：\n\n" + msgList + "\n\n已自動套用替代方案顯示！");
+            }
+        }
         else alert(d.detail || "解析失敗。");
     }).catch(e => alert("連線失敗。")).finally(() => hideProgress('link'));
 }
