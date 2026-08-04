@@ -1660,19 +1660,122 @@ function calcPrizeProb() {
 }
 
 // ==========================================
-// 9. 萬次蒙地卡羅機率推演與分享系統
+// 1. 前端蒙地卡羅 10,000 次深度推演核心算盤
 // ==========================================
-async function runSimulation() {
-    let token = await checkLoginStatus();
-    if (!token) return;
+function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule = "AND", deadHandSize = 0, iterations = 10000) {
+    if (!deckCards || deckCards.length === 0 || draw1 <= 0 || Object.keys(directDict).length === 0) return 0.0;
+    
+    const baseDeck = deckCards.map(c => c.name);
+    let successCount = 0;
 
-    let d1 = parseInt(document.getElementById('draw1-qty').value);
+    for (let iter = 0; iter < iterations; iter++) {
+        // 洗牌 (Fisher-Yates)
+        let deck = [...baseDeck];
+        for (let i = deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [deck[i], deck[j]] = [deck[j], deck[i]];
+        }
+
+        let hand = deck.slice(0, draw1);
+        let remDeck = deck.slice(draw1);
+
+        // 發動保證在手的連鎖資源
+        Object.keys(chainDict).forEach(k => {
+            if (chainDict[k].guaranteed && !hand.includes(k)) hand.push(k);
+        });
+
+        // 檢查手牌是否達成條件
+        const checkSuccess = (currentHand) => {
+            let missing = {};
+            Object.keys(directDict).forEach(k => { missing[k] = directDict[k].qty || 1; });
+
+            let searchCards = [];
+            for (let card of currentHand) {
+                if (missing[card] !== undefined && missing[card] > 0) {
+                    missing[card]--;
+                } else if (chainDict[card] && chainDict[card].type && chainDict[card].type.includes('檢索')) {
+                    searchCards.push(card);
+                }
+            }
+
+            const isSatisfied = (m) => {
+                if (targetRule === "AND") {
+                    return Object.values(m).reduce((a, b) => a + b, 0) <= 0;
+                } else {
+                    return Object.keys(m).some(k => m[k] < (directDict[k].qty || 1));
+                }
+            };
+
+            if (isSatisfied(missing)) return true;
+
+            // 執行卡牌檢索
+            for (let sCard of searchCards) {
+                let canFetch = chainDict[sCard].search_targets || [];
+                let fetchQty = chainDict[sCard].val || 1;
+                while (fetchQty > 0) {
+                    let bestTarget = canFetch.find(t => missing[t] !== undefined && missing[t] > 0);
+                    if (bestTarget) {
+                        missing[bestTarget]--;
+                        fetchQty--;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            return isSatisfied(missing);
+        };
+
+        if (checkSuccess(hand)) {
+            successCount++;
+            continue;
+        }
+
+        // 過牌資源計算 (支援者/物品/特性)
+        let maxSupporter = 0;
+        let totalItem = 0;
+        for (let card of hand) {
+            if (chainDict[card]) {
+                let ctype = chainDict[card].type || '';
+                let cval = chainDict[card].val || 0;
+                if (ctype.includes('支援者')) maxSupporter = Math.max(maxSupporter, cval);
+                else if (ctype.includes('物品/特性')) totalItem += cval;
+            }
+        }
+
+        let totalDraw = maxSupporter + totalItem;
+        if (totalDraw > 0) {
+            if (deadHandSize > 0) {
+                for (let d = 0; d < deadHandSize; d++) remDeck.push('blank');
+                for (let i = remDeck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [remDeck[i], remDeck[j]] = [remDeck[j], remDeck[i]];
+                }
+            }
+            hand.push(...remDeck.slice(0, totalDraw));
+            if (checkSuccess(hand)) successCount++;
+        }
+    }
+    return (successCount / iterations) * 100.0;
+}
+
+// ==========================================
+// 2. 前端觸發與 UI 渲染（全在地端執行）
+// ==========================================
+function runSimulation() {
+    let deckForSim = gameCards.filter(c => c.zone === 'deck').map(c => ({ name: c.key }));
+    if (deckForSim.length === 0) {
+        return alert("⚠️ 牌庫中沒有卡片！請先點擊「鎖定牌組並開局」。");
+    }
+
+    let d1 = parseInt(document.getElementById('draw1-qty').value) || 7;
     let targetRule = document.querySelector('input[name="target_rule"]:checked').value;
     let deadHand = parseInt(document.getElementById('dead-hand-qty').value) || 0;
     
     let directDict = {};
     Object.keys(targetList).forEach(k => { directDict[k] = { qty: targetList[k].qty }; });
-    if(Object.keys(directDict).length === 0) return alert("請先選取直接解牌目標！");
+    if (Object.keys(directDict).length === 0) {
+        return alert("請先選取直接解牌目標！");
+    }
     
     let formattedChainDict = {};
     Object.keys(chainList).forEach(k => {
@@ -1688,61 +1791,27 @@ async function runSimulation() {
     resultEl.innerText = "運算中...";
     resultEl.style.color = "#FFD700";
     resultEl.style.fontSize = "32px";
-    
-    fetch(`${API_BASE}/api/v1/simulate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-            deck_cards: gameCards.filter(c => c.zone === 'deck').map(c => ({name: c.key})),
-            direct_targets: directDict,
-            chain_targets: formattedChainDict,
-            draw1: d1,
-            target_rule: targetRule,
-            dead_hand_size: deadHand
-        })
-    }).then(async r => {
-        if(r.status === 401) { document.getElementById('gate-overlay').style.display='flex'; throw new Error("請先登入"); }
-        if(r.status === 403) {
-            const d = await r.json();
-            if(d.detail === "LIMIT_REACHED") { document.getElementById('sub-modal').style.display='flex'; throw new Error("額度用盡"); }
-        }
-        if(!r.ok) {
-            const errData = await r.json().catch(() => ({}));
-            throw new Error(errData.detail || `伺服器錯誤 (${r.status})`);
-        }
-        return r.json();
-    }).then(d => {
-        if(d.success) {
+
+    // 透過 setTimeout 讓畫面先呈現「運算中...」，隨後直接在瀏覽器執行 10,000 次運算
+    setTimeout(() => {
+        try {
+            let prob = runMonteCarloClient(deckForSim, directDict, formattedChainDict, d1, targetRule, deadHand, 10000);
+
             lastSimResult = {
                 title: `首波 ${d1} 抽`,
                 desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`,
-                prob: d.prob
+                prob: prob
             };
-            resultEl.innerText = `${d.prob.toFixed(1)} %`;
+
+            resultEl.innerText = `${prob.toFixed(1)} %`;
             resultEl.style.color = "#00E5FF";
             resultEl.style.fontSize = "46px";
-            if (!d.is_pro && d.remaining_today !== undefined) {
-                document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(今日剩餘: ${d.remaining_today} 次)</span>`;
-            }
-        } else {
-            throw new Error(d.detail || "運算失敗");
-        }
-    }).catch(e => {
-        if(e.message !== "額度用盡" && e.message !== "請先登入") {
-            resultEl.innerText = "❌ " + e.message;
+        } catch (err) {
+            resultEl.innerText = "❌ 運算發生錯誤";
             resultEl.style.color = "#FF5252";
             resultEl.style.fontSize = "20px";
-            setTimeout(() => {
-                resultEl.innerText = "0.0 %";
-                resultEl.style.color = "#00E5FF";
-                resultEl.style.fontSize = "46px";
-            }, 4000);
-        } else {
-            resultEl.innerText = "0.0 %";
-            resultEl.style.color = "#00E5FF";
-            resultEl.style.fontSize = "46px";
         }
-    });
+    }, 20);
 }
 
 function saveScenario() {
