@@ -267,13 +267,16 @@
             
             <details id="prob-panel">
                 <summary style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px;">
-                   <div style="display:flex; align-items:center; gap:12px;">
+                   <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
     <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
     <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
     
-    <!-- 👇 替換成這個，讓萬次推演教學回來 -->
+    <!-- 🐙 萬次推演教學 -->
     <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial()">🐙 萬次推演教學 (必看)</button>
-    </div>
+    
+    <!-- ❓ 覆盤戰場教學 -->
+    <button class="q-btn" style="background: linear-gradient(145deg, #00E5FF, #00B4D8); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('tut-sandbox-modal').style.display='flex'">❓ 覆盤戰場教學</button>
+</div>
                     <div style="display:flex; align-items: center; gap: 12px;">
                         <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); rollDice()">🎲 擲骰子</button>
                         <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
