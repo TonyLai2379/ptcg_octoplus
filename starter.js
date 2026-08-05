@@ -210,7 +210,7 @@ function runUltimateSimulation() {
     searchRows.forEach(row => {
         const count = parseInt(row.querySelector('.st-search-count').value) || 0;
         
-        // 💡 判斷機制：如果是檢索整副牌庫，直接將 Look 強制設為 60 張 (觸發全牌庫智慧檢索)
+        // 💡 讀取發動機制：如果選擇「檢索整副牌庫」，則將 lookVal 強制設為 60
         const mechEl = row.querySelector('.st-search-mechanism');
         const mech = mechEl ? mechEl.value : 'search_deck';
         let lookVal = 60; 
@@ -220,7 +220,7 @@ function runUltimateSimulation() {
         
         const pickVal = parseInt(row.querySelector('.st-search-pick').value) || 1;
         
-        // 標籤解析防呆處理
+        // 標籤字串安全解析
         const targetRaw = row.querySelector('.st-search-targets').value;
         let pTargets = [];
         if (targetRaw && targetRaw.trim() !== '' && targetRaw.trim() !== '-') {
@@ -436,6 +436,18 @@ window.toggleSearchMech = function(selectEl) {
         pickLabel.innerText = '看幾張';
     }
 };
+window.toggleSearchMech = function(selectEl) {
+    const row = selectEl.closest('.st-search-row');
+    const lookContainer = row.querySelector('.look-container');
+    const pickLabel = row.querySelector('.pick-label');
+    if (selectEl.value === 'search_deck') {
+        lookContainer.style.display = 'none';
+        pickLabel.innerText = '檢索張數';
+    } else {
+        lookContainer.style.display = 'flex';
+        pickLabel.innerText = '選幾張';
+    }
+};
 function addSearchCardRow(name = "", qty = 2, mech = "search_deck", look = 7, pick = 1, targets = "1,2") {
     if (!window.isUserPro) {
         const currentCount = document.querySelectorAll('.st-search-row').length;
@@ -459,9 +471,9 @@ function addSearchCardRow(name = "", qty = 2, mech = "search_deck", look = 7, pi
             <input type="number" value="${qty}" class="st-search-count" style="width:45px; text-align:center; padding:4px;">
         </div>
         <div style="display:flex; flex-direction:column; flex:1.2; margin: 0 5px;">
-            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">效果機制</span>
+            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">發動效果機制</span>
             <select class="st-search-mechanism" onchange="toggleSearchMech(this)" style="padding:4px; font-size:12px;">
-                <option value="search_deck" ${mech==='search_deck'?'selected':''}>檢索整副牌庫</option>
+                <option value="search_deck" ${mech==='search_deck'?'selected':''}>指定檢索整副牌庫</option>
                 <option value="look_top" ${mech==='look_top'?'selected':''}>看牌庫頂 X 張</option>
             </select>
         </div>
@@ -471,11 +483,11 @@ function addSearchCardRow(name = "", qty = 2, mech = "search_deck", look = 7, pi
                 <input type="number" value="${look}" class="st-search-look" style="width:45px; text-align:center; padding:4px;">
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
-                <span class="pick-label" style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">${mech==='search_deck'?'抓幾張':'選幾張'}</span>
+                <span class="pick-label" style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">${mech==='search_deck'?'檢索張數':'選幾張'}</span>
                 <input type="number" value="${pick}" class="st-search-pick" style="width:45px; text-align:center; padding:4px;">
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; margin-left: 4px;">
-                <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">目標標籤</span>
+                <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">抓取標籤</span>
                 <input type="text" value="${targets}" placeholder="(如1,2)" class="st-search-targets" style="width:50px; text-align:center; padding:4px;">
             </div>
         </div>
