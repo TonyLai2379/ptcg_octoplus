@@ -84,7 +84,8 @@ function applyAutoZoom() {
     if (width < 992) targetZoom = 0.7;
     if (width < 768) targetZoom = 0.55;
     
-    let mv = document.getElementById('main-view');
+    // 改成抓取新的主視圖容器 #app-viewport
+    let mv = document.getElementById('app-viewport');
     if (mv) mv.style.zoom = targetZoom;
     
     let slider = document.getElementById('zoom-slider');
@@ -558,8 +559,8 @@ window.addEventListener('load', () => {
         if (savedBoard) gameCards = JSON.parse(savedBoard);
     } catch(e) {}
     
-    renderBenchSlots();
-    renderBoard();
+    // 移除載入時強迫渲染戰場，改為預設鎖定在中央匯入畫面
+    switchMainView('import');
     runSplashAnimation();
 });
 
