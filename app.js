@@ -66,7 +66,19 @@ function switchMainView(viewName) {
         syncStarterToolFromDeck(deckDict);
     }
 }
-
+// ==========================================
+// 智慧教學按鈕控制 (解決 openTutorial is not defined)
+// ==========================================
+function openTutorial() {
+    // 根據當前所在的畫面，自動跳出對應的教學視窗
+    if (currentMainView === 'import') {
+        document.getElementById('tut-import-modal').style.display = 'flex';
+    } else if (currentMainView === 'starter') {
+        document.getElementById('tut-starter-modal').style.display = 'flex';
+    } else if (currentMainView === 'sandbox') {
+        document.getElementById('tut-sandbox-modal').style.display = 'flex';
+    }
+}
 // ==========================================
 // 2. 數學計算與 Auto Zoom
 // ==========================================
