@@ -22,7 +22,7 @@ let gameCards = [];
 let lastSimResult = null;
 let targetList = {};
 let chainList = {};
-let prizeTargetList = {}; // 💡 獎賞卡目標清單
+let prizeTargetList = {};
 let tempSelectedKeys = [];
 let searchMultiSelection = {};
 let currentModalMode = "";
@@ -31,8 +31,14 @@ let isDragging = false;
 let benchSize = 5;
 let historyStates = [];
 let historyPtr = -1;
-let prizesFaceUp = true; // 💡 預設獎賞卡正面朝上！
+let prizesFaceUp = true;
 let feedbackBase64 = "";
+
+var DEFAULT_CARDBACK = (function(color) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+})("#2B579A");
+
 // ==========================================
 // 視圖切換主控 (Import / Starter / Sandbox)
 // ==========================================
@@ -41,32 +47,22 @@ let currentMainView = 'import';
 function switchMainView(viewName) {
     currentMainView = viewName;
     
-    // 切換導覽列按鈕樣式
-    document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.nav-3d-btn').forEach(btn => btn.classList.remove('active'));
     let activeNavBtn = document.getElementById('btn-view-' + viewName);
     if (activeNavBtn) activeNavBtn.classList.add('active');
 
-    // 切換視圖顯示
     document.getElementById('view-import').style.display = (viewName === 'import') ? 'block' : 'none';
     document.getElementById('view-starter').style.display = (viewName === 'starter') ? 'block' : 'none';
     document.getElementById('view-sandbox').style.display = (viewName === 'sandbox') ? 'block' : 'none';
 
-    // 若切換至起手健檢，同步當前牌組資料
     if (viewName === 'starter' && typeof syncStarterToolFromDeck === 'function') {
         syncStarterToolFromDeck(deckDict);
     }
 }
 
-var DEFAULT_CARDBACK = (function(color) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-})("#2B579A");
-
-
 // ==========================================
 // 2. 數學計算與 Auto Zoom
 // ==========================================
-// 💡 獎賞卡機率算盤使用的超幾何分配公式
 function combination(n, k) {
     if (k < 0 || k > n) return 0;
     if (k === 0 || k === n) return 1;
@@ -84,7 +80,6 @@ function applyAutoZoom() {
     if (width < 992) targetZoom = 0.7;
     if (width < 768) targetZoom = 0.55;
     
-    // 改成抓取新的主視圖容器 #app-viewport
     let mv = document.getElementById('app-viewport');
     if (mv) mv.style.zoom = targetZoom;
     
@@ -92,7 +87,6 @@ function applyAutoZoom() {
     if (slider) slider.value = targetZoom;
 }
 window.addEventListener('resize', applyAutoZoom);
-
 
 // ==========================================
 // 3. 多國語言支援 (翻譯字典)
@@ -106,7 +100,7 @@ const translations = {
         lblSearchDb: "全圖庫圖文搜尋：", phSearchInput: "輸入卡名即時搜尋...", 
         lblCustomCard: "自訂卡片 (自動套用牌背文字)：", phCustomCard: "自訂卡名稱", 
         btnAddCustom: "➕ 建立專屬卡", deckListTitle: "牌組清單", btnPreviewDeck: "👁️ 預覽卡組", 
-        btnStartGame: "🎲 鎖定牌組並開局", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", 
+        btnStartGame: "🎲 鎖定牌組並開始精算", btnSaveCloud: "💾 紀錄至雲端", optLoadCloud: "載入雲端牌組...", 
         disclaimer: "<b>⚠️ 免責聲明：</b><br>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。", 
         lblZoom: "🔍 介面縮放", summaryProbTitle: "🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)", 
         txtToggleBadge: "點擊展開/收合", lblStep1: "🔥 1. 直接解牌目標 (可多選)", 
@@ -559,7 +553,6 @@ window.addEventListener('load', () => {
         if (savedBoard) gameCards = JSON.parse(savedBoard);
     } catch(e) {}
     
-    // 移除載入時強迫渲染戰場，改為預設鎖定在中央匯入畫面
     switchMainView('import');
     runSplashAnimation();
 });
@@ -582,8 +575,10 @@ if (supabaseClient) {
 
 async function handleSession(session) {
     document.getElementById('gate-overlay').style.display = 'none';
-    document.getElementById('user-id-input').value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
-    document.getElementById('btn-unlock').innerText = "訂閱、輸入邀請碼";
+    let uIdInput = document.getElementById('user-id-input');
+    if(uIdInput) uIdInput.value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
+    let btnUnlock = document.getElementById('btn-unlock');
+    if(btnUnlock) btnUnlock.innerText = "訂閱、輸入邀請碼";
     
     try {
         if (supabaseClient) {
@@ -594,19 +589,18 @@ async function handleSession(session) {
                     let expDate = new Date(data.pro_expires_at.replace("Z", "+00:00"));
                     if (new Date() < expDate) hasActiveSub = true;
                 }
-                if (data.is_pro || hasActiveSub) {
-                    let expStr = "終身尊榮 VIP ♾️";
-                    if (data.pro_expires_at) {
-                        let d = new Date(data.pro_expires_at.replace("Z", "+00:00"));
-                        if (d.getFullYear() < 2090) expStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                let statusTxt = document.getElementById('txt-status');
+                if(statusTxt) {
+                    if (data.is_pro || hasActiveSub) {
+                        let expStr = "終身尊榮 VIP ♾️";
+                        if (data.pro_expires_at) {
+                            let d = new Date(data.pro_expires_at.replace("Z", "+00:00"));
+                            if (d.getFullYear() < 2090) expStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        }
+                        statusTxt.innerHTML = `👑 <b>Pro 專業會員</b><br><span style="font-size:11px; color:#FFD700;">(有效期限: ${expStr})</span>`;
+                    } else {
+                        statusTxt.innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(每日 30 次額度)</span>`;
                     }
-                    document.getElementById('txt-status').innerHTML = `👑 <b>Pro 專業會員</b><br><span style="font-size:11px; color:#FFD700;">(有效期限: ${expStr})</span>`;
-                    document.getElementById('auth-status-bar').style.background = "rgba(255, 215, 0, 0.12)";
-                    document.getElementById('auth-status-bar').style.border = "1px solid rgba(255, 215, 0, 0.5)";
-                } else {
-                    document.getElementById('txt-status').innerHTML = `<b>免費試用版</b><br><span style="font-size:11px; color:#00E5FF;">(每日 30 次額度)</span>`;
-                    document.getElementById('auth-status-bar').style.background = "rgba(33, 38, 44, 1)";
-                    document.getElementById('auth-status-bar').style.border = "1px solid #30363D";
                 }
             }
         }
@@ -672,56 +666,18 @@ async function checkLoginStatus() {
 // ==========================================
 // 6. 牌組處理與 UI 邏輯
 // ==========================================
-function toggleSidebar() {
-    const sb = document.getElementById('sidebar');
-    const btn = document.getElementById('sidebar-toggle-btn');
-    if (sb.style.width === '0px') { sb.style.width = '360px'; btn.innerText = '«'; }
-    else { sb.style.width = '0px'; btn.innerText = '»'; }
-}
-
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     event.target.classList.add('active');
     document.getElementById(tabId).classList.add('active');
 }
-// ==========================================
-// 視圖切換主控 (Import / Starter / Sandbox)
-// ==========================================
-let currentMainView = 'import';
 
-function switchMainView(viewName) {
-    currentMainView = viewName;
-    
-    // 切換 3D 按鈕 active 樣式
-    document.querySelectorAll('.nav-3d-btn').forEach(btn => btn.classList.remove('active'));
-    let activeNavBtn = document.getElementById('btn-view-' + viewName);
-    if (activeNavBtn) activeNavBtn.classList.add('active');
-
-    // 切換三大區塊 View
-    document.getElementById('view-import').style.display = (viewName === 'import') ? 'block' : 'none';
-    document.getElementById('view-starter').style.display = (viewName === 'starter') ? 'block' : 'none';
-    document.getElementById('view-sandbox').style.display = (viewName === 'sandbox') ? 'block' : 'none';
-
-    // 若切換至起手健檢，自動填入目前卡牌資料
-    if (viewName === 'starter' && typeof syncStarterToolFromDeck === 'function') {
-        syncStarterToolFromDeck(deckDict);
-    }
-}
 function switchTutTab(tid) {
     document.querySelectorAll('#tutorial-modal .tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('#tutorial-modal .tut-content').forEach(c => c.style.display='none');
     document.getElementById('btn-'+tid).classList.add('active');
     document.getElementById(tid).style.display = 'flex';
-}
-
-function switchSubTutTab(subId) {
-    document.querySelectorAll('.sub-tab-btn').forEach(b => { b.style.borderColor = '#30363D'; b.style.color = '#888'; });
-    document.querySelectorAll('.sub-tut-content').forEach(c => c.style.display = 'none');
-    let activeBtn = document.getElementById('btn-' + subId);
-    activeBtn.style.borderColor = '#00E5FF';
-    activeBtn.style.color = '#00E5FF';
-    document.getElementById(subId).style.display = 'block';
 }
 
 function showProgress(id) {
@@ -791,8 +747,6 @@ function parseOfficial() {
         if(d.success){ 
             deckDict = d.deck; 
             updateDeckUI(); 
-            
-            // 💡 【新增】若有替代卡牌，跳出視窗提醒使用者
             if (d.fallback_cards && d.fallback_cards.length > 0) {
                 let msgList = d.fallback_cards.map(item => "• " + item).join("\n");
                 alert("⚠️ 以下卡牌未能在官網取得精確專屬卡圖：\n\n" + msgList + "\n\n已自動套用替代方案顯示！");
@@ -910,7 +864,7 @@ function changeCardBack(color) {
 function closeGalleryModal(e) {
     if(e.target.id === 'gallery-modal') document.getElementById('gallery-modal').style.display = 'none';
 }
-// 💡 獎賞卡機率面板控制
+
 function openPrizeProbModal() {
     document.getElementById('prize-prob-modal').style.display = 'flex';
     renderPrizeTargetUI();
@@ -944,7 +898,7 @@ function removePrizeTarget(k) {
     renderPrizeTargetUI();
 }
 function handleCardClick(imgUrl, fallbackUrl) {
-    isDragging = false; // 💡 強制解除偶發卡死的拖曳狀態
+    isDragging = false; 
     let safeImg = (imgUrl && imgUrl.startsWith('http')) ? imgUrl : DEFAULT_CARDBACK;
     let fUrl = (fallbackUrl && fallbackUrl.startsWith('http')) ? fallbackUrl : DEFAULT_CARDBACK;
     let lbImg = document.getElementById('lightbox-img');
@@ -953,7 +907,7 @@ function handleCardClick(imgUrl, fallbackUrl) {
     
     let modal = document.getElementById('lightbox-modal');
     modal.style.display = 'flex';
-    modal.style.zIndex = "30000"; // 💡 確保圖層絕對蓋在所有物件的最上方
+    modal.style.zIndex = "30000"; 
 }
 
 function openPreviewModal() {
@@ -973,7 +927,6 @@ function openSelector(type) {
         itemsToRender = Object.keys(deckDict).map(k => ({ key: k, ...deckDict[k] }));
     } else if (type === 'prize_target') {
         tempSelectedKeys = Object.keys(prizeTargetList);
-        // 💡 嚴格篩選：只抓取「現在還在獎賞卡區」的卡片
         let prizeCards = gameCards.filter(c => c.zone.startsWith('prize_'));
         let prizeGroups = {};
         prizeCards.forEach(c => {
@@ -1036,7 +989,6 @@ function renderGalleryItems(items) {
         div.onclick = () => {
             if(currentModalMode === 'preview' || currentModalMode.startsWith('search_multi')) return handleCardClick(item.img, item.fallback_img);
             
-            // 💡 確保 prize_target 模式支援多選點擊
             if(currentModalMode === 'direct' || currentModalMode.startsWith('chain_target_') || currentModalMode === 'prize_target') {
                 if(tempSelectedKeys.includes(item.key)) {
                     tempSelectedKeys = tempSelectedKeys.filter(k=>k!==item.key);
@@ -1077,7 +1029,6 @@ function confirmGallerySelection() {
         targetList = newList;
         renderTargetUI();
     } else if (currentModalMode === 'prize_target') {
-        // 💡 處理獎賞卡目標選取
         let newList = {};
         tempSelectedKeys.forEach(k => { newList[k] = prizeTargetList[k] || { name: deckDict[k].name, img: deckDict[k].img }; });
         prizeTargetList = newList;
@@ -1128,33 +1079,6 @@ function updateTargetQty(k, val) {
     let v = parseInt(val);
     if(v <= 0) delete targetList[k]; else targetList[k].qty = v;
     renderTargetUI();
-}
-
-// 💡 渲染獎賞卡目標 UI
-function renderPrizeTargetUI() {
-    const container = document.getElementById('prize-target-display');
-    container.innerHTML = "";
-    let keys = Object.keys(prizeTargetList);
-    if(keys.length === 0) { container.innerHTML = `<div style="color:#888; text-align:center;">未選擇任何卡片</div>`; return; }
-    keys.forEach(k => {
-        let c = prizeTargetList[k];
-        let div = document.createElement('div');
-        div.className = 'target-row';
-        let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
-        div.innerHTML = `
-            <div style="display:flex; align-items:center;">
-                <img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:30px;height:42px;margin-right:10px;">
-                <span style="font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">${c.name}</span>
-            </div> 
-            <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; display:flex; justify-content:center; align-items:center;" onclick="removePrizeTarget('${k.replace(/'/g, "\\\\'")}')">✕</button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function removePrizeTarget(k) {
-    delete prizeTargetList[k];
-    renderPrizeTargetUI();
 }
 
 function renderChainUI() {
@@ -1333,7 +1257,6 @@ function renderBenchSlots() {
     }
 }
 
-// 修正原本的 startGame 函數，開局鎖定後跳轉至功能 A
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     
@@ -1356,7 +1279,7 @@ function startGame() {
     renderBenchSlots();
     renderBoard();
 
-    // 💡 鎖定完成後自動切換至功能 A 進行測試
+    // 鎖定完成後自動切換至功能 A 進行測試
     switchMainView('starter');
 }
 
@@ -1501,7 +1424,6 @@ function renderBoard() {
         }
     });
 
-    // 💡 獎賞卡固定渲染
     for(let i=0; i<6; i++) {
         let arr = zones['prize_'+i]||[];
         if(arr.length > 0) document.getElementById('zone-prize-'+i).appendChild(createCardEl(arr[0], false, prizesFaceUp));
@@ -1646,7 +1568,6 @@ function openSearchModal(zone) {
     document.getElementById('gallery-modal').style.display = 'flex';
 }
 
-// 💡 獎賞卡抽取與機率系統
 function drawRandomPrize() {
     let prizeCards = gameCards.filter(c => c.zone.startsWith('prize_'));
     if (prizeCards.length === 0) return alert("⚠️ 獎賞卡已經全部抽完囉！");
@@ -1673,15 +1594,13 @@ function calcPrizeProb() {
     let draws = parseInt(document.getElementById('prize-draw-qty').value) || 1;
     if (draws > N) draws = N;
 
-    // 💡 取得 AND/OR 設定
     let rule = document.querySelector('input[name="prize_rule"]:checked').value;
-    let simCount = 10000; // 一萬次蒙地卡羅
+    let simCount = 10000; 
     let success = 0;
     
     let prizePool = prizeCards.map(c => c.key);
     
     for (let i = 0; i < simCount; i++) {
-        // 💡 這次是真的！套用數學絕對公平的 Fisher-Yates 洗牌演算法
         let shuffled = [...prizePool];
         for (let j = shuffled.length - 1; j > 0; j--) {
             let r = Math.floor(Math.random() * (j + 1));
@@ -1693,14 +1612,12 @@ function calcPrizeProb() {
         let drawnCards = shuffled.slice(0, draws);
         
         if (rule === 'AND') {
-            // AND：必須包含「所有」目標卡種類
             let pass = true;
             for (let key of targetKeys) {
                 if (!drawnCards.includes(key)) { pass = false; break; }
             }
             if (pass) success++;
         } else {
-            // OR：只要抽到「任何一張」目標卡即算成功
             let pass = false;
             for (let key of targetKeys) {
                 if (drawnCards.includes(key)) { pass = true; break; }
@@ -1719,9 +1636,6 @@ function calcPrizeProb() {
     resEl.classList.add('bounce-in');
 }
 
-// ==========================================
-// 1. 前端蒙地卡羅 10,000 次深度推演核心算盤
-// ==========================================
 function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule = "AND", deadHandSize = 0, iterations = 10000) {
     if (!deckCards || deckCards.length === 0 || draw1 <= 0 || Object.keys(directDict).length === 0) return 0.0;
     
@@ -1729,7 +1643,6 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
     let successCount = 0;
 
     for (let iter = 0; iter < iterations; iter++) {
-        // 洗牌 (Fisher-Yates)
         let deck = [...baseDeck];
         for (let i = deck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -1739,12 +1652,10 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
         let hand = deck.slice(0, draw1);
         let remDeck = deck.slice(draw1);
 
-        // 發動保證在手的連鎖資源
         Object.keys(chainDict).forEach(k => {
             if (chainDict[k].guaranteed && !hand.includes(k)) hand.push(k);
         });
 
-        // 檢查手牌是否達成條件
         const checkSuccess = (currentHand) => {
             let missing = {};
             Object.keys(directDict).forEach(k => { missing[k] = directDict[k].qty || 1; });
@@ -1768,7 +1679,6 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
 
             if (isSatisfied(missing)) return true;
 
-            // 執行卡牌檢索
             for (let sCard of searchCards) {
                 let canFetch = chainDict[sCard].search_targets || [];
                 let fetchQty = chainDict[sCard].val || 1;
@@ -1790,7 +1700,6 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
             continue;
         }
 
-        // 過牌資源計算 (支援者/物品/特性)
         let maxSupporter = 0;
         let totalItem = 0;
         for (let card of hand) {
@@ -1818,9 +1727,6 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
     return (successCount / iterations) * 100.0;
 }
 
-// ==========================================
-// 2. 前端觸發與 UI 渲染（全在地端執行）
-// ==========================================
 function runSimulation() {
     let deckForSim = gameCards.filter(c => c.zone === 'deck').map(c => ({ name: c.key }));
     if (deckForSim.length === 0) {
@@ -1852,7 +1758,6 @@ function runSimulation() {
     resultEl.style.color = "#FFD700";
     resultEl.style.fontSize = "32px";
 
-    // 透過 setTimeout 讓畫面先呈現「運算中...」，隨後直接在瀏覽器執行 10,000 次運算
     setTimeout(() => {
         try {
             let prob = runMonteCarloClient(deckForSim, directDict, formattedChainDict, d1, targetRule, deadHand, 10000);
@@ -2032,10 +1937,13 @@ async function fetchMarquee() {
         const data = await resp.json();
         let text = data.text || "歡迎使用 PTCG 小章魚";
         let el = document.getElementById('marquee-text');
-        el.innerHTML = text;
-        el.style.animationDuration = Math.max(text.length * 0.45, 20) + 's';
+        if (el) {
+            el.innerHTML = text;
+            el.style.animationDuration = Math.max(text.length * 0.45, 20) + 's';
+        }
     } catch (e) {
-        document.getElementById('marquee-text').innerHTML = "歡迎使用 PTCG 小章魚";
+        let el = document.getElementById('marquee-text');
+        if (el) el.innerHTML = "歡迎使用 PTCG 小章魚";
     }
 }
 
