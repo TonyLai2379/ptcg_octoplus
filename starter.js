@@ -378,15 +378,29 @@ function exportOctoReportCard() {
     }
 }
 
-// 7. 動態填入預設卡牌資料列輔助函式
+// 7. 動態填入預設卡牌資料列輔助函式 (加入權限阻擋與選卡按鈕)
+
 function addKeyCardRow(name = "", qty = 2) {
+    // 💡 Freemium 限制：免費版只能有 1 張 Key Card
+    if (!window.isUserPro) {
+        const currentCount = document.querySelectorAll('.st-key-row').length;
+        if (currentCount >= 1) {
+            document.getElementById('sub-modal').style.display = 'flex';
+            return;
+        }
+    }
+
     const container = document.getElementById('st-keyCardsContainer');
     const num = container.getElementsByClassName('st-key-row').length + 1;
     const div = document.createElement('div');
+    const inputId = 'st_key_' + Date.now() + Math.floor(Math.random()*1000); // 產生唯一ID
     div.className = 'st-key-row target-row';
     div.innerHTML = `
         <span style="font-weight:bold; color:#FFD700; min-width:70px;">[標籤:${num}]</span>
-        <input type="text" value="${name}" placeholder="重點卡名稱" class="st-key-name" style="flex:2;">
+        <div style="flex:2; display:flex; gap:4px;">
+            <input type="text" id="${inputId}" value="${name}" placeholder="重點卡名(可手填)" class="st-key-name">
+            <button class="btn-secondary" style="padding:0 8px; font-size:12px; border-radius:4px;" title="從牌組挑選" onclick="openSelector('st_input_${inputId}')">🔍</button>
+        </div>
         <input type="number" value="${qty}" min="1" max="4" class="st-key-count" style="width:60px; text-align:center;">
         <button class="btn-secondary" style="width:30px; height:30px; padding:0; border-radius:50%; color:#FF5252;" onclick="this.parentElement.remove()">✕</button>
     `;
@@ -394,11 +408,21 @@ function addKeyCardRow(name = "", qty = 2) {
 }
 
 function addSearchCardRow(name = "", qty = 2, look = 7, pick = 1, targets = "1,2") {
+    // 💡 Freemium 限制：免費版不可使用過牌物品
+    if (!window.isUserPro) {
+        document.getElementById('sub-modal').style.display = 'flex';
+        return;
+    }
+
     const container = document.getElementById('st-searchCardsContainer');
     const div = document.createElement('div');
+    const inputId = 'st_search_' + Date.now() + Math.floor(Math.random()*1000);
     div.className = 'st-search-row target-row';
     div.innerHTML = `
-        <input type="text" value="${name}" placeholder="物品/過牌卡" class="st-search-name" style="flex:2;">
+        <div style="flex:2; display:flex; gap:4px;">
+            <input type="text" id="${inputId}" value="${name}" placeholder="物品卡名(可手填)" class="st-search-name">
+            <button class="btn-secondary" style="padding:0 8px; font-size:12px; border-radius:4px;" title="從牌組挑選" onclick="openSelector('st_input_${inputId}')">🔍</button>
+        </div>
         <input type="number" value="${qty}" class="st-search-count" style="width:50px; text-align:center;">
         <span style="font-size:12px; color:#aaa;">看</span>
         <input type="number" value="${look}" class="st-search-look" style="width:50px; text-align:center;">
@@ -411,11 +435,21 @@ function addSearchCardRow(name = "", qty = 2, look = 7, pick = 1, targets = "1,2
 }
 
 function addDrawCardRow(name = "", qty = 2, mech = "shuffle_back", val = 5, targets = "-") {
+    // 💡 Freemium 限制：免費版不可使用支援者矩陣
+    if (!window.isUserPro) {
+        document.getElementById('sub-modal').style.display = 'flex';
+        return;
+    }
+
     const container = document.getElementById('st-drawCardsContainer');
     const div = document.createElement('div');
+    const inputId = 'st_draw_' + Date.now() + Math.floor(Math.random()*1000);
     div.className = 'st-draw-row target-row';
     div.innerHTML = `
-        <input type="text" value="${name}" placeholder="支援者卡" class="st-draw-name" style="flex:1.5;">
+        <div style="flex:1.5; display:flex; gap:4px;">
+            <input type="text" id="${inputId}" value="${name}" placeholder="支援者卡(可手填)" class="st-draw-name">
+            <button class="btn-secondary" style="padding:0 8px; font-size:12px; border-radius:4px;" title="從牌組挑選" onclick="openSelector('st_input_${inputId}')">🔍</button>
+        </div>
         <input type="number" value="${qty}" class="st-draw-count" style="width:50px; text-align:center;">
         <select class="st-draw-mechanism" style="flex:2;" onchange="this.parentElement.querySelector('.st-draw-targets').disabled = (this.value !== 'search_key')">
             <option value="shuffle_back" ${mech==='shuffle_back'?'selected':''}>洗回牌庫抽 X 張</option>
