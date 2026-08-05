@@ -36,41 +36,6 @@ let feedbackBase64 = "";
 // ==========================================
 // 動畫與開場邏輯 (修復畫面卡住無法點擊)
 // ==========================================
-let splashDismissed = false;
-function dismissSplash() {
-    if (splashDismissed) return;
-    splashDismissed = true;
-    const splash = document.getElementById('octopus-splash');
-    if (splash) {
-        splash.style.opacity = '0';
-        splash.style.visibility = 'hidden';
-        setTimeout(() => splash.remove(), 800);
-    }
-}
-
-function runSplashAnimation() {
-    let countEl = document.getElementById('splash-count');
-    let phaseEl = document.getElementById('splash-phase-text');
-    let barEl = document.getElementById('splash-bar-inner');
-    if (!countEl) return;
-    
-    let progress = 0; let currentProb = 0.0; let targetProb = 47.0;
-    let totalSteps = 5000 / 30; let stepProb = targetProb / (totalSteps * 0.7);
-    
-    let timer = setInterval(() => {
-        progress += (100 / totalSteps);
-        if (barEl) barEl.style.width = Math.min(100, progress) + '%';
-        if (currentProb < targetProb) {
-            currentProb += stepProb;
-            if (currentProb >= targetProb) currentProb = targetProb;
-            countEl.innerText = currentProb.toFixed(1) + '%';
-        }
-        if (progress >= 100) {
-            clearInterval(timer);
-            setTimeout(dismissSplash, 800);
-        }
-    }, 30);
-}
 
 // 確保載入時執行進度條動畫
 window.addEventListener('load', () => {
