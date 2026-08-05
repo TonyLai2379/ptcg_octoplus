@@ -301,3 +301,47 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .combination-table tr:nth-child(even) {
     background: rgba(255, 255, 255, 0.02);
 }
+/* ==========================================
+   會員資訊與大訂閱按鈕 (圖一優化)
+   ========================================== */
+.auth-card-box {
+    background: linear-gradient(145deg, #21262D 0%, #161B22 100%);
+    border: 1px solid #30363D;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 5px 15px rgba(0,0,0,0.3);
+}
+.auth-info-text {
+    font-size: 14px;
+    color: #CCC;
+    margin-bottom: 12px;
+}
+.btn-subscribe-large {
+    background: linear-gradient(90deg, #E34C26, #FF5722);
+    color: white;
+    font-size: 16px;
+    font-weight: 900;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(227, 76, 38, 0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn-subscribe-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(227, 76, 38, 0.6);
+}
+
+/* ==========================================
+   起手健檢區塊分隔線 (圖四優化)
+   ========================================== */
+.st-divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #30363D, transparent);
+    margin: 20px 0;
+}
