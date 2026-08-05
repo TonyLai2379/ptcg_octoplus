@@ -66,7 +66,6 @@
         </div>
         <div style="display:flex; gap:8px;">
             <button class="nav-3d-btn" style="color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
-            <button class="nav-3d-btn" onclick="openTutorial()">❓ 教學</button>
         </div>
     </div>
 
@@ -118,7 +117,11 @@
             </div>
 
             <div class="import-card-container">
-                <h2 style="color:#00E5FF; text-align:center; font-size:24px; margin-bottom:20px;">🎴 匯入您的 PTCG 牌組</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div style="width:120px;"></div> <!-- 隱形佔位，保持標題完美置中 -->
+    <h2 style="color:#00E5FF; font-size:24px; margin:0; text-align:center;">🎴 匯入您的 PTCG 牌組</h2>
+    <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; width:120px; justify-content:center;" onclick="document.getElementById('tut-import-modal').style.display='flex'">❓ 匯入教學</button>
+</div>
 
             <!-- 新版：置中的會員資訊與大訂閱按鈕 -->
             <div class="auth-card-box">
@@ -181,7 +184,10 @@
 
         <!-- View 2: 功能 A 起手勝率健檢 -->
         <div id="view-starter" class="view-section" style="display:none; max-width:900px; margin:20px auto; padding:20px;">
-            <h2 style="color:#00E5FF; font-size:22px; margin-bottom:15px; text-align:center;">🎲 功能 A：起手勝率與組合對比健檢</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+    <h2 style="color:#00E5FF; font-size:22px; margin:0; flex:1; text-align:center;">🎲 功能 A：起手勝率與組合對比健檢</h2>
+    <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
+</div>
             
             <div class="prob-card" style="margin-bottom:20px;">
                 <b style="font-size:16px; color:#FFD700;">A. 寶可夢起站怪數量配置</b>
@@ -264,7 +270,7 @@
                     <div style="display:flex; align-items:center; gap:12px;">
                         <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
                         <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
-                        <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial()">🐙 萬次推演教學 (必看)</button>
+                        <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('tut-sandbox-modal').style.display='flex'">❓ 覆盤戰場教學</button>
                     </div>
                     <div style="display:flex; align-items: center; gap: 12px;">
                         <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); rollDice()">🎲 擲骰子</button>
@@ -443,7 +449,73 @@
         </div>
 
     </div>
+<!-- 獨立教學 Modal 1: 匯入牌組 -->
+    <div id="tut-import-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
+        <div class="modal-card" style="width: 500px; max-width: 95vw;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 style="color:#FFD700; margin:0; font-size:18px;">📖 匯入牌組教學</h2>
+                <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('tut-import-modal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD;">
+                <p>歡迎來到 PTCG 小章魚！建立牌組有三種方式：</p>
+                <ul style="margin-left: 20px; margin-top: 10px; color: #00E5FF;">
+                    <li style="margin-bottom: 8px;"><b>官方代碼：</b>前往寶可夢繁中官網，組好牌組後複製代碼貼入。</li>
+                    <li style="margin-bottom: 8px;"><b>Limitless 英文：</b>複製國外賽事網站的英文牌組表，一鍵解析匯入。</li>
+                    <li style="margin-bottom: 8px;"><b>搜尋建立：</b>直接透過左側搜尋框輸入卡名找卡片加入。</li>
+                </ul>
+            </div>
+            <div class="modal-footer"><button class="btn" style="width:100%; background:#238636;" onclick="document.getElementById('tut-import-modal').style.display='none'">我瞭解了！</button></div>
+        </div>
+    </div>
 
+    <!-- 獨立教學 Modal 2: 起手勝率 -->
+    <div id="tut-starter-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
+        <div class="modal-card" style="width: 600px; max-width: 95vw;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 style="color:#FFD700; margin:0; font-size:18px;">📖 起手勝率健檢教學</h2>
+                <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('tut-starter-modal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD;">
+                <div style="background:#21262D; border-left:4px solid #FFD700; padding:12px; margin-bottom:15px; border-radius:6px;">
+                    <b style="color:#FFD700;">🐙 小章魚獨家特色：戰術評分系統</b><br>
+                    系統將自動執行 10,000 次蒙地卡羅模擬，精算出你牌組的「起手穩定度」與「T1 展開爆發力」，並給出專屬評語！
+                </div>
+                <b style="color:#00E5FF;">設定步驟：</b>
+                <ol style="margin-left: 20px; margin-top: 10px;">
+                    <li style="margin-bottom: 8px;"><b>基礎怪配置：</b>設定你想用哪隻怪起站，系統會算出「Mulligan 率」與「鬼抓人率」。</li>
+                    <li style="margin-bottom: 8px;"><b>重點卡設定：</b>設定你首回合最想抓到的關鍵卡（支援手動打字或放大鏡搜尋）。</li>
+                    <li style="margin-bottom: 8px;"><b>支援者對比：</b>加入不同的支援者（如：博士、莉莉艾），系統會幫你算出開哪張勝率最高！</li>
+                </ol>
+            </div>
+            <div class="modal-footer"><button class="btn" style="width:100%; background:#238636;" onclick="document.getElementById('tut-starter-modal').style.display='none'">開始健檢！</button></div>
+        </div>
+    </div>
+
+    <!-- 獨立教學 Modal 3: 覆盤戰場 -->
+    <div id="tut-sandbox-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
+        <div class="modal-card" style="width: 600px; max-width: 95vw;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 style="color:#FFD700; margin:0; font-size:18px;">📖 覆盤沙盤戰場教學</h2>
+                <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('tut-sandbox-modal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD;">
+                <p style="margin-bottom: 15px; color: #00E5FF; font-weight: bold;">戰鬥盤面支援全自由拖曳，100% 還原真實賽場！</p>
+                <div style="background:#21262D; border-left:4px solid #FF5252; padding:12px; margin-bottom:12px; border-radius:6px;">
+                    <h3 style="color:#FF5252; margin-bottom:4px; font-size:15px;">⚔️ 基礎操作</h3>
+                    所有卡片皆可拖曳。場地與備戰區支援<b>「完美錯位疊放」</b>。點擊「🔼置頂」可將卡片拉到最上層。
+                </div>
+                <div style="background:#21262D; border-left:4px solid #4CAF50; padding:12px; margin-bottom:12px; border-radius:6px;">
+                    <h3 style="color:#4CAF50; margin-bottom:4px; font-size:15px;">🛠️ 戰術指示物</h3>
+                    將中央的傷害、回血、異常狀態指示物，直接拖曳到寶可夢身上即可標記！
+                </div>
+                <div style="background:#21262D; border-left:4px solid #9C27B0; padding:12px; border-radius:6px;">
+                    <h3 style="color:#E040FB; margin-bottom:4px; font-size:15px;">🎯 獎賞卡機率算盤</h3>
+                    點擊左側獎賞卡區的「📊機率」，選定目標卡後，系統會幫你算出神抽拯救絕境的機率！
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn" style="width:100%; background:#238636;" onclick="document.getElementById('tut-sandbox-modal').style.display='none'">我知道了</button></div>
+        </div>
+    </div>
     <!-- Modals 彈窗集合區 -->
     <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 30000; display: none;">
         <div style="position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center;" onclick="event.stopPropagation()">
