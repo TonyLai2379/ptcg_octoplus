@@ -33,6 +33,29 @@ let historyStates = [];
 let historyPtr = -1;
 let prizesFaceUp = true; // 💡 預設獎賞卡正面朝上！
 let feedbackBase64 = "";
+// ==========================================
+// 視圖切換主控 (Import / Starter / Sandbox)
+// ==========================================
+let currentMainView = 'import';
+
+function switchMainView(viewName) {
+    currentMainView = viewName;
+    
+    // 切換導覽列按鈕樣式
+    document.querySelectorAll('.nav-tab-btn').forEach(btn => btn.classList.remove('active'));
+    let activeNavBtn = document.getElementById('btn-view-' + viewName);
+    if (activeNavBtn) activeNavBtn.classList.add('active');
+
+    // 切換視圖顯示
+    document.getElementById('view-import').style.display = (viewName === 'import') ? 'block' : 'none';
+    document.getElementById('view-starter').style.display = (viewName === 'starter') ? 'block' : 'none';
+    document.getElementById('view-sandbox').style.display = (viewName === 'sandbox') ? 'block' : 'none';
+
+    // 若切換至起手健檢，同步當前牌組資料
+    if (viewName === 'starter' && typeof syncStarterToolFromDeck === 'function') {
+        syncStarterToolFromDeck(deckDict);
+    }
+}
 
 var DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
@@ -1289,8 +1312,9 @@ function renderBenchSlots() {
 
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
+    
     gameCards = [];
-    prizesFaceUp = true; // 💡 獎賞卡預設正面朝上
+    prizesFaceUp = true;
     
     Object.keys(deckDict).forEach(k => {
         for(let i=0; i<deckDict[k].qty; i++) {
@@ -1307,6 +1331,9 @@ function startGame() {
     saveState();
     renderBenchSlots();
     renderBoard();
+
+    // 💡 匯入/鎖定完成後，切換至「功能 A：起手勝率健檢」
+    switchMainView('starter');
 }
 
 function createCardEl(c, isField=false, isPrizeFaceUp=null) {
