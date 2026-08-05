@@ -685,7 +685,29 @@ function switchTab(tabId) {
     event.target.classList.add('active');
     document.getElementById(tabId).classList.add('active');
 }
+// ==========================================
+// 視圖切換主控 (Import / Starter / Sandbox)
+// ==========================================
+let currentMainView = 'import';
 
+function switchMainView(viewName) {
+    currentMainView = viewName;
+    
+    // 切換 3D 按鈕 active 樣式
+    document.querySelectorAll('.nav-3d-btn').forEach(btn => btn.classList.remove('active'));
+    let activeNavBtn = document.getElementById('btn-view-' + viewName);
+    if (activeNavBtn) activeNavBtn.classList.add('active');
+
+    // 切換三大區塊 View
+    document.getElementById('view-import').style.display = (viewName === 'import') ? 'block' : 'none';
+    document.getElementById('view-starter').style.display = (viewName === 'starter') ? 'block' : 'none';
+    document.getElementById('view-sandbox').style.display = (viewName === 'sandbox') ? 'block' : 'none';
+
+    // 若切換至起手健檢，自動填入目前卡牌資料
+    if (viewName === 'starter' && typeof syncStarterToolFromDeck === 'function') {
+        syncStarterToolFromDeck(deckDict);
+    }
+}
 function switchTutTab(tid) {
     document.querySelectorAll('#tutorial-modal .tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('#tutorial-modal .tut-content').forEach(c => c.style.display='none');
@@ -1311,6 +1333,7 @@ function renderBenchSlots() {
     }
 }
 
+// 修正原本的 startGame 函數，開局鎖定後跳轉至功能 A
 function startGame() {
     if(getDeckTotal() !== 60) return alert("⚠️ 牌組必須 60 張！");
     
@@ -1333,7 +1356,7 @@ function startGame() {
     renderBenchSlots();
     renderBoard();
 
-    // 💡 匯入/鎖定完成後，切換至「功能 A：起手勝率健檢」
+    // 💡 鎖定完成後自動切換至功能 A 進行測試
     switchMainView('starter');
 }
 
