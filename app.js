@@ -1064,13 +1064,12 @@ function confirmGallerySelection() {
         });
         saveState();
         renderBoard();
-    } else if (currentModalMode.startsWith('chain_target_')) {
+} else if (currentModalMode.startsWith('chain_target_')) {
         let parentKey = currentModalMode.replace('chain_target_', '');
         let newList = {};
         tempSelectedKeys.forEach(k => { newList[k] = chainList[parentKey].targets[k] || { name: deckDict[k].name }; });
         chainList[parentKey].targets = newList;
         renderChainUI();
-    }
     } else if (currentModalMode.startsWith('st_input_')) {
         // 💡 串接 Starter Tool 的輸入框回填
         let targetInputId = currentModalMode.replace('st_input_', '');
@@ -1082,8 +1081,7 @@ function confirmGallerySelection() {
         }
     }
     
-    document.getElementById('gallery-modal').style.display = 'none';
-}
+    // 確保這裡只有「一個」關閉 Modal 的動作
     document.getElementById('gallery-modal').style.display = 'none';
 }
 
