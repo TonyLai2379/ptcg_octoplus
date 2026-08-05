@@ -27,7 +27,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+<!-- 1. 頂部導覽列 (匯入或開局後常駐) -->
+<div id="top-nav-bar" style="background:#161B22; border-bottom:1px solid #30363D; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; z-index:9000; position:relative;">
+    <div style="display:flex; gap:10px; align-items:center;">
+        <span style="font-size:18px; font-weight:900; color:#00E5FF; margin-right:10px;">🐙 PTCG OCTOPLUS</span>
+        <button class="nav-tab-btn active" id="btn-view-import" onclick="switchMainView('import')">🛠️ 1. 編輯牌組</button>
+        <button class="nav-tab-btn" id="btn-view-starter" onclick="switchMainView('starter')">🎲 2. 起手勝率健檢</button>
+        <button class="nav-tab-btn" id="btn-view-sandbox" onclick="switchMainView('sandbox')">⚔️ 3. 覆盤沙盤戰場</button>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <button class="btn-secondary" style="padding:4px 10px; font-size:12px; color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
+        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="openTutorial()">❓ 教學</button>
+    </div>
+</div>
     <!-- 開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
         <div class="splash-content">
