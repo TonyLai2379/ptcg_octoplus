@@ -272,3 +272,104 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .combination-table tr:nth-child(even) {
     background: rgba(255, 255, 255, 0.02);
 }
+/* ==========================================
+   全新頂部 3D 浮雕導覽列與閃爍引導框樣式
+   ========================================== */
+#top-nav-bar {
+    background: linear-gradient(180deg, #1C2128 0%, #161B22 100%);
+    border-bottom: 2px solid #30363D;
+    padding: 10px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    position: relative;
+    z-index: 9000;
+}
+
+/* 擬物化 3D 立體按鈕 */
+.nav-3d-btn {
+    background: linear-gradient(180deg, #2D333B 0%, #21262D 100%);
+    color: #ADBAC7;
+    border: 1px solid #444C56;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #161B22, inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nav-3d-btn:hover {
+    background: linear-gradient(180deg, #373E47 0%, #2D333B 100%);
+    color: #FFF;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 0 #161B22, inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.nav-3d-btn:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 #161B22;
+}
+
+.nav-3d-btn.active {
+    background: linear-gradient(180deg, #00E5FF 0%, #00B4D8 100%);
+    color: #000;
+    border-color: #00E5FF;
+    box-shadow: 0 4px 0 #007791, 0 0 15px rgba(0, 229, 255, 0.4);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* 中央匯入卡片容器 */
+#app-viewport {
+    flex: 1;
+    overflow-y: auto;
+    background: #0D1117;
+}
+
+.import-card-container {
+    max-width: 680px;
+    margin: 15px auto 40px auto;
+    padding: 25px;
+    background: #161B22;
+    border: 1px solid #30363D;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+}
+
+/* 霓虹燈閃爍引導框 */
+.guide-flash-box {
+    max-width: 680px;
+    margin: 25px auto 0 auto;
+    padding: 12px 20px;
+    background: rgba(0, 229, 255, 0.08);
+    border: 2px solid #00E5FF;
+    border-radius: 10px;
+    color: #00E5FF;
+    font-size: 14px;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+    animation: neon-glow 1.8s infinite ease-in-out;
+}
+
+@keyframes neon-glow {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+        border-color: rgba(0, 229, 255, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 22px rgba(0, 229, 255, 0.8);
+        border-color: rgba(0, 229, 255, 1);
+    }
+}
+
+/* 對比表格與評分卡 CSS */
+.combination-table th, .combination-table td {
+    padding: 10px;
+    border: 1px solid #30363D;
+    text-align: center;
+}
