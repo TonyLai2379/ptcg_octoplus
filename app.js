@@ -33,7 +33,49 @@ let historyStates = [];
 let historyPtr = -1;
 let prizesFaceUp = true;
 let feedbackBase64 = "";
+// ==========================================
+// 動畫與開場邏輯 (修復畫面卡住無法點擊)
+// ==========================================
+let splashDismissed = false;
+function dismissSplash() {
+    if (splashDismissed) return;
+    splashDismissed = true;
+    const splash = document.getElementById('octopus-splash');
+    if (splash) {
+        splash.style.opacity = '0';
+        splash.style.visibility = 'hidden';
+        setTimeout(() => splash.remove(), 800);
+    }
+}
 
+function runSplashAnimation() {
+    let countEl = document.getElementById('splash-count');
+    let phaseEl = document.getElementById('splash-phase-text');
+    let barEl = document.getElementById('splash-bar-inner');
+    if (!countEl) return;
+    
+    let progress = 0; let currentProb = 0.0; let targetProb = 47.0;
+    let totalSteps = 5000 / 30; let stepProb = targetProb / (totalSteps * 0.7);
+    
+    let timer = setInterval(() => {
+        progress += (100 / totalSteps);
+        if (barEl) barEl.style.width = Math.min(100, progress) + '%';
+        if (currentProb < targetProb) {
+            currentProb += stepProb;
+            if (currentProb >= targetProb) currentProb = targetProb;
+            countEl.innerText = currentProb.toFixed(1) + '%';
+        }
+        if (progress >= 100) {
+            clearInterval(timer);
+            setTimeout(dismissSplash, 800);
+        }
+    }, 30);
+}
+
+// 確保載入時執行進度條動畫
+window.addEventListener('load', () => {
+    runSplashAnimation();
+});
 var DEFAULT_CARDBACK = (function(color) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="88"><rect width="100%" height="100%" fill="${color}" rx="4" /><rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1" rx="2" /><text x="50%" y="50%" font-size="28" text-anchor="middle" dominant-baseline="central">🐙</text></svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
