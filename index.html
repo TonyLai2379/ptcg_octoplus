@@ -118,13 +118,13 @@
             </div>
 
             <div class="import-card-container">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h2 style="color:#00E5FF; font-size:22px; margin:0;">🎴 匯入您的 PTCG 牌組</h2>
-                    <div id="auth-status-bar-inline">
-                        <span id="txt-status">訪客試玩模式</span>
-                        <button class="q-btn" id="btn-unlock" style="background:#E34C26; color:#fff; font-size:11px; padding:3px 8px; margin-left:6px;" onclick="document.getElementById('sub-modal').style.display='flex'">訂閱、輸入邀請碼</button>
-                    </div>
-                </div>
+                <h2 style="color:#00E5FF; text-align:center; font-size:24px; margin-bottom:20px;">🎴 匯入您的 PTCG 牌組</h2>
+
+            <!-- 新版：置中的會員資訊與大訂閱按鈕 -->
+            <div class="auth-card-box">
+                <div class="auth-info-text" id="txt-status"><b>訪客試玩模式</b> (每日限制 30 次額度)</div>
+                <button class="btn-subscribe-large" id="btn-unlock" onclick="document.getElementById('sub-modal').style.display='flex'">👑 訂閱・輸入邀請碼解鎖全功能</button>
+            </div>
 
                 <div id="import-section" style="position:relative;">
                     <div class="tab-group">
@@ -202,10 +202,10 @@
                 <b style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
                 <div id="st-keyCardsContainer" style="margin:12px 0;"></div>
                 <button class="btn-secondary" style="padding:4px 10px; font-size:12px; margin-bottom:15px;" onclick="addKeyCardRow()">＋ 新增重點牌種類</button>
-
+                <hr class="st-divider"> <!-- 新增這行分隔線 -->
                 <div id="st-searchCardsContainer" style="margin-bottom:12px;"></div>
                 <button class="btn-secondary" style="padding:4px 10px; font-size:12px; margin-bottom:15px;" onclick="addSearchCardRow()">＋ 新增物品過牌卡</button>
-
+                <hr class="st-divider"> <!-- 新增這行分隔線 -->
                 <div id="st-drawCardsContainer" style="margin-bottom:12px;"></div>
                 <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addDrawCardRow()">＋ 新增支援者卡</button>
             </div>
