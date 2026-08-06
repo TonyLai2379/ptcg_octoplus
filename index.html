@@ -26,14 +26,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css?v=2">
 </head>
-<!-- 💡 左下角常駐資訊 (跑馬燈與免責聲明) -->
-    <div id="global-bottom-left-info">
-        <div class="marquee-container"><div class="marquee-content" id="marquee-text">💬 正在載入留言...</div></div>
-        <div class="disclaimer-box" id="txt-disclaimer"><b>⚠️ 免責聲明：</b>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。</div>
-    </div>
 <body>
     <!-- 補回系統需要的隱藏欄位 -->
     <input type="hidden" id="user-id-input" value="Guest">
+
+    <!-- 💡 可自由拖曳的資訊框 (跑馬燈與免責聲明) -->
+    <div id="draggable-info-box" onmousedown="startInfoDrag(event)" ontouchstart="startInfoDrag(event)">
+        <div class="marquee-container" style="margin-bottom: 8px;"><div class="marquee-content" id="marquee-text">💬 正在載入留言...</div></div>
+        <div class="disclaimer-box" id="txt-disclaimer"><b>⚠️ 免責聲明：</b>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。</div>
+    </div>
 
     <!-- 開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
@@ -61,7 +62,7 @@
         </div>
     </div>
 
-   <!-- 頂部 3D 立體感導覽列 -->
+    <!-- 頂部 3D 立體感導覽列 -->
     <div id="top-nav-bar">
         <div style="display:flex; gap:12px; align-items:center;">
             <span style="font-size:18px; font-weight:900; color:#00E5FF; margin-right:5px; text-shadow:0 0 10px rgba(0,229,255,0.5);">🐙 OCTOPLUS PTCG</span>
@@ -124,7 +125,6 @@
 
         <!-- View 1: 正中央牌組匯入主區塊 -->
         <div id="view-import" class="view-section active">
-            
             <!-- 閃爍高亮引導框 -->
             <div class="guide-flash-box">
                 ✨ <b>歡迎使用！請先在下方「匯入牌組代碼」或「搜尋建立卡組」以開始精算對局！</b>
@@ -132,12 +132,10 @@
 
             <div class="import-card-container">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-    <div style="width:120px;"></div> <!-- 隱形佔位，保持標題完美置中 -->
-    <h2 style="color:#00E5FF; font-size:24px; margin:0; text-align:center;">🎴 匯入您的 PTCG 牌組</h2>
-    <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; width:120px; justify-content:center;" onclick="document.getElementById('tut-import-modal').style.display='flex'">❓ 匯入教學</button>
-</div>
-
-            <!-- 新版：置中的會員資訊與大訂閱按鈕 -->
+                    <div style="width:120px;"></div> <!-- 隱形佔位，保持標題完美置中 -->
+                    <h2 style="color:#00E5FF; font-size:24px; margin:0; text-align:center;">🎴 匯入您的 PTCG 牌組</h2>
+                    <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; width:120px; justify-content:center;" onclick="document.getElementById('tut-import-modal').style.display='flex'">❓ 匯入教學</button>
+                </div>
 
                 <div id="import-section" style="position:relative;">
                     <div class="tab-group">
@@ -189,7 +187,7 @@
             </div>
         </div>
 
-       <!-- View 2: 功能 A 起手勝率健檢 -->
+        <!-- View 2: 功能 A 起手勝率健檢 -->
         <div id="view-starter" class="view-section" style="display:none; max-width:1200px; margin:20px auto; padding:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h2 style="color:#00E5FF; font-size:22px; margin:0; flex:1; text-align:center;">🎲 功能 A：起手勝率與組合對比健檢</h2>
@@ -286,30 +284,25 @@
             
             <details id="prob-panel">
                 <summary style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:10px;">
-    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
-        <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
-        
-        <!-- 🐙 萬次推演教學 (補回這裡) -->
-        <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial()">🐙 萬次推演教學 (必看)</button>
-        
-        <!-- ❓ 覆盤戰場教學 -->
-        <button class="q-btn" style="background: linear-gradient(145deg, #00E5FF, #00B4D8); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('tut-sandbox-modal').style.display='flex'">❓ 覆盤戰場教學</button>
-    </div>
-
-    <div style="display:flex; align-items: center; gap: 12px;">
-        <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); rollDice()">🎲 擲骰子</button>
-        <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
-        <div style="width:1px; height:20px; background:#444;"></div>
-        <select id="lang-select" style="width: auto; padding: 3px 8px; font-size: 12px; background: #0D1117; color: #00E5FF; border: 1px solid #30363D; border-radius: 12px; cursor: pointer;" onchange="changeLanguage(this.value)" onclick="event.stopPropagation()">
-            <option value="zh">🌐 中文</option>
-            <option value="en">🌐 English</option>
-        </select>
-        <div style="width:1px; height:20px; background:#444;"></div>
-        <label id="lbl-zoom" style="font-size:12px; color:#aaa; white-space:nowrap;">🔍 介面縮放</label>
-        <input type="range" id="zoom-slider" min="0.5" max="1.3" step="0.05" value="1" style="margin:0; width:80px;" onchange="document.getElementById('view-sandbox').style.zoom = this.value;" onclick="event.stopPropagation()">
-    </div>
-</summary>
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <span id="summary-prob-title">🎯 進階情境：機率與連鎖分析 (萬次蒙地卡羅運算)</span>
+                        <span class="arrow-badge"><span class="arrow-symbol">▼</span> <span id="txt-toggle-badge">點擊展開/收合</span></span>
+                        <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); openProbTutorial()">🐙 萬次推演教學 (必看)</button>
+                        <button class="q-btn" style="background: linear-gradient(145deg, #00E5FF, #00B4D8); color: #000;" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('tut-sandbox-modal').style.display='flex'">❓ 覆盤戰場教學</button>
+                    </div>
+                    <div style="display:flex; align-items: center; gap: 12px;">
+                        <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); rollDice()">🎲 擲骰子</button>
+                        <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
+                        <div style="width:1px; height:20px; background:#444;"></div>
+                        <select id="lang-select" style="width: auto; padding: 3px 8px; font-size: 12px; background: #0D1117; color: #00E5FF; border: 1px solid #30363D; border-radius: 12px; cursor: pointer;" onchange="changeLanguage(this.value)" onclick="event.stopPropagation()">
+                            <option value="zh">🌐 中文</option>
+                            <option value="en">🌐 English</option>
+                        </select>
+                        <div style="width:1px; height:20px; background:#444;"></div>
+                        <label id="lbl-zoom" style="font-size:12px; color:#aaa; white-space:nowrap;">🔍 介面縮放</label>
+                        <input type="range" id="zoom-slider" min="0.5" max="1.3" step="0.05" value="1" style="margin:0; width:80px;" onchange="document.getElementById('view-sandbox').style.zoom = this.value;" onclick="event.stopPropagation()">
+                    </div>
+                </summary>
 
                 <div class="prob-grid">
                     <div class="prob-card">
@@ -474,7 +467,9 @@
         </div>
 
     </div>
-<!-- 獨立教學 Modal 1: 匯入牌組 -->
+
+    <!-- Modals 彈窗集合區 -->
+    <!-- 獨立教學 Modal 1: 匯入牌組 -->
     <div id="tut-import-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'">
         <div class="modal-card" style="width: 500px; max-width: 95vw;" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -482,14 +477,14 @@
                 <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('tut-import-modal').style.display='none'">✕</button>
             </div>
             <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD;">
-    <p>歡迎來到 小章魚 (FOR PTCG)！建立牌組有三種方式：</p>
-    <ul style="margin-left: 20px; margin-top: 10px; color: #00E5FF;">
-        <li style="margin-bottom: 8px;"><b>官方代碼：</b>前往寶可夢繁中官網，組好牌組後複製代碼貼入。</li>
-        <li style="margin-bottom: 8px;"><b>Limitless 英文：</b>複製國外賽事網站的英文牌組表，一鍵解析匯入。</li>
-        <li style="margin-bottom: 8px;"><b>搜尋建立：</b>直接透過左側搜尋框輸入卡名找卡片加入。</li>
-        <li style="margin-bottom: 8px;"><b>💾 紀錄至雲端：</b>登入後點擊「紀錄至雲端」，隨時儲存最愛的卡組，跨裝置一鍵載入！</li>
-    </ul>
-</div>
+                <p>歡迎來到 PTCG 小章魚！建立牌組有三種方式：</p>
+                <ul style="margin-left: 20px; margin-top: 10px; color: #00E5FF;">
+                    <li style="margin-bottom: 8px;"><b>官方代碼：</b>前往寶可夢繁中官網，組好牌組後複製代碼貼入。</li>
+                    <li style="margin-bottom: 8px;"><b>Limitless 英文：</b>複製國外賽事網站的英文牌組表，一鍵解析匯入。</li>
+                    <li style="margin-bottom: 8px;"><b>搜尋建立：</b>直接透過左側搜尋框輸入卡名找卡片加入。</li>
+                    <li style="margin-bottom: 8px;"><b>💾 紀錄至雲端：</b>登入後點擊「紀錄至雲端」，隨時儲存最愛的卡組，跨裝置一鍵載入！</li>
+                </ul>
+            </div>
             <div class="modal-footer"><button class="btn" style="width:100%; background:#238636;" onclick="document.getElementById('tut-import-modal').style.display='none'">我瞭解了！</button></div>
         </div>
     </div>
@@ -525,28 +520,28 @@
                 <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="document.getElementById('tut-sandbox-modal').style.display='none'">✕</button>
             </div>
             <div class="modal-body" style="font-size:14px; line-height:1.7; color:#DDD;">
-    <p style="margin-bottom: 15px; color: #00E5FF; font-weight: bold;">戰鬥盤面支援全自由拖曳，100% 還原真實賽場！</p>
-    <div style="background:#21262D; border-left:4px solid #FF5252; padding:12px; margin-bottom:12px; border-radius:6px;">
-        <h3 style="color:#FF5252; margin-bottom:4px; font-size:15px;">⚔️ 基礎操作</h3>
-        所有卡片皆可拖曳。場地與備戰區支援<b>「完美錯位疊放」</b>。點擊「🔼置頂」可將卡片拉到最上層。
-    </div>
-    <div style="background:#21262D; border-left:4px solid #4CAF50; padding:12px; margin-bottom:12px; border-radius:6px;">
-        <h3 style="color:#4CAF50; margin-bottom:4px; font-size:15px;">🛠️ 戰術指示物</h3>
-        將中央的傷害、回血、異常狀態指示物，直接拖曳到寶可夢身上即可標記！
-    </div>
-    <div style="background:#21262D; border-left:4px solid #9C27B0; padding:12px; margin-bottom:12px; border-radius:6px;">
-        <h3 style="color:#E040FB; margin-bottom:4px; font-size:15px;">🎯 獎賞卡機率算盤</h3>
-        點擊左側獎賞卡區的「📊機率」，選定目標卡後，系統會幫你算出神抽拯救絕境的機率！
-    </div>
-    <div style="background:#21262D; border-left:4px solid #FF9800; padding:12px; border-radius:6px;">
-        <h3 style="color:#FF9800; margin-bottom:4px; font-size:15px;">📤 一鍵對局分享</h3>
-        點擊右下角「分享對局」產生 6 位數短代碼，傳給朋友即可完美還原當前戰局與機率推演進度！
-    </div>
+                <p style="margin-bottom: 15px; color: #00E5FF; font-weight: bold;">戰鬥盤面支援全自由拖曳，100% 還原真實賽場！</p>
+                <div style="background:#21262D; border-left:4px solid #FF5252; padding:12px; margin-bottom:12px; border-radius:6px;">
+                    <h3 style="color:#FF5252; margin-bottom:4px; font-size:15px;">⚔️ 基礎操作</h3>
+                    所有卡片皆可拖曳。場地與備戰區支援<b>「完美錯位疊放」</b>。點擊「🔼置頂」可將卡片拉到最上層。
+                </div>
+                <div style="background:#21262D; border-left:4px solid #4CAF50; padding:12px; margin-bottom:12px; border-radius:6px;">
+                    <h3 style="color:#4CAF50; margin-bottom:4px; font-size:15px;">🛠️ 戰術指示物</h3>
+                    將中央的傷害、回血、異常狀態指示物，直接拖曳到寶可夢身上即可標記！
+                </div>
+                <div style="background:#21262D; border-left:4px solid #9C27B0; padding:12px; margin-bottom:12px; border-radius:6px;">
+                    <h3 style="color:#E040FB; margin-bottom:4px; font-size:15px;">🎯 獎賞卡機率算盤</h3>
+                    點擊左側獎賞卡區的「📊機率」，選定目標卡後，系統會幫你算出神抽拯救絕境的機率！
+                </div>
+                <div style="background:#21262D; border-left:4px solid #FF9800; padding:12px; border-radius:6px;">
+                    <h3 style="color:#FF9800; margin-bottom:4px; font-size:15px;">📤 一鍵對局分享</h3>
+                    點擊右下角「分享對局」產生 6 位數短代碼，傳給朋友即可完美還原當前戰局與機率推演進度！
+                </div>
             </div>
             <div class="modal-footer"><button class="btn" style="width:100%; background:#238636;" onclick="document.getElementById('tut-sandbox-modal').style.display='none'">我知道了</button></div>
         </div>
     </div>
-    <!-- Modals 彈窗集合區 -->
+
     <div id="lightbox-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 30000; display: none;">
         <div style="position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center;" onclick="event.stopPropagation()">
             <img id="lightbox-img" src="" style="max-height: 80vh; max-width: 90vw; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9); object-fit: contain;">
@@ -626,13 +621,11 @@
                         <b style="font-size: 14px; color: #FFF;">🎯 想抽到什麼？ (目標卡)：</b>
                     </div>
                     
-                    <!-- 💡 新增 AND / OR 邏輯選擇 -->
                     <div style="display:flex; flex-direction: row; gap:25px; align-items:center; margin-bottom: 12px; font-size:13px; background:#161B22; padding:8px; border-radius:6px; border: 1px solid #30363D;">
                         <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="radio" name="prize_rule" value="AND" checked> <span style="color:#00E5FF;">條件皆要有 (AND)</span></label>
                         <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="radio" name="prize_rule" value="OR"> <span style="color:#FF5252;">任一張達成 (OR)</span></label>
                     </div>
                     
-                    <!-- 💡 修改按鈕文字與樣式 -->
                     <button class="btn-secondary" style="width:100%; padding:8px; margin: 10px 0; border-color:#00E5FF; color:#00E5FF;" onclick="openSelector('prize_target')">🖼️ 選取目標獎賞卡</button>
                     <div id="prize-target-display" style="max-height: 150px; overflow-y: auto; margin-bottom: 10px;"></div>
                     
@@ -697,6 +690,6 @@
     <!-- 腳本正確載入順序 -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="starter.js?v=1"></script>
-    <script src="app.js?v=27"></script>
+    <script src="app.js?v=29"></script>
 </body>
 </html>
