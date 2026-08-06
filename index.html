@@ -189,153 +189,95 @@
             </div>
         </div>
 
-        <!-- View 2: 功能 A 起手勝率健檢 -->
-    <div id="view-starter" class="view-section" style="display:none; max-width:1200px; margin:20px auto; padding:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <h2 style="color:#00E5FF; font-size:22px; margin:0; flex:1; text-align:center;">🎲 功能 A：起手勝率與組合對比健檢</h2>
-            <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
-        </div>
-
-        <div class="starter-split-layout">
-            <!-- 左半部：參數設定區 -->
-            <div class="starter-left-col">
-                <div class="prob-card" style="margin-bottom:20px;">
-                    <b style="font-size:16px; color:#FFD700;">A. 寶可夢起站怪數量配置</b>
-                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin:15px 0;">
-                        <div><label style="font-size:12px; color:#888;">基礎怪總數：</label><input type="number" id="st-totalBasic" value="12"></div>
-                        <div><label style="font-size:12px; color:#888;">理想起站怪 (Want)：</label><input type="number" id="st-wantBasic" value="4"></div>
-                        <div><label style="font-size:12px; color:#888;">雷區怪 (Unwanted)：</label><input type="number" id="st-unwantedBasic" value="2"></div>
-                    </div>
-                    <button class="btn btn-secondary" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
-                    <div id="st-basicResultArea" style="display:none; margin-top:15px; background:#21262D; padding:12px; border-radius:6px; font-size:13px; border-left:3px solid #00E5FF;">
-                        <div>💥 <b>無基礎怪重抽 (Mulligan) 率：</b> <span id="st-mulliganProb" style="color:#FF5252; font-weight:bold;">--</span></div>
-                        <div>🎯 <b>完美起站機率：</b> <span id="st-perfectStartProb" style="color:#00E5FF; font-weight:bold;">--</span></div>
-                        <div>⚠️ <b>迫出雷區怪起站率：</b> <span id="st-forcedStartProb" style="color:#FF9800; font-weight:bold;">--</span></div>
-                    </div>
-                </div>
-
-                <div class="prob-card" style="margin-bottom:20px;">
-                    <b style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
-                    <div id="st-keyCardsContainer" style="margin:12px 0;"></div>
-                    <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addKeyCardRow()">＋ 新增重點牌種類</button>
-
-                    <hr class="st-divider">
-
-                    <div id="st-searchCardsContainer" style="margin-bottom:12px;"></div>
-                    <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addSearchCardRow()">＋ 新增物品過牌卡</button>
-
-                    <hr class="st-divider">
-
-                    <div id="st-drawCardsContainer" style="margin-bottom:12px;"></div>
-                    <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addDrawCardRow()">＋ 新增支援者卡</button>
-                </div>
-
-                <button class="btn" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-size:18px; font-weight:bold; padding:12px;" onclick="runUltimateSimulation()">⚡ 執行多支援者勝率比較模擬</button>
+       <!-- View 2: 功能 A 起手勝率健檢 -->
+        <div id="view-starter" class="view-section" style="display:none; max-width:1200px; margin:20px auto; padding:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="color:#00E5FF; font-size:22px; margin:0; flex:1; text-align:center;">🎲 功能 A：起手勝率與組合對比健檢</h2>
+                <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000;" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
             </div>
 
-            <!-- 右半部：計算結果與報告區 -->
-            <div class="starter-right-col">
-                <div id="st-analysisResults" style="display:none;">
-                    <h3 style="color:#FFD700; margin-bottom:10px;">📊 各支援者獨立劇本勝率結果</h3>
-                    <table class="combination-table" style="width:100%; border-collapse:collapse; background:#161B22; border:1px solid #30363D; border-radius:6px; font-size:13px;">
-                        <thead id="st-tableHeader"></thead>
-                        <tbody id="st-combinationTableBody"></tbody>
-                    </table>
-                </div>
-
-                <!-- 🐙 小章魚自動評分報告卡片 -->
-                <div id="octo-report-card" style="display:none; margin-top:20px; background:#161B22; border:2px solid #00E5FF; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,229,255,0.2);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363D; padding-bottom:10px;">
-                        <div>
-                            <h3 style="color:#00E5FF; margin:0; font-size:20px;">🐙 OCTOPLUS PTCG 戰術評分報告</h3>
-                            <span style="font-size:11px; color:#888;">Replay. Analyze. Win More.</span>
+            <div class="starter-split-layout">
+                <!-- 🟡 左半部：參數設定區 -->
+                <div class="starter-left-col">
+                    <div class="prob-card" style="margin-bottom:20px;">
+                        <b style="font-size:16px; color:#FFD700;">A. 寶可夢起站怪數量配置</b>
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin:15px 0;">
+                            <div><label style="font-size:12px; color:#888;">基礎怪總數：</label><input type="number" id="st-totalBasic" value="12"></div>
+                            <div><label style="font-size:12px; color:#888;">理想起站怪 (Want)：</label><input type="number" id="st-wantBasic" value="4"></div>
+                            <div><label style="font-size:12px; color:#888;">雷區怪 (Unwanted)：</label><input type="number" id="st-unwantedBasic" value="2"></div>
                         </div>
-                        <div id="octo-rank-badge" style="border:2px solid #FFD700; color:#FFD700; padding:4px 12px; border-radius:20px; font-weight:900; font-size:16px;">S 級主流隊</div>
+                        <button class="btn btn-secondary" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
+                        <div id="st-basicResultArea" style="display:none; margin-top:15px; background:#21262D; padding:12px; border-radius:6px; font-size:13px; border-left:3px solid #00E5FF;">
+                            <div>💥 <b>無基礎怪重抽 (Mulligan) 率：</b> <span id="st-mulliganProb" style="color:#FF5252; font-weight:bold;">--</span></div>
+                            <div>🎯 <b>完美起站機率：</b> <span id="st-perfectStartProb" style="color:#00E5FF; font-weight:bold;">--</span></div>
+                            <div>⚠️ <b>迫出雷區怪起站率：</b> <span id="st-forcedStartProb" style="color:#FF9800; font-weight:bold;">--</span></div>
+                        </div>
                     </div>
 
-                    <div style="display:flex; align-items:center; gap:20px; margin:20px 0;">
-                        <div style="text-align:center; min-width:100px;">
-                            <div style="font-size:48px; font-weight:900; color:#FFD700;" id="octo-score-number">88</div>
-                            <div style="font-size:12px; color:#888;">綜合戰力評分</div>
-                        </div>
-                        <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+                    <div class="prob-card" style="margin-bottom:20px;">
+                        <b style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
+                        <div id="st-keyCardsContainer" style="margin:12px 0;"></div>
+                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addKeyCardRow()">＋ 新增重點牌種類</button>
+
+                        <hr class="st-divider">
+
+                        <div id="st-searchCardsContainer" style="margin-bottom:12px;"></div>
+                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addSearchCardRow()">＋ 新增物品過牌卡</button>
+
+                        <hr class="st-divider">
+
+                        <div id="st-drawCardsContainer" style="margin-bottom:12px;"></div>
+                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addDrawCardRow()">＋ 新增支援者卡</button>
+                    </div>
+
+                    <button class="btn" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-size:18px; font-weight:bold; padding:12px;" onclick="runUltimateSimulation()">⚡ 執行多支援者勝率比較模擬</button>
+                </div>
+
+                <!-- 🟡 右半部：計算結果與報告區 -->
+                <div class="starter-right-col">
+                    <div id="st-analysisResults" style="display:none;">
+                        <h3 style="color:#FFD700; margin-bottom:10px;">📊 各支援者獨立劇本勝率結果</h3>
+                        <table class="combination-table" style="width:100%; border-collapse:collapse; background:#161B22; border:1px solid #30363D; border-radius:6px; font-size:13px;">
+                            <thead id="st-tableHeader"></thead>
+                            <tbody id="st-combinationTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- 🐙 小章魚自動評分報告卡片 -->
+                    <div id="octo-report-card" style="display:none; margin-top:20px; background:#161B22; border:2px solid #00E5FF; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,229,255,0.2);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363D; padding-bottom:10px;">
                             <div>
-                                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>起手穩定度</span><span id="octo-score-stability">82 分</span></div>
-                                <div style="height:6px; background:#21262D; border-radius:3px; overflow:hidden;"><div id="octo-bar-stability" style="width:82%; height:100%; background:#00E5FF;"></div></div>
+                                <h3 style="color:#00E5FF; margin:0; font-size:20px;">🐙 OCTOPLUS PTCG 戰術評分報告</h3>
+                                <span style="font-size:11px; color:#888;">Replay. Analyze. Win More.</span>
                             </div>
-                            <div>
-                                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>T1 展開爆發力</span><span id="octo-score-consistency">95 分</span></div>
-                                <div style="height:6px; background:#21262D; border-radius:3px; overflow:hidden;"><div id="octo-bar-consistency" style="width:95%; height:100%; background:#FFD700;"></div></div>
+                            <div id="octo-rank-badge" style="border:2px solid #FFD700; color:#FFD700; padding:4px 12px; border-radius:20px; font-weight:900; font-size:16px;">S 級主流隊</div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:20px; margin:20px 0;">
+                            <div style="text-align:center; min-width:100px;">
+                                <div style="font-size:48px; font-weight:900; color:#FFD700;" id="octo-score-number">88</div>
+                                <div style="font-size:12px; color:#888;">綜合戰力評分</div>
+                            </div>
+                            <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>起手穩定度</span><span id="octo-score-stability">82 分</span></div>
+                                    <div style="height:6px; background:#21262D; border-radius:3px; overflow:hidden;"><div id="octo-bar-stability" style="width:82%; height:100%; background:#00E5FF;"></div></div>
+                                </div>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>T1 展開爆發力</span><span id="octo-score-consistency">95 分</span></div>
+                                    <div style="height:6px; background:#21262D; border-radius:3px; overflow:hidden;"><div id="octo-bar-consistency" style="width:95%; height:100%; background:#FFD700;"></div></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div style="background:#21262D; padding:15px; border-radius:8px; margin-bottom:15px;">
-                        <b style="color:#FFF; font-size:14px; display:block; margin-bottom:8px;">💬 小章魚戰術評語：</b>
-                        <ul id="octo-comments-list" style="color:#CCC; font-size:13px; padding-left:20px; line-height:1.6;"></ul>
-                    </div>
-
-                    <button class="btn" style="background:#238636; font-size:14px;" onclick="exportOctoReportCard()">📸 匯出小章魚戰術報告卡 (分享用)</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-            <div class="prob-card" style="margin-bottom:20px;">
-                <b style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
-                <div id="st-keyCardsContainer" style="margin:12px 0;"></div>
-                <button class="btn-secondary" style="padding:4px 10px; font-size:12px; margin-bottom:15px;" onclick="addKeyCardRow()">＋ 新增重點牌種類</button>
-                <hr class="st-divider"> <!-- 新增這行分隔線 -->
-                <div id="st-searchCardsContainer" style="margin-bottom:12px;"></div>
-                <button class="btn-secondary" style="padding:4px 10px; font-size:12px; margin-bottom:15px;" onclick="addSearchCardRow()">＋ 新增物品過牌卡</button>
-                <hr class="st-divider"> <!-- 新增這行分隔線 -->
-                <div id="st-drawCardsContainer" style="margin-bottom:12px;"></div>
-                <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addDrawCardRow()">＋ 新增支援者卡</button>
-            </div>
-
-            <button class="btn" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-size:18px; font-weight:bold; padding:12px;" onclick="runUltimateSimulation()">⚡ 執行多支援者勝率比較模擬</button>
-
-            <div id="st-analysisResults" style="display:none; margin-top:25px;">
-                <h3 style="color:#FFD700; margin-bottom:10px;">📊 各支援者獨立劇本勝率結果</h3>
-                <table class="combination-table" style="width:100%; border-collapse:collapse; background:#161B22; border:1px solid #30363D; border-radius:6px; font-size:13px;">
-                    <thead id="st-tableHeader"></thead>
-                    <tbody id="st-combinationTableBody"></tbody>
-                </table>
-            </div>
-
-            <!-- 🐙 小章魚自動評分報告卡片 -->
-            <div id="octo-report-card" style="display:none; margin-top:30px; background:#161B22; border:2px solid #00E5FF; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,229,255,0.2);">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #30363D; padding-bottom:10px;">
-                    <div>
-                        <h3 style="color:#00E5FF; margin:0; font-size:20px;">🐙 OCTOPLUS PTCG 戰術評分報告</h3>
-                        <span style="font-size:11px; color:#888;">Replay. Analyze. Win More.</span>
-                    </div>
-                    <div id="octo-rank-badge" style="border:2px solid #FFD700; color:#FFD700; padding:4px 12px; border-radius:20px; font-weight:900; font-size:16px;">S 級主流隊</div>
-                </div>
-
-                <div style="display:flex; align-items:center; gap:20px; margin:20px 0;">
-                    <div style="text-align:center; min-width:100px;">
-                        <div style="font-size:48px; font-weight:900; color:#FFD700;" id="octo-score-number">88</div>
-                        <div style="font-size:12px; color:#888;">綜合戰力評分</div>
-                    </div>
-                    <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>起手穩定度</span><span id="octo-score-stability">82 分</span></div>
-                            <div style="height:6px; background:#21262D; border-radius:3px; overflow:hidden;"><div id="octo-bar-stability" style="width:82%; height:100%; background:#00E5FF;"></div></div>
+                        <div style="background:#21262D; padding:15px; border-radius:8px; margin-bottom:15px;">
+                            <b style="color:#FFF; font-size:14px; display:block; margin-bottom:8px;">💬 小章魚戰術評語：</b>
+                            <ul id="octo-comments-list" style="color:#CCC; font-size:13px; padding-left:20px; line-height:1.6;"></ul>
                         </div>
-                        <div>
-                            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;"><span>T1 展開爆發力</span><span id="octo-score-consistency">95 分</span></div>
-                            <div style="height:6px; background:#21262D; border-radius:3px; overflow:hidden;"><div id="octo-bar-consistency" style="width:95%; height:100%; background:#FFD700;"></div></div>
-                        </div>
+
+                        <button class="btn" style="background:#238636; font-size:14px;" onclick="exportOctoReportCard()">📸 匯出小章魚戰術報告卡 (分享用)</button>
                     </div>
                 </div>
-
-                <div style="background:#21262D; padding:15px; border-radius:8px; margin-bottom:15px;">
-                    <b style="color:#FFF; font-size:14px; display:block; margin-bottom:8px;">💬 小章魚戰術評語：</b>
-                    <ul id="octo-comments-list" style="color:#CCC; font-size:13px; padding-left:20px; line-height:1.6;"></ul>
-                </div>
-
-                <button class="btn" style="background:#238636; font-size:14px;" onclick="exportOctoReportCard()">📸 匯出小章魚戰術報告卡 (分享用)</button>
             </div>
         </div>
 
