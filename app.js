@@ -1134,13 +1134,27 @@ function confirmGallerySelection() {
         chainList[parentKey].targets = newList;
         renderChainUI();
     } else if (currentModalMode.startsWith('st_input_')) {
-        // 💡 串接 Starter Tool 的輸入框回填
+        // 💡 串接 Starter Tool 的輸入框回填 (並自動填入正確張數)
         let targetInputId = currentModalMode.replace('st_input_', '');
         let targetInput = document.getElementById(targetInputId);
+        
         if (targetInput && tempSelectedKeys.length > 0) {
             let k = tempSelectedKeys[0];
-            // 只取卡片名稱，去掉後面的 [代碼]
+            
+            // 1. 填入卡片名稱，去掉後面的 [代碼]
             targetInput.value = deckDict[k] ? deckDict[k].name : k.split(' [')[0];
+            
+            // 2. 自動抓取當前牌組中的數量，並填入旁邊的「牌組投入」數字框
+            if (deckDict[k]) {
+                let row = targetInput.closest('.target-row'); // 抓取當前這行
+                if (row) {
+                    // 尋找對應的數量輸入框
+                    let qtyInput = row.querySelector('.st-key-count, .st-search-count, .st-draw-count');
+                    if (qtyInput) {
+                        qtyInput.value = deckDict[k].qty; // 自動寫入真實張數
+                    }
+                }
+            }
         }
     }
     
