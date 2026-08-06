@@ -104,19 +104,27 @@ def auto_save_new_cards_to_db(cards_to_upsert: list):
     """當使用者匯入資料庫沒有的新卡時，自動寫入 Supabase 全卡庫擴充"""
     if not cards_to_upsert:
         return
+        
+    # 💡 修正：先強制更新伺服器的「記憶體快取」，確保前端搜尋系統立刻找得到
+    for card in cards_to_upsert:
+        c_key = card["card_key"]
+        c_img = card["img_url"]
+        c_name = card["name"]
+        LOCAL_CARD_DB[c_key.lower()] = c_img
+        if c_name.lower() not in LOCAL_CARD_DB:
+            LOCAL_CARD_DB[c_name.lower()] = c_img
+        
+        # 避免重複加入導致搜尋結果出現兩張一樣的卡
+        if not any(c['key'] == c_key for c in GLOBAL_CARDS_LIST):
+            GLOBAL_CARDS_LIST.append({"key": c_key, "name": c_name, "img": c_img})
+            
+    # 💡 接著再嘗試非同步寫入 Supabase 資料庫
     try:
         supabase.table("global_cards").upsert(cards_to_upsert).execute()
-        for card in cards_to_upsert:
-            c_key = card["card_key"]
-            c_img = card["img_url"]
-            c_name = card["name"]
-            LOCAL_CARD_DB[c_key.lower()] = c_img
-            if c_name.lower() not in LOCAL_CARD_DB:
-                LOCAL_CARD_DB[c_name.lower()] = c_img
-            GLOBAL_CARDS_LIST.append({"key": c_key, "name": c_name, "img": c_img})
         print(f"🎉 [自動擴充卡庫] 成功新增 {len(cards_to_upsert)} 張卡牌至 Supabase！")
     except Exception as e:
-        print(f"⚠️ [自動擴充卡庫失敗]: {e}")
+        # 就算資料庫寫入失敗，前端搜尋依然可以運作，因為記憶體已經存了
+        print(f"⚠️ [自動擴充資料庫失敗，但已暫存於記憶體]: {e}")
 
 # Token 雙軌驗證
 def get_user_and_email_from_token(auth_header: str):
