@@ -345,3 +345,38 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     background: linear-gradient(90deg, transparent, #30363D, transparent);
     margin: 20px 0;
 }
+/* ==========================================
+   排版優化：起手左右分欄 & 左下角常駐資訊
+   ========================================== */
+#global-bottom-left-info {
+    position: fixed;
+    bottom: 15px;
+    left: 100px; /* 避開左下角的懸浮小章魚 */
+    z-index: 8500;
+    width: 380px;
+    pointer-events: none; /* 避免擋住後方元素的點擊 */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#global-bottom-left-info > * {
+    pointer-events: auto; /* 讓跑馬燈與免責聲明內的文字可被選取 */
+    margin: 0 !important;
+}
+
+/* 起手健檢左右分欄 */
+.starter-split-layout {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+}
+.starter-left-col {
+    flex: 1.2;
+    min-width: 500px;
+}
+.starter-right-col {
+    flex: 1;
+    min-width: 450px;
+    position: sticky;
+    top: 20px;
+}
