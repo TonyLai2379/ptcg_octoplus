@@ -488,11 +488,21 @@ function startMascotDrag(e) {
 // 5. 客服、登入、會員與表單機制
 // ==========================================
 function closeSupportModal() {
-    document.getElementById('support-modal').style.display = 'none';
-    document.getElementById('feedback-msg-input').value = "";
-    document.getElementById('feedback-img-input').value = "";
-    document.getElementById('feedback-img-preview').style.display = 'none';
-    document.getElementById('feedback-status-msg').style.display = 'none';
+    let modal = document.getElementById('support-modal');
+    if (modal) modal.style.display = 'none';
+    
+    let msgInput = document.getElementById('feedback-msg-input');
+    if (msgInput) msgInput.value = "";
+    
+    let imgInput = document.getElementById('feedback-img-input');
+    if (imgInput) imgInput.value = "";
+    
+    let imgPreview = document.getElementById('feedback-img-preview');
+    if (imgPreview) imgPreview.style.display = 'none';
+    
+    let statusMsg = document.getElementById('feedback-status-msg');
+    if (statusMsg) statusMsg.style.display = 'none';
+    
     feedbackBase64 = "";
 }
 
