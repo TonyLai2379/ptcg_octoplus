@@ -346,23 +346,31 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     margin: 20px 0;
 }
 /* ==========================================
-   排版優化：起手左右分欄 & 左下角常駐資訊
+   排版優化：起手左右分欄 & 可拖曳資訊懸浮窗
    ========================================== */
-#global-bottom-left-info {
+#draggable-info-box {
     position: fixed;
     bottom: 25px;
-    left: 110px; /* 完美避開懸浮小章魚 */
-    z-index: 8500;
-    width: 320px; /* 嚴格限制寬度，符合紅框範圍 */
-    pointer-events: none; 
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    left: 90px;
+    z-index: 9999;
+    width: 320px;
+    background: rgba(14, 17, 23, 0.85);
+    border: 1px solid #30363D;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
 }
-#global-bottom-left-info > * {
+#draggable-info-box:active {
+    cursor: grabbing;
+}
+#draggable-info-box > * {
     pointer-events: auto; 
     margin: 0 !important;
-    width: 100%; /* 強制填滿 320px 容器，避免超出邊界 */
+    width: 100%;
 }
 
 /* 起手健檢左右分欄 */
