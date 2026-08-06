@@ -144,13 +144,19 @@
                         <button class="tab-btn" id="tab-btn-edit" onclick="switchTab('tab-edit')">🛠️ 搜尋編輯</button>
                     </div>
 
-                    <div id="tab-link" class="tab-content active" style="margin-top:15px;">
+                <div id="tab-link" class="tab-content active" style="margin-top:15px;">
+                        <div style="text-align:right; margin-bottom:6px;">
+                            <a href="https://asia.pokemon-card.com/tw/deckbuild/" target="_blank" style="color:#00E5FF; font-size:12px; text-decoration:underline;">前往寶可夢繁中官網組牌 ➔</a>
+                        </div>
                         <input type="text" id="deck-code" placeholder="輸入官方牌組代碼 (例: uCRvSM...)">
                         <button class="btn" id="btn-parse-official" style="margin-top:10px;" onclick="parseOfficial()">🌐 解析官方牌組</button>
                         <div class="local-progress-container" id="prog-link"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-link"></div></div>
                     </div>
 
                     <div id="tab-text" class="tab-content" style="margin-top:15px;">
+                        <div style="text-align:right; margin-bottom:6px;">
+                            <a href="https://limitlesstcg.com/tools/importer" target="_blank" style="color:#00E5FF; font-size:12px; text-decoration:underline;">前往 Limitless 尋找賽場牌組 ➔</a>
+                        </div>
                         <textarea id="deck-text" rows="4" placeholder="貼上 Limitless 內容..."></textarea>
                         <button class="btn" id="btn-parse-text" style="margin-top:10px;" onclick="parseText()">📥 解析文字牌組</button>
                         <div class="local-progress-container" id="prog-text"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-text"></div></div>
