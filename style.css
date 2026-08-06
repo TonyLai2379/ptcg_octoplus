@@ -350,18 +350,19 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
    ========================================== */
 #global-bottom-left-info {
     position: fixed;
-    bottom: 15px;
-    left: 100px; /* 避開左下角的懸浮小章魚 */
+    bottom: 25px;
+    left: 110px; /* 完美避開懸浮小章魚 */
     z-index: 8500;
-    width: 380px;
-    pointer-events: none; /* 避免擋住後方元素的點擊 */
+    width: 320px; /* 嚴格限制寬度，符合紅框範圍 */
+    pointer-events: none; 
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 #global-bottom-left-info > * {
-    pointer-events: auto; /* 讓跑馬燈與免責聲明內的文字可被選取 */
+    pointer-events: auto; 
     margin: 0 !important;
+    width: 100%; /* 強制填滿 320px 容器，避免超出邊界 */
 }
 
 /* 起手健檢左右分欄 */
