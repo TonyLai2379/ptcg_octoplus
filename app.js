@@ -609,8 +609,9 @@ async function handleSession(session) {
     document.getElementById('gate-overlay').style.display = 'none';
     let uIdInput = document.getElementById('user-id-input');
     if(uIdInput) uIdInput.value = session.user.email ? session.user.email.split('@')[0] : session.user.id.substring(0, 8);
+    
     let btnUnlock = document.getElementById('btn-unlock');
-    if(btnUnlock) btnUnlock.innerText = "👑 升級 / 延長訂閱期限";
+    if(btnUnlock) btnUnlock.innerHTML = "👑 升級 / 延長訂閱"; // 微調文字長度適應導覽列
     
     try {
         if (supabaseClient) {
@@ -622,21 +623,22 @@ async function handleSession(session) {
                     if (new Date() < expDate) hasActiveSub = true;
                 }
                 
-                // 寫入全域變數
                 window.isUserPro = data.is_pro || hasActiveSub; 
 
                 let statusTxt = document.getElementById('txt-status');
-                if(statusTxt) {
-                    if (window.isUserPro) {
-                        let expStr = "終身尊榮 VIP ♾️";
-                        if (data.pro_expires_at) {
-                            let d = new Date(data.pro_expires_at.replace("Z", "+00:00"));
-                            if (d.getFullYear() < 2090) expStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        }
-                        statusTxt.innerHTML = `👑 <b style="color:#FFD700; font-size:16px;">Pro 專業會員</b><br><span style="font-size:12px; color:#aaa; display:inline-block; margin-top:6px;">(有效期限: ${expStr})</span>`;
-                    } else {
-                        statusTxt.innerHTML = `<b style="font-size:16px;">免費會員 (Free)</b><br><span style="font-size:12px; color:#aaa; display:inline-block; margin-top:6px;">(支援單一關鍵卡推演，升級解鎖全戰術矩陣)</span>`;
+                let statusSub = document.getElementById('txt-status-sub');
+                
+                if (window.isUserPro) {
+                    let expStr = "終身尊榮 VIP ♾️";
+                    if (data.pro_expires_at) {
+                        let d = new Date(data.pro_expires_at.replace("Z", "+00:00"));
+                        if (d.getFullYear() < 2090) expStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     }
+                    if(statusTxt) statusTxt.innerHTML = `<span style="color:#FFD700;">👑 Pro 專業會員</span>`;
+                    if(statusSub) statusSub.innerHTML = `(期限: ${expStr})`;
+                } else {
+                    if(statusTxt) statusTxt.innerHTML = `免費會員 (Free)`;
+                    if(statusSub) statusSub.innerHTML = `(升級解鎖全戰術矩陣)`;
                 }
             }
         }
