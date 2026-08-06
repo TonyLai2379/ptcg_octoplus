@@ -393,7 +393,7 @@ function exportOctoReportCard() {
     }
 }
 
-// 7. 動態填入預設卡牌資料列輔助函式 (加入權限阻擋與選卡按鈕)
+// 7. 動態填入預設卡牌資料列輔助函式 (調整輸入框比例與放大標籤字體)
 
 function addKeyCardRow(name = "", qty = 2) {
     if (!window.isUserPro) {
@@ -411,43 +411,19 @@ function addKeyCardRow(name = "", qty = 2) {
     div.className = 'st-key-row target-row';
     div.innerHTML = `
         <span style="font-weight:bold; color:#FFD700; min-width:60px;">[標籤:${num}]</span>
-        <div style="flex:1; display:flex; gap:4px; align-items: center;">
+        <div style="flex:0.8; display:flex; gap:4px; align-items: center; max-width: 200px;">
             <input type="text" id="${inputId}" value="${name}" placeholder="重點卡名" class="st-key-name">
             <button class="btn-secondary" style="padding:0 8px; height: 35px; font-size:12px; border-radius:4px;" title="從牌組挑選" onclick="openSelector('st_input_${inputId}')">🔍</button>
         </div>
-        <div style="display:flex; flex-direction:column; align-items:center; margin-left: 10px;">
-            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">牌組投入</span>
+        <div style="display:flex; flex-direction:column; align-items:center; margin-left: 10px; flex:1;">
+            <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">牌組投入</span>
             <input type="number" value="${qty}" min="1" max="4" class="st-key-count" style="width:50px; text-align:center; padding:4px;">
         </div>
         <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; margin-left:10px;" onclick="this.parentElement.remove()">✕</button>
     `;
     container.appendChild(div);
 }
-// 💡 控制物品卡「看X張」欄位顯示/隱藏的切換器
-window.toggleSearchMech = function(selectEl) {
-    const row = selectEl.closest('.st-search-row');
-    const lookContainer = row.querySelector('.look-container');
-    const pickLabel = row.querySelector('.pick-label');
-    if (selectEl.value === 'search_deck') {
-        lookContainer.style.display = 'none';
-        pickLabel.innerText = '抓幾張';
-    } else {
-        lookContainer.style.display = 'flex';
-        pickLabel.innerText = '看幾張';
-    }
-};
-window.toggleSearchMech = function(selectEl) {
-    const row = selectEl.closest('.st-search-row');
-    const lookContainer = row.querySelector('.look-container');
-    const pickLabel = row.querySelector('.pick-label');
-    if (selectEl.value === 'search_deck') {
-        lookContainer.style.display = 'none';
-        pickLabel.innerText = '檢索張數';
-    } else {
-        lookContainer.style.display = 'flex';
-        pickLabel.innerText = '選幾張';
-    }
-};
+
 function addSearchCardRow(name = "", qty = 2, mech = "search_deck", look = 7, pick = 1, targets = "1,2") {
     if (!window.isUserPro) {
         const currentCount = document.querySelectorAll('.st-search-row').length;
@@ -462,33 +438,33 @@ function addSearchCardRow(name = "", qty = 2, mech = "search_deck", look = 7, pi
     const inputId = 'st_search_' + Date.now() + Math.floor(Math.random()*1000);
     div.className = 'st-search-row target-row';
     div.innerHTML = `
-        <div style="flex:1; display:flex; gap:4px; align-items: center;">
+        <div style="flex:0.8; display:flex; gap:4px; align-items: center; max-width: 180px;">
             <input type="text" id="${inputId}" value="${name}" placeholder="物品卡名" class="st-search-name">
             <button class="btn-secondary" style="padding:0 8px; height: 35px; font-size:12px; border-radius:4px;" title="從牌組挑選" onclick="openSelector('st_input_${inputId}')">🔍</button>
         </div>
         <div style="display:flex; flex-direction:column; align-items:center; margin: 0 5px;">
-            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">牌組投入</span>
+            <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">牌組投入</span>
             <input type="number" value="${qty}" class="st-search-count" style="width:45px; text-align:center; padding:4px;">
         </div>
-        <div style="display:flex; flex-direction:column; flex:1.2; margin: 0 5px;">
-            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">發動效果機制</span>
-            <select class="st-search-mechanism" onchange="toggleSearchMech(this)" style="padding:4px; font-size:12px;">
+        <div style="display:flex; flex-direction:column; flex:1; margin: 0 5px;">
+            <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">發動機制</span>
+            <select class="st-search-mechanism" onchange="toggleSearchMech(this)" style="padding:4px; font-size:13px;">
                 <option value="search_deck" ${mech==='search_deck'?'selected':''}>指定檢索整副牌庫</option>
                 <option value="look_top" ${mech==='look_top'?'selected':''}>看牌庫頂 X 張</option>
             </select>
         </div>
-        <div style="display:flex; align-items:center; gap:4px;">
+        <div style="display:flex; align-items:center; gap:6px;">
             <div class="look-container" style="display:${mech==='search_deck'?'none':'flex'}; flex-direction:column; align-items:center;">
-                <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">看幾張</span>
+                <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">看幾張</span>
                 <input type="number" value="${look}" class="st-search-look" style="width:45px; text-align:center; padding:4px;">
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
-                <span class="pick-label" style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">${mech==='search_deck'?'檢索張數':'選幾張'}</span>
+                <span class="pick-label" style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">${mech==='search_deck'?'檢索張數':'選幾張'}</span>
                 <input type="number" value="${pick}" class="st-search-pick" style="width:45px; text-align:center; padding:4px;">
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; margin-left: 4px;">
-                <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">抓取標籤</span>
-                <input type="text" value="${targets}" placeholder="(如1,2)" class="st-search-targets" style="width:50px; text-align:center; padding:4px;">
+                <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">抓取標籤</span>
+                <input type="text" value="${targets}" placeholder="(如1,2)" class="st-search-targets" style="width:60px; text-align:center; padding:4px;">
             </div>
         </div>
         <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; margin-left:8px;" onclick="this.parentElement.remove()">✕</button>
@@ -510,38 +486,37 @@ function addDrawCardRow(name = "", qty = 2, mech = "shuffle_back", val = 5, targ
     const inputId = 'st_draw_' + Date.now() + Math.floor(Math.random()*1000);
     div.className = 'st-draw-row target-row';
     div.innerHTML = `
-        <div style="flex:1; display:flex; gap:4px; align-items: center;">
+        <div style="flex:0.8; display:flex; gap:4px; align-items: center; max-width: 180px;">
             <input type="text" id="${inputId}" value="${name}" placeholder="支援者卡" class="st-draw-name">
             <button class="btn-secondary" style="padding:0 8px; height: 35px; font-size:12px; border-radius:4px;" title="從牌組挑選" onclick="openSelector('st_input_${inputId}')">🔍</button>
         </div>
         <div style="display:flex; flex-direction:column; align-items:center; margin: 0 5px;">
-            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">牌組投入</span>
+            <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">牌組投入</span>
             <input type="number" value="${qty}" class="st-draw-count" style="width:45px; text-align:center; padding:4px;">
         </div>
-        <div style="display:flex; flex-direction:column; flex:1.5; margin: 0 5px;">
-            <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">發動效果機制</span>
-            <select class="st-draw-mechanism" onchange="this.parentElement.nextElementSibling.querySelector('.st-draw-targets').disabled = (this.value !== 'search_key')" style="padding:4px; font-size:12px;">
+        <div style="display:flex; flex-direction:column; flex:1; margin: 0 5px;">
+            <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">發動機制</span>
+            <select class="st-draw-mechanism" onchange="this.parentElement.nextElementSibling.querySelector('.st-draw-targets').disabled = (this.value !== 'search_key')" style="padding:4px; font-size:13px;">
                 <option value="shuffle_back" ${mech==='shuffle_back'?'selected':''}>洗回抽 X 張</option>
                 <option value="discard_all" ${mech==='discard_all'?'selected':''}>全丟抽 X 張</option>
                 <option value="put_bottom" ${mech==='put_bottom'?'selected':''}>放回抽 X 張</option>
                 <option value="search_key" ${mech==='search_key'?'selected':''}>指定檢索標籤</option>
             </select>
         </div>
-        <div style="display:flex; align-items:center; gap:4px;">
+        <div style="display:flex; align-items:center; gap:6px;">
             <div style="display:flex; flex-direction:column; align-items:center;">
-                <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">抽幾張</span>
+                <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">抽幾張</span>
                 <input type="number" value="${val}" class="st-draw-count-val" style="width:45px; text-align:center; padding:4px;">
             </div>
             <div style="display:flex; flex-direction:column; align-items:center;">
-                <span style="font-size:12px; font-weight:bold; color:#58A6FF; margin-bottom:2px;">抓標籤</span>
-                <input type="text" value="${targets}" class="st-draw-targets" ${mech!=='search_key'?'disabled':''} style="width:45px; text-align:center; padding:4px;">
+                <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">抓標籤</span>
+                <input type="text" value="${targets}" class="st-draw-targets" ${mech!=='search_key'?'disabled':''} style="width:50px; text-align:center; padding:4px;">
             </div>
         </div>
         <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; margin-left:8px;" onclick="this.parentElement.remove()">✕</button>
     `;
     container.appendChild(div);
 }
-
 // 8. 品牌同步：從 app.js 的 deckDict 自動帶入基礎怪與卡片資料
 function syncStarterToolFromDeck(deckDict) {
     if (!deckDict || Object.keys(deckDict).length === 0) return;
