@@ -483,7 +483,46 @@ function startMascotDrag(e) {
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd);
 }
+// 💡 跑馬燈資訊框拖曳邏輯
+function startInfoDrag(e) {
+    const infoBox = document.getElementById('draggable-info-box');
+    if (!infoBox) return;
+    
+    let startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+    let startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+    let rect = infoBox.getBoundingClientRect();
+    let offsetX = startX - rect.left;
+    let offsetY = startY - rect.top;
 
+    function onMove(moveEvent) {
+        let clientX = moveEvent.type.includes('mouse') ? moveEvent.clientX : moveEvent.touches[0].clientX;
+        let clientY = moveEvent.type.includes('mouse') ? moveEvent.clientY : moveEvent.touches[0].clientY;
+        
+        let newLeft = clientX - offsetX;
+        let newTop = clientY - offsetY;
+        
+        // 邊界防呆 (不會被拖出螢幕外)
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth - rect.width));
+        newTop = Math.max(0, Math.min(newTop, window.innerHeight - rect.height));
+
+        infoBox.style.left = newLeft + 'px';
+        infoBox.style.top = newTop + 'px';
+        infoBox.style.bottom = 'auto'; // 解除 bottom 綁定，改用 top 定位
+        infoBox.style.right = 'auto';
+    }
+
+    function onEnd() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onEnd);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onEnd);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, {passive: false});
+    document.addEventListener('touchend', onEnd);
+}
 // ==========================================
 // 5. 客服、登入、會員與表單機制
 // ==========================================
