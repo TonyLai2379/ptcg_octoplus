@@ -210,7 +210,6 @@ function runUltimateSimulation() {
     searchRows.forEach(row => {
         const count = parseInt(row.querySelector('.st-search-count').value) || 0;
         
-        // 💡 讀取發動機制：如果選擇「檢索整副牌庫」，則將 lookVal 強制設為 60
         const mechEl = row.querySelector('.st-search-mechanism');
         const mech = mechEl ? mechEl.value : 'search_deck';
         let lookVal = 60; 
@@ -220,7 +219,6 @@ function runUltimateSimulation() {
         
         const pickVal = parseInt(row.querySelector('.st-search-pick').value) || 1;
         
-        // 標籤字串安全解析
         const targetRaw = row.querySelector('.st-search-targets').value;
         let pTargets = [];
         if (targetRaw && targetRaw.trim() !== '' && targetRaw.trim() !== '-') {
@@ -293,7 +291,6 @@ function runUltimateSimulation() {
         });
     }
 
-    // 渲染對比表格
     let headerHtml = `<tr><th>目標組合</th>`;
     supporterNames.forEach(name => { headerHtml += `<th style="background:rgba(0,229,255,0.1); color:#00E5FF;">⚡ 發動【${name}】</th>`; });
     headerHtml += `<th style="background:rgba(255,255,255,0.05); color:#AAA;">🪵 完全不開支援者</th></tr>`;
@@ -317,7 +314,6 @@ function runUltimateSimulation() {
     document.getElementById('st-combinationTableBody').innerHTML = bodyHtml;
     document.getElementById('st-analysisResults').style.display = 'block';
 
-    // 觸發小章魚自動評分引擎
     generateOctoTacticalReport({
         totalBasic: totalBasic,
         unwantedBasic: unwantedBasic,
@@ -332,7 +328,6 @@ function generateOctoTacticalReport(stats) {
     const forcedProb = basicRes.forcedProb;
     const maxProb = stats.maxProb || 0;
 
-    // 分數計算公式
     let stabilityScore = Math.max(0, Math.min(100, 100 - (mulProb * 2) - (forcedProb * 1.5)));
     let consistencyScore = Math.max(0, Math.min(100, maxProb));
     let totalScore = Math.round(stabilityScore * 0.5 + consistencyScore * 0.5);
@@ -360,7 +355,6 @@ function generateOctoTacticalReport(stats) {
         comments.push(`🎯 **戰術連鎖可優化**：當前極限展開率為 ${maxProb.toFixed(1)}%，可嘗試增加過牌或檢索卡。`);
     }
 
-    // 更新評分卡 UI
     document.getElementById('octo-score-number').innerText = totalScore;
     document.getElementById('octo-rank-badge').innerText = rankBadge;
     document.getElementById('octo-rank-badge').style.borderColor = badgeColor;
@@ -378,7 +372,6 @@ function generateOctoTacticalReport(stats) {
     document.getElementById('octo-report-card').style.display = 'block';
 }
 
-// 6. 截圖分享評分卡
 function exportOctoReportCard() {
     const cardEl = document.getElementById('octo-report-card');
     if (typeof html2canvas !== 'undefined') {
@@ -392,8 +385,6 @@ function exportOctoReportCard() {
         alert("截圖元件載入中，請稍後重試。");
     }
 }
-
-// 7. 動態填入預設卡牌資料列輔助函式 (調整輸入框比例與放大標籤字體)
 
 function addKeyCardRow(name = "", qty = 2) {
     if (!window.isUserPro) {
@@ -517,18 +508,14 @@ function addDrawCardRow(name = "", qty = 2, mech = "shuffle_back", val = 5, targ
     `;
     container.appendChild(div);
 }
-// 8. 品牌同步：從 app.js 的 deckDict 自動帶入基礎怪與卡片資料
+
 function syncStarterToolFromDeck(deckDict) {
     if (!deckDict || Object.keys(deckDict).length === 0) return;
 
     let basicCount = 0;
-    let items = [];
-    let supporters = [];
-
     Object.keys(deckDict).forEach(k => {
         let card = deckDict[k];
         let name = card.name;
-        // 簡易屬性猜測或自動帶入
         if (name.includes('ex') || name.includes('V') || name.includes('龍') || name.includes('怪') || name.includes('蟲') || name.includes('弟')) {
             basicCount += card.qty;
         }
