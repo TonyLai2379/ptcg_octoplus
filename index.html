@@ -132,68 +132,82 @@
 
             <div class="import-card-container">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <div style="width:120px;"></div> <!-- 隱形佔位，保持標題完美置中 -->
+                    <div style="width:120px;"></div>
                     <h2 style="color:#00E5FF; font-size:24px; margin:0; text-align:center;">🎴 匯入您的 PTCG 牌組</h2>
                     <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; width:120px; justify-content:center;" onclick="document.getElementById('tut-import-modal').style.display='flex'">❓ 匯入教學</button>
                 </div>
 
-                <div id="import-section" style="position:relative;">
-                    <div class="tab-group">
-                        <button class="tab-btn active" id="tab-btn-link" onclick="switchTab('tab-link')">🔗 官方代碼</button>
-                        <button class="tab-btn" id="tab-btn-text" onclick="switchTab('tab-text')">📝 英文匯入</button>
-                        <button class="tab-btn" id="tab-btn-edit" onclick="switchTab('tab-edit')">🛠️ 搜尋編輯</button>
+                <!-- 💡 全新左右雙欄結構 -->
+                <div class="import-split-layout">
+                    
+                    <!-- 左欄：環境強勢牌組 -->
+                    <div class="import-left-col">
+                        <h3 style="color:#FF9800; font-size:16px; margin:0 0 8px 0; text-align:center; border-bottom:1px solid #30363D; padding-bottom:8px;">🔥 環境強勢牌組</h3>
+                        <p style="font-size:12px; color:#888; text-align:center; margin-bottom:12px;">點擊一秒自動匯入！</p>
+                        
+                        <!-- JS 會自動將按鈕填入這裡 -->
+                        <div id="popular-decks-container" style="display:flex; flex-direction:column; gap:10px; overflow-y:auto; flex:1;"></div>
                     </div>
 
-                <div id="tab-link" class="tab-content active" style="margin-top:15px;">
-                        <div style="text-align:right; margin-bottom:6px;">
-                            <!-- 💡 更新為正確的繁中官網首頁 -->
-                            <a href="https://asia.pokemon-card.com/tw/" target="_blank" style="color:#00E5FF; font-size:12px; text-decoration:underline;">前往寶可夢繁中官網 ➔</a>
+                    <!-- 右欄：原本的匯入設定區 -->
+                    <div class="import-right-col">
+                        <div id="import-section" style="position:relative;">
+                            <div class="tab-group">
+                                <button class="tab-btn active" id="tab-btn-link" onclick="switchTab('tab-link')">🔗 官方代碼</button>
+                                <button class="tab-btn" id="tab-btn-text" onclick="switchTab('tab-text')">📝 英文匯入</button>
+                                <button class="tab-btn" id="tab-btn-edit" onclick="switchTab('tab-edit')">🛠️ 搜尋編輯</button>
+                            </div>
+
+                            <div id="tab-link" class="tab-content active" style="margin-top:15px;">
+                                <div style="text-align:right; margin-bottom:6px;">
+                                    <a href="https://asia.pokemon-card.com/tw/" target="_blank" style="color:#00E5FF; font-size:12px; text-decoration:underline;">前往寶可夢繁中官網 ➔</a>
+                                </div>
+                                <input type="text" id="deck-code" placeholder="輸入官方牌組代碼 (例: uCRvSM...)">
+                                <button class="btn" id="btn-parse-official" style="margin-top:10px;" onclick="parseOfficial()">🌐 解析官方牌組</button>
+                                <div class="local-progress-container" id="prog-link"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-link"></div></div>
+                            </div>
+
+                            <div id="tab-text" class="tab-content" style="margin-top:15px;">
+                                <div style="text-align:right; margin-bottom:6px;">
+                                    <a href="https://limitlesstcg.com/" target="_blank" style="color:#00E5FF; font-size:12px; text-decoration:underline;">前往 Limitless 尋找賽場牌組 ➔</a>
+                                </div>
+                                <textarea id="deck-text" rows="4" placeholder="貼上 Limitless 內容..."></textarea>
+                                <button class="btn" id="btn-parse-text" style="margin-top:10px;" onclick="parseText()">📥 解析文字牌組</button>
+                                <div class="local-progress-container" id="prog-text"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-text"></div></div>
+                            </div>
+
+                            <div id="tab-edit" class="tab-content" style="margin-top:15px;">
+                                <label id="lbl-search-db" style="font-size:12px; color:#888;">全圖庫圖文搜尋：</label>
+                                <div class="search-wrapper">
+                                    <input type="text" id="search-input" placeholder="輸入卡名即時搜尋..." onkeyup="debounceSearch(this.value)">
+                                    <div id="search-results"></div>
+                                </div>
+                                <label id="lbl-custom-card" style="font-size:12px; color:#888; display:block; margin-top:15px;">自訂卡片 (自動套用牌背文字)：</label>
+                                <input type="text" id="custom-card-input" placeholder="自訂卡名稱">
+                                <button class="btn btn-secondary" id="btn-add-custom" style="margin-top:5px;" onclick="addCustomCard()">➕ 建立專屬卡</button>
+                            </div>
                         </div>
-                        <input type="text" id="deck-code" placeholder="輸入官方牌組代碼 (例: uCRvSM...)">
-                        <button class="btn" id="btn-parse-official" style="margin-top:10px;" onclick="parseOfficial()">🌐 解析官方牌組</button>
-                        <div class="local-progress-container" id="prog-link"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-link"></div></div>
-                    </div>
 
-                    <div id="tab-text" class="tab-content" style="margin-top:15px;">
-                        <div style="text-align:right; margin-bottom:6px;">
-                            <!-- 💡 更新為正確的 Limitless 首頁 -->
-                            <a href="https://limitlesstcg.com/" target="_blank" style="color:#00E5FF; font-size:12px; text-decoration:underline;">前往 Limitless 尋找賽場牌組 ➔</a>
+                        <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center; border-top:1px solid #30363D; padding-top:15px;">
+                            <b style="font-size:16px;"><span id="txt-deck-list-title">牌組清單</span> (<span id="deck-total-count" style="color:#FF5252;">0</span> / 60)</b>
+                            <button class="btn-secondary" id="btn-preview-deck" style="padding:4px 10px; border-radius:4px; font-size:12px;" onclick="openPreviewModal()">👁️ 預覽卡組</button>
                         </div>
-                        <textarea id="deck-text" rows="4" placeholder="貼上 Limitless 內容..."></textarea>
-                        <button class="btn" id="btn-parse-text" style="margin-top:10px;" onclick="parseText()">📥 解析文字牌組</button>
-                        <div class="local-progress-container" id="prog-text"><span style="font-weight:bold; color:#FFD700; font-size:13px;">⏳ 卡組讀取中...</span><div class="local-progress-bar" id="bar-text"></div></div>
-                    </div>
+                        <div id="deck-list-container" style="max-height:200px; margin-top:10px;"></div>
 
-                    <div id="tab-edit" class="tab-content" style="margin-top:15px;">
-                        <label id="lbl-search-db" style="font-size:12px; color:#888;">全圖庫圖文搜尋：</label>
-                        <div class="search-wrapper">
-                            <input type="text" id="search-input" placeholder="輸入卡名即時搜尋..." onkeyup="debounceSearch(this.value)">
-                            <div id="search-results"></div>
+                        <div style="display:flex; gap:10px; margin-top:20px;">
+                            <button class="btn" id="btn-start-game" style="background:linear-gradient(135deg, #E91E63, #FF4081); font-size:16px; flex:1; box-shadow:0 4px 15px rgba(233,30,99,0.4);" onclick="startGame()">🎲 鎖定牌組並開始精算</button>
                         </div>
-                        <label id="lbl-custom-card" style="font-size:12px; color:#888; display:block; margin-top:15px;">自訂卡片 (自動套用牌背文字)：</label>
-                        <input type="text" id="custom-card-input" placeholder="自訂卡名稱">
-                        <button class="btn btn-secondary" id="btn-add-custom" style="margin-top:5px;" onclick="addCustomCard()">➕ 建立專屬卡</button>
-                    </div>
-                </div>
+                        
+                        <div id="cloud-save-section" style="display:flex; gap:5px; margin-top:10px;">
+                            <button class="btn-secondary" id="btn-save-cloud" style="flex:1; padding:8px;" onclick="saveDeckToDB()">💾 紀錄至雲端</button>
+                            <select id="saved-decks-select" style="flex:2; margin:0;" onchange="loadDeckFromDB(this.value)">
+                                <option value="" id="opt-load-cloud">載入雲端牌組...</option>
+                            </select>
+                        </div>
+                    </div> <!-- 結束右欄 -->
 
-                <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center; border-top:1px solid #30363D; padding-top:15px;">
-                    <b style="font-size:16px;"><span id="txt-deck-list-title">牌組清單</span> (<span id="deck-total-count" style="color:#FF5252;">0</span> / 60)</b>
-                    <button class="btn-secondary" id="btn-preview-deck" style="padding:4px 10px; border-radius:4px; font-size:12px;" onclick="openPreviewModal()">👁️ 預覽卡組</button>
-                </div>
-                <div id="deck-list-container" style="max-height:200px; margin-top:10px;"></div>
-
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button class="btn" id="btn-start-game" style="background:linear-gradient(135deg, #E91E63, #FF4081); font-size:16px; flex:1; box-shadow:0 4px 15px rgba(233,30,99,0.4);" onclick="startGame()">🎲 鎖定牌組並開始精算</button>
-                </div>
-                
-                <div id="cloud-save-section" style="display:flex; gap:5px; margin-top:10px;">
-                    <button class="btn-secondary" id="btn-save-cloud" style="flex:1; padding:8px;" onclick="saveDeckToDB()">💾 紀錄至雲端</button>
-                    <select id="saved-decks-select" style="flex:2; margin:0;" onchange="loadDeckFromDB(this.value)">
-                        <option value="" id="opt-load-cloud">載入雲端牌組...</option>
-                    </select>
-                </div>
+                </div> <!-- 結束雙欄容器 -->
             </div>
-        </div>
 
         <!-- View 2: 功能 A 起手勝率健檢 -->
         <div id="view-starter" class="view-section" style="display:none; max-width:1200px; margin:20px auto; padding:20px;">
