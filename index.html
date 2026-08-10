@@ -717,7 +717,28 @@
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
         <div id="dice-result" class="bounce-in" style="font-size:140px; text-shadow: 0 10px 40px rgba(0,0,0,0.9); font-weight: bold;">🎲</div>
     </div>
+<!-- 📱 手機版專屬底部導覽列 (Bottom Tab Bar) -->
+    <div id="mobile-bottom-nav">
+        <div class="m-nav-item active" id="m-nav-import" onclick="switchMainView('import')">
+            <span class="m-nav-icon">🛠️</span>
+            <span class="m-nav-text">編輯牌組</span>
+        </div>
+        <div class="m-nav-item" id="m-nav-starter" onclick="switchMainView('starter')">
+            <span class="m-nav-icon">🎲</span>
+            <span class="m-nav-text">起手健檢</span>
+        </div>
+        <div class="m-nav-item" id="m-nav-sandbox" onclick="switchMainView('sandbox')">
+            <span class="m-nav-icon">⚔️</span>
+            <span class="m-nav-text">沙盤戰場</span>
+        </div>
+    </div>
 
+    <!-- 腳本正確載入順序 -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="starter.js?v=1"></script>
+    <script src="app.js?v=34"></script>
+</body>
+</html>
     <!-- 腳本正確載入順序 -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="starter.js?v=1"></script>
