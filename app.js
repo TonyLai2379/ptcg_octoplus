@@ -34,6 +34,41 @@ let historyPtr = -1;
 let prizesFaceUp = true;
 let feedbackBase64 = "";
 // ==========================================
+// 🔥 環境熱門牌組一鍵匯入設定
+// ==========================================
+const POPULAR_DECKS = [
+    { name: "多龍巴魯托 ex", code: "SMRppX-wGjT0X-S2ypMp" },
+    { name: "猛雷鼓 ex", code: "8xxG8a-WlVb4G-cYYcc8" },
+    { name: "噴火龍 ex", code: "E8cx88-X1K2K8-YYYccG" },
+    { name: "沙奈朵 ex", code: "8Yxx8a-4VwKq8-xcxxYG" },
+    { name: "洛奇亞 VSTAR", code: "GcxYc8-aA0F0D-cK8a4G" }
+    // 💡 你以後只要在這裡修改名稱跟代碼即可
+];
+
+function renderPopularDecks() {
+    const container = document.getElementById('popular-decks-container');
+    if(!container) return;
+    container.innerHTML = "";
+    
+    POPULAR_DECKS.forEach(deck => {
+        let btn = document.createElement('button');
+        btn.className = "btn-secondary";
+        btn.style.cssText = "padding: 8px; font-size: 13px; font-weight: bold; border-color: #FF9800; color: #FFD700; background: rgba(255, 152, 0, 0.05); transition: 0.2s; text-align: left;";
+        btn.innerHTML = `<span style="display:inline-block; width:20px;">🗡️</span> ${deck.name}`;
+        
+        btn.onmouseover = () => { btn.style.background = "rgba(255, 152, 0, 0.2)"; btn.style.transform = "translateX(2px)"; };
+        btn.onmouseout = () => { btn.style.background = "rgba(255, 152, 0, 0.05)"; btn.style.transform = "translateX(0)"; };
+        
+        btn.onclick = () => {
+            // 自動切換到官方代碼分頁、填入數值並按下解析！
+            document.getElementById('tab-btn-link').click();
+            document.getElementById('deck-code').value = deck.code;
+            parseOfficial();
+        };
+        container.appendChild(btn);
+    });
+}
+// ==========================================
 // 動畫與開場邏輯 (修復畫面卡住無法點擊)
 // ==========================================
 
@@ -611,6 +646,8 @@ window.addEventListener('load', () => {
     checkAgreements();
     checkCooldownOnLoad();
     applyAutoZoom();
+    
+    renderPopularDecks(); // 💡 新增這行：載入網頁時生成熱門牌組按鈕
     
     changeLanguage(currentLang);
     
