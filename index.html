@@ -27,8 +27,17 @@
     <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-    <!-- 補回系統需要的隱藏欄位 -->
+   <!-- 補回系統需要的隱藏欄位 -->
     <input type="hidden" id="user-id-input" value="Guest">
+
+    <!-- 📱 手機直向強制橫向提示遮罩 -->
+    <div id="portrait-warning">
+        <div class="warning-content">
+            <div style="font-size: 60px; margin-bottom: 15px; animation: rotate-phone 1.5s infinite ease-in-out;">📱🔄</div>
+            <h2 style="color:#00E5FF; margin-bottom: 10px;">請旋轉您的手機</h2>
+            <p style="color:#CCC; font-size:14px; line-height:1.6;">PTCG 的戰鬥盤面需要較寬廣的視野！<br>請將手機轉為<b style="color:#FFD700;">「橫向 (Landscape)」</b><br>以獲得最佳的沙盤推演體驗。</p>
+        </div>
+    </div>
 
     <!-- 💡 可自由拖曳的資訊框 (跑馬燈與免責聲明) -->
     <div id="draggable-info-box" onmousedown="startInfoDrag(event)" ontouchstart="startInfoDrag(event)">
