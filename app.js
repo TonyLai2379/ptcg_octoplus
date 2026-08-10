@@ -37,11 +37,11 @@ let feedbackBase64 = "";
 // 🔥 環境熱門牌組一鍵匯入設定
 // ==========================================
 const POPULAR_DECKS = [
-    { name: "多龍巴魯托 ex", code: "SMRppX-wGjT0X-S2ypMp" },
-    { name: "猛雷鼓 ex", code: "8xxG8a-WlVb4G-cYYcc8" },
-    { name: "噴火龍 ex", code: "E8cx88-X1K2K8-YYYccG" },
-    { name: "沙奈朵 ex", code: "8Yxx8a-4VwKq8-xcxxYG" },
-    { name: "洛奇亞 VSTAR", code: "GcxYc8-aA0F0D-cK8a4G" }
+    { name: "化隱", code: "uCRvSM-NdxUvZ-iWAqYI" },
+    { name: "更新中", code: "8xxG8a-WlVb4G-cYYcc8" },
+    { name: "更新中", code: "E8cx88-X1K2K8-YYYccG" },
+    { name: "更新中", code: "8Yxx8a-4VwKq8-xcxxYG" },
+    { name: "更新中", code: "GcxYc8-aA0F0D-cK8a4G" }
     // 💡 你以後只要在這裡修改名稱跟代碼即可
 ];
 
