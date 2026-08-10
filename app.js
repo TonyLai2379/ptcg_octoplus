@@ -86,13 +86,20 @@ var DEFAULT_CARDBACK = (function(color) {
 // ==========================================
 let currentMainView = 'import';
 
-function switchMainView(viewName) {
+async function switchMainView(viewName) {
     currentMainView = viewName;
     
+    // 1. 切換上方導覽列狀態 (電腦版)
     document.querySelectorAll('.nav-3d-btn').forEach(btn => btn.classList.remove('active'));
     let activeNavBtn = document.getElementById('btn-view-' + viewName);
     if (activeNavBtn) activeNavBtn.classList.add('active');
 
+    // 2. 切換下方導覽列狀態 (手機版)
+    document.querySelectorAll('.m-nav-item').forEach(btn => btn.classList.remove('active'));
+    let activeMobileBtn = document.getElementById('m-nav-' + viewName);
+    if (activeMobileBtn) activeMobileBtn.classList.add('active');
+
+    // 3. 切換主視圖顯示
     document.getElementById('view-import').style.display = (viewName === 'import') ? 'block' : 'none';
     document.getElementById('view-starter').style.display = (viewName === 'starter') ? 'block' : 'none';
     document.getElementById('view-sandbox').style.display = (viewName === 'sandbox') ? 'block' : 'none';
@@ -100,7 +107,54 @@ function switchMainView(viewName) {
     if (viewName === 'starter' && typeof syncStarterToolFromDeck === 'function') {
         syncStarterToolFromDeck(deckDict);
     }
+    
+    // 💡 4. 手機版智慧轉向：沙盤戰場「自動橫向與全螢幕」，其他畫面「直向」
+    const isMobile = window.innerWidth <= 800 || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    if (isMobile) {
+        if (viewName === 'sandbox') {
+            try {
+                // 必須先進入全螢幕，瀏覽器才允許強制轉向
+                if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen();
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape');
+                }
+            } catch (err) { 
+                console.log("自動橫向鎖定失敗或不支援:", err); 
+            }
+        } else {
+            try {
+                // 離開戰場時，解除轉向鎖定並退出全螢幕
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    await document.exitFullscreen();
+                }
+            } catch (err) {}
+        }
+    }
+    
+    checkOrientation(); // 檢查並顯示/隱藏原本的轉向警告遮罩
 }
+
+// 💡 智慧偵測：只在「沙盤戰場」且「直向」時才跳出警告
+function checkOrientation() {
+    const warning = document.getElementById('portrait-warning');
+    if (!warning) return;
+    
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 800;
+    const isPortrait = window.innerHeight > window.innerWidth;
+    
+    // 只有當「身處戰場」且「手機拿直的」，且自動轉向API失效時，才亮出警告遮罩
+    if (isMobile && isPortrait && currentMainView === 'sandbox') {
+        warning.style.display = 'flex';
+    } else {
+        warning.style.display = 'none';
+    }
+}
+window.addEventListener('resize', checkOrientation);
 // ==========================================
 // 智慧教學按鈕控制 (解決 openTutorial is not defined)
 // ==========================================
