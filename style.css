@@ -400,3 +400,43 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     position: sticky;
     top: 20px;
 }
+/* ==========================================
+   📱 手機強制橫向提示 (Portrait Warning)
+   ========================================== */
+#portrait-warning {
+    display: none;
+}
+.warning-content {
+    background: #161B22;
+    border: 2px solid #00E5FF;
+    border-radius: 12px;
+    padding: 35px 20px;
+    width: 85%;
+    max-width: 320px;
+    box-shadow: 0 10px 40px rgba(0, 229, 255, 0.3);
+}
+@keyframes rotate-phone {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(-90deg); }
+    100% { transform: rotate(-90deg); }
+}
+
+/* 💡 核心魔法：只在手機 + 直向時觸發 */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+    #portrait-warning {
+        display: flex;
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(14, 17, 23, 0.98);
+        backdrop-filter: blur(10px);
+        z-index: 999999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    /* 隱藏主畫面避免破版與滾動 */
+    #app-viewport, #top-nav-bar, #octo-mascot-wrapper, #draggable-info-box {
+        display: none !important;
+    }
+}
