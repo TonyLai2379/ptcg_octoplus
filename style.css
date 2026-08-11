@@ -505,5 +505,5 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
 .marquee-content {
     display: inline-block;
     padding-left: 100%;
-    animation: marquee-anim 80s linear infinite !important; /* 強制均速 80 秒 */
+    animation: marquee-anim linear infinite; /* 💡 移除寫死的秒數，讓 JS 動態控制 */
 }
