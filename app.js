@@ -237,6 +237,21 @@ const translations = {
         navStarter: "🎲 2. 起手勝率健檢",
         navSandbox: "⚔️ 3. 覆盤沙盤戰場",
         navSupport: "💬 聯絡客服",
+        stMainTitle: "🎲 起手勝率健檢",
+        stTutBtn: "❓ 起手勝率教學",
+        stSecA: "A. 寶可夢起站怪數量配置",
+        stLblTotal: "基礎怪總數：",
+        stLblWant: "理想起站怪 (Want)：",
+        stLblUnwanted: "雷區怪 (Unwanted)：",
+        stBtnCalcBasic: "📊 獨立計算開局起站機率",
+        stTxtMulligan: "無基礎怪重抽 (Mulligan) 率：",
+        stTxtPerfect: "完美起站機率：",
+        stTxtForced: "迫出雷區怪起站率：",
+        stSecB: "B. 重點卡與資源檢索設定",
+        stBtnAddKey: "＋ 新增重點牌種類",
+        stBtnAddSearch: "＋ 新增物品過牌卡",
+        stBtnAddDraw: "＋ 新增支援者卡",
+        stBtnRunSim: "⚡ 執行多支援者勝率比較模擬",
     },
     en: { 
         tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", 
@@ -276,6 +291,21 @@ const translations = {
         navStarter: "🎲 2. Starter Checkup",
         navSandbox: "⚔️ 3. Sandbox Board",
         navSupport: "💬 Support",
+        stMainTitle: "🎲 Opening Hand Consistency Checkup",
+        stTutBtn: "❓ Checkup Guide",
+        stSecA: "A. Basic Pokémon Starter Configuration",
+        stLblTotal: "Total Basic PKMN:",
+        stLblWant: "Ideal Starters (Want):",
+        stLblUnwanted: "Risky Starters (Unwanted):",
+        stBtnCalcBasic: "📊 Calculate Independent Starter Probabilities",
+        stTxtMulligan: "Mulligan Rate (No Basic PKMN):",
+        stTxtPerfect: "Perfect Starter Probability:",
+        stTxtForced: "Forced Risky Starter Rate:",
+        stSecB: "B. Key Cards & Resource Retrieval",
+        stBtnAddKey: "＋ Add Key Card Type",
+        stBtnAddSearch: "＋ Add Item Searching Card",
+        stBtnAddDraw: "＋ Add Supporter Draw Card",
+        stBtnRunSim: "⚡ Run Multi-Supporter Comparison Simulation",
     }
 };
 
@@ -387,6 +417,21 @@ function changeLanguage(lang) {
     setTxt('btn-view-starter', t.navStarter);
     setTxt('btn-view-sandbox', t.navSandbox);
     setTxt('btn-support', t.navSupport);
+    setTxt('st-main-title', t.stMainTitle);
+    setTxt('st-tut-btn', t.stTutBtn);
+    setTxt('st-sec-a-title', t.stSecA);
+    setTxt('st-lbl-total', t.stLblTotal);
+    setTxt('st-lbl-want', t.stLblWant);
+    setTxt('st-lbl-unwanted', t.stLblUnwanted);
+    setTxt('st-btn-calc-basic', t.stBtnCalcBasic);
+    setTxt('st-txt-mulligan', t.stTxtMulligan);
+    setTxt('st-txt-perfect', t.stTxtPerfect);
+    setTxt('st-txt-forced', t.stTxtForced);
+    setTxt('st-sec-b-title', t.stSecB);
+    setTxt('st-btn-add-key', t.stBtnAddKey);
+    setTxt('st-btn-add-search', t.stBtnAddSearch);
+    setTxt('st-btn-add-draw', t.stBtnAddDraw);
+    setTxt('st-btn-run-sim', t.stBtnRunSim);
 }
 
 // ==========================================
