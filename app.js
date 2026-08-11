@@ -252,6 +252,13 @@ const translations = {
         stBtnAddSearch: "＋ 新增物品過牌卡",
         stBtnAddDraw: "＋ 新增支援者卡",
         stBtnRunSim: "⚡ 執行多支援者勝率比較模擬",
+        stResTitle: "📊 各支援者獨立劇本勝率結果",
+        stRepTitle: "🐙 OCTOPLUS PTCG 戰術評分報告",
+        stRepScoreLbl: "綜合戰力評分",
+        stRepStabLbl: "起手穩定度",
+        stRepConsLbl: "T1 展開爆發力",
+        stRepCommLbl: "💬 小章魚戰術評語：",
+        stBtnExport: "📸 匯出小章魚戰術報告卡 (分享用)",
     },
     en: { 
         tutBtn: "❓ Guide", statusNotLogin: "Status: Guest", btnUnlock: "Subscribe / Invite Code", 
@@ -306,6 +313,13 @@ const translations = {
         stBtnAddSearch: "＋ Add Item Searching Card",
         stBtnAddDraw: "＋ Add Supporter Draw Card",
         stBtnRunSim: "⚡ Run Multi-Supporter Comparison Simulation",
+        stResTitle: "📊 Independent Supporter Win Rate Results",
+        stRepTitle: "🐙 OCTOPLUS PTCG Tactical Evaluation",
+        stRepScoreLbl: "Overall Score",
+        stRepStabLbl: "Opening Stability",
+        stRepConsLbl: "T1 Explosive Potential",
+        stRepCommLbl: "💬 Octo's Tactical Remarks:",
+        stBtnExport: "📸 Export Octo Report Card (Share)",
     }
 };
 
@@ -432,6 +446,13 @@ function changeLanguage(lang) {
     setTxt('st-btn-add-search', t.stBtnAddSearch);
     setTxt('st-btn-add-draw', t.stBtnAddDraw);
     setTxt('st-btn-run-sim', t.stBtnRunSim);
+    setTxt('st-res-title', t.stResTitle);
+    setTxt('st-rep-title', t.stRepTitle);
+    setTxt('st-rep-score-lbl', t.stRepScoreLbl);
+    setTxt('st-rep-stab-lbl', t.stRepStabLbl);
+    setTxt('st-rep-cons-lbl', t.stRepConsLbl);
+    setTxt('st-rep-comm-lbl', t.stRepCommLbl);
+    setTxt('st-btn-export', t.stBtnExport);
 }
 
 // ==========================================
