@@ -2189,6 +2189,8 @@ async function fetchMarquee() {
         let el = document.getElementById('marquee-text');
         if (el) {
             el.innerHTML = text;
+            // 💡 動態均速演算法：每字約 0.35 秒，最少 20 秒，長話慢走、短話不拖！
+            el.style.animationDuration = Math.max(text.length * 0.35, 20) + 's';
         }
     } catch (e) {
         let el = document.getElementById('marquee-text');
