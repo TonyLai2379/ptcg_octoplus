@@ -226,45 +226,45 @@
         <!-- View 2: 功能 A 起手勝率健檢 -->
         <div id="view-starter" class="view-section" style="display:none; max-width:1200px; margin:20px auto; padding:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#161B22; border:1px solid #30363D; border-left:4px solid #00E5FF; padding:12px 20px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-    <h2 style="color:#00E5FF; font-size:20px; margin:0; font-weight:bold; letter-spacing:1px;">🎲 起手勝率健檢</h2>
-    <button class="q-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; font-weight:bold; box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
-    </div>
+                <h2 id="st-main-title" style="color:#00E5FF; font-size:20px; margin:0; font-weight:bold; letter-spacing:1px;">🎲 起手勝率健檢</h2>
+                <button class="q-btn" id="st-tut-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; font-weight:bold; box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
+            </div>
 
             <div class="starter-split-layout">
                 <!-- 🟡 左半部：參數設定區 -->
                 <div class="starter-left-col">
                     <div class="prob-card" style="margin-bottom:20px;">
-                        <b style="font-size:16px; color:#FFD700;">A. 寶可夢起站怪數量配置</b>
+                        <b id="st-sec-a-title" style="font-size:16px; color:#FFD700;">A. 寶可夢起站怪數量配置</b>
                         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin:15px 0;">
-                            <div><label style="font-size:12px; color:#888;">基礎怪總數：</label><input type="number" id="st-totalBasic" value="12"></div>
-                            <div><label style="font-size:12px; color:#888;">理想起站怪 (Want)：</label><input type="number" id="st-wantBasic" value="4"></div>
-                            <div><label style="font-size:12px; color:#888;">雷區怪 (Unwanted)：</label><input type="number" id="st-unwantedBasic" value="2"></div>
+                            <div><label id="st-lbl-total" style="font-size:12px; color:#888;">基礎怪總數：</label><input type="number" id="st-totalBasic" value="12"></div>
+                            <div><label id="st-lbl-want" style="font-size:12px; color:#888;">理想起站怪 (Want)：</label><input type="number" id="st-wantBasic" value="4"></div>
+                            <div><label id="st-lbl-unwanted" style="font-size:12px; color:#888;">雷區怪 (Unwanted)：</label><input type="number" id="st-unwantedBasic" value="2"></div>
                         </div>
-                        <button class="btn" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-weight:bold; border:none; box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
+                        <button class="btn" id="st-btn-calc-basic" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-weight:bold; border:none; box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
                         <div id="st-basicResultArea" style="display:none; margin-top:15px; background:#21262D; padding:12px; border-radius:6px; font-size:13px; border-left:3px solid #00E5FF;">
-                            <div>💥 <b>無基礎怪重抽 (Mulligan) 率：</b> <span id="st-mulliganProb" style="color:#FF5252; font-weight:bold;">--</span></div>
-                            <div>🎯 <b>完美起站機率：</b> <span id="st-perfectStartProb" style="color:#00E5FF; font-weight:bold;">--</span></div>
-                            <div>⚠️ <b>迫出雷區怪起站率：</b> <span id="st-forcedStartProb" style="color:#FF9800; font-weight:bold;">--</span></div>
+                            <div>💥 <b id="st-txt-mulligan">無基礎怪重抽 (Mulligan) 率：</b> <span id="st-mulliganProb" style="color:#FF5252; font-weight:bold;">--</span></div>
+                            <div>🎯 <b id="st-txt-perfect">完美起站機率：</b> <span id="st-perfectStartProb" style="color:#00E5FF; font-weight:bold;">--</span></div>
+                            <div>⚠️ <b id="st-txt-forced">迫出雷區怪起站率：</b> <span id="st-forcedStartProb" style="color:#FF9800; font-weight:bold;">--</span></div>
                         </div>
                     </div>
 
                     <div class="prob-card" style="margin-bottom:20px;">
-                        <b style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
+                        <b id="st-sec-b-title" style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
                         <div id="st-keyCardsContainer" style="margin:12px 0;"></div>
-                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addKeyCardRow()">＋ 新增重點牌種類</button>
+                        <button class="btn-secondary" id="st-btn-add-key" style="padding:4px 10px; font-size:12px;" onclick="addKeyCardRow()">＋ 新增重點牌種類</button>
 
                         <hr class="st-divider">
 
                         <div id="st-searchCardsContainer" style="margin-bottom:12px;"></div>
-                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addSearchCardRow()">＋ 新增物品過牌卡</button>
+                        <button class="btn-secondary" id="st-btn-add-search" style="padding:4px 10px; font-size:12px;" onclick="addSearchCardRow()">＋ 新增物品過牌卡</button>
 
                         <hr class="st-divider">
 
                         <div id="st-drawCardsContainer" style="margin-bottom:12px;"></div>
-                        <button class="btn-secondary" style="padding:4px 10px; font-size:12px;" onclick="addDrawCardRow()">＋ 新增支援者卡</button>
+                        <button class="btn-secondary" id="st-btn-add-draw" style="padding:4px 10px; font-size:12px;" onclick="addDrawCardRow()">＋ 新增支援者卡</button>
                     </div>
 
-                    <button class="btn" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-size:18px; font-weight:bold; padding:12px;" onclick="runUltimateSimulation()">⚡ 執行多支援者勝率比較模擬</button>
+                    <button class="btn" id="st-btn-run-sim" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-size:18px; font-weight:bold; padding:12px;" onclick="runUltimateSimulation()">⚡ 執行多支援者勝率比較模擬</button>
                 </div>
 
                 <!-- 🟡 右半部：計算結果與報告區 -->
