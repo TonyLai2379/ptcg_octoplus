@@ -88,8 +88,13 @@
             </div>
             <button class="q-btn" id="btn-unlock" style="background: linear-gradient(145deg, #E34C26, #FF5722); color: white; padding: 6px 14px;" onclick="document.getElementById('sub-modal').style.display='flex'">👑 訂閱 / 輸入邀請碼</button>
             <div style="width:1px; height:24px; background:#30363D; margin: 0 5px;"></div>
-            <button class="nav-3d-btn" style="color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
-            <button class="nav-3d-btn" onclick="openTutorial()">❓ 教學</button>
+            <!-- 💡 新增語系切換下拉選單 -->
+            <select id="lang-select" class="nav-lang-select" onchange="changeLanguage(this.value)" onclick="event.stopPropagation()">
+                <option value="zh">🌐 中文</option>
+                <option value="en">🌐 English</option>
+            </select>
+            <button class="nav-3d-btn" id="btn-support" style="color:#00E5FF; border-color:#00E5FF;" onclick="document.getElementById('support-modal').style.display='flex'">💬 聯絡客服</button>
+            <button class="nav-3d-btn" id="tut-btn" onclick="openTutorial()">❓ 教學</button>
         </div>
     </div>
 
@@ -325,10 +330,6 @@
                         <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); rollDice()">🎲 擲骰子</button>
                         <button class="q-btn" onclick="event.preventDefault(); event.stopPropagation(); flipCoin()" style="background: linear-gradient(145deg, #FF5252, #FF1744); color: white;">🪙 擲硬幣</button>
                         <div style="width:1px; height:20px; background:#444;"></div>
-                        <select id="lang-select" style="width: auto; padding: 3px 8px; font-size: 12px; background: #0D1117; color: #00E5FF; border: 1px solid #30363D; border-radius: 12px; cursor: pointer;" onchange="changeLanguage(this.value)" onclick="event.stopPropagation()">
-                            <option value="zh">🌐 中文</option>
-                            <option value="en">🌐 English</option>
-                        </select>
                         <div style="width:1px; height:20px; background:#444;"></div>
                         <label id="lbl-zoom" style="font-size:12px; color:#aaa; white-space:nowrap;">🔍 介面縮放</label>
                         <input type="range" id="zoom-slider" min="0.5" max="1.3" step="0.05" value="1" style="margin:0; width:80px;" onchange="document.getElementById('view-sandbox').style.zoom = this.value;" onclick="event.stopPropagation()">
