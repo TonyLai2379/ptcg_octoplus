@@ -291,9 +291,13 @@ function runUltimateSimulation() {
         });
     }
 
-    let headerHtml = `<tr><th>目標組合</th>`;
-    supporterNames.forEach(name => { headerHtml += `<th style="background:rgba(0,229,255,0.1); color:#00E5FF;">⚡ 發動【${name}】</th>`; });
-    headerHtml += `<th style="background:rgba(255,255,255,0.05); color:#AAA;">🪵 完全不開支援者</th></tr>`;
+    // 💡 渲染對比表格（支援中英雙語標頭）
+    let isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
+    let headerHtml = `<tr><th>${isEn ? 'Target Combo' : '目標組合'}</th>`;
+    supporterNames.forEach(name => { 
+        headerHtml += `<th style="background:rgba(0,229,255,0.1); color:#00E5FF;">⚡ ${isEn ? 'Use' : '發動'}【${name}】</th>`; 
+    });
+    headerHtml += `<th style="background:rgba(255,255,255,0.05); color:#AAA;">🪵 ${isEn ? 'No Supporter' : '完全不開支援者'}</th></tr>`;
     document.getElementById('st-tableHeader').innerHTML = headerHtml;
 
     let bodyHtml = "";
@@ -327,32 +331,43 @@ function generateOctoTacticalReport(stats) {
     const mulProb = basicRes.mulProb;
     const forcedProb = basicRes.forcedProb;
     const maxProb = stats.maxProb || 0;
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
     let stabilityScore = Math.max(0, Math.min(100, 100 - (mulProb * 2) - (forcedProb * 1.5)));
     let consistencyScore = Math.max(0, Math.min(100, maxProb));
     let totalScore = Math.round(stabilityScore * 0.5 + consistencyScore * 0.5);
 
-    let rankBadge = "A 級穩定隊";
+    let rankBadge = isEn ? "A Tier - Stable" : "A 級穩定隊";
     let badgeColor = "#00E5FF";
-    if (totalScore >= 90) { rankBadge = "SSS 級神隊"; badgeColor = "#FFD700"; }
-    else if (totalScore >= 80) { rankBadge = "S 級主流隊"; badgeColor = "#FF80AB"; }
-    else if (totalScore < 65) { rankBadge = "B 級事故隊"; badgeColor = "#FF5252"; }
+    if (totalScore >= 90) { rankBadge = isEn ? "SSS Tier - Godly" : "SSS 級神隊"; badgeColor = "#FFD700"; }
+    else if (totalScore >= 80) { rankBadge = isEn ? "S Tier - Meta" : "S 級主流隊"; badgeColor = "#FF80AB"; }
+    else if (totalScore < 65) { rankBadge = isEn ? "B Tier - Bricky" : "B 級事故隊"; badgeColor = "#FF5252"; }
 
     let comments = [];
     if (mulProb > 10) {
-        comments.push(`⚠️ **起手事故風險過高**：無怪重抽（Mulligan）率達 ${mulProb.toFixed(1)}%，建議增加 1~2 張基礎寶可夢！`);
+        comments.push(isEn 
+            ? `⚠️ **High Mulligan Risk**: Mulligan rate is ${mulProb.toFixed(1)}%. Consider adding 1-2 more Basic Pokémon!`
+            : `⚠️ **起手事故風險過高**：無怪重抽（Mulligan）率達 ${mulProb.toFixed(1)}%，建議增加 1~2 張基礎寶可夢！`);
     } else {
-        comments.push(`✅ **起手相當穩定**：無怪重抽率低至 ${mulProb.toFixed(1)}%，開局不卡怪！`);
+        comments.push(isEn
+            ? `✅ **Solid Starter Stability**: Low Mulligan rate of ${mulProb.toFixed(1)}%. Clean opening!`
+            : `✅ **起手相當穩定**：無怪重抽率低至 ${mulProb.toFixed(1)}%，開局不卡怪！`);
     }
 
     if (forcedProb > 15) {
-        comments.push(`👻 **小心鬼抓人起站**：迫出後排功能怪起站的機率高達 ${forcedProb.toFixed(1)}%，小心送出獎賞卡！`);
+        comments.push(isEn
+            ? `👻 **Vulnerable Starters**: Forced start rate with support Pokémon is ${forcedProb.toFixed(1)}%. Beware of early Prize card loss!`
+            : `👻 **小心鬼抓人起站**：迫出後排功能怪起站的機率高達 ${forcedProb.toFixed(1)}%，小心送出獎賞卡！`);
     }
 
     if (maxProb >= 80) {
-        comments.push(`🔥 **爆發天胡率極強**：搭配支援者後首波展開成功率突破 ${maxProb.toFixed(1)}%！`);
+        comments.push(isEn
+            ? `🔥 **High Explosive Setup**: First turn execution rate exceeds ${maxProb.toFixed(1)}% with Supporter lines!`
+            : `🔥 **爆發天胡率極強**：搭配支援者後首波展開成功率突破 ${maxProb.toFixed(1)}%！`);
     } else {
-        comments.push(`🎯 **戰術連鎖可優化**：當前極限展開率為 ${maxProb.toFixed(1)}%，可嘗試增加過牌或檢索卡。`);
+        comments.push(isEn
+            ? `🎯 **Optimization Room**: Current max setup consistency is ${maxProb.toFixed(1)}%. Consider adding drawing or search items.`
+            : `🎯 **戰術連鎖可優化**：當前極限展開率為 ${maxProb.toFixed(1)}%，可嘗試增加過牌或檢索卡。`);
     }
 
     document.getElementById('octo-score-number').innerText = totalScore;
@@ -361,10 +376,10 @@ function generateOctoTacticalReport(stats) {
     document.getElementById('octo-rank-badge').style.color = badgeColor;
 
     document.getElementById('octo-bar-stability').style.width = stabilityScore + "%";
-    document.getElementById('octo-score-stability').innerText = Math.round(stabilityScore) + " 分";
+    document.getElementById('octo-score-stability').innerText = Math.round(stabilityScore) + (isEn ? " pts" : " 分");
 
     document.getElementById('octo-bar-consistency').style.width = consistencyScore + "%";
-    document.getElementById('octo-score-consistency').innerText = Math.round(consistencyScore) + " 分";
+    document.getElementById('octo-score-consistency').innerText = Math.round(consistencyScore) + (isEn ? " pts" : " 分");
 
     let commentsContainer = document.getElementById('octo-comments-list');
     commentsContainer.innerHTML = comments.map(c => `<li style="margin-bottom:6px;">${c}</li>`).join('');
