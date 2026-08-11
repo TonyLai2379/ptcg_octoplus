@@ -232,7 +232,7 @@ const translations = {
         tut1CDesc: "若有缺卡或想直接微調，可使用搜尋庫直接加入，或是建立自己的假卡 (代牌)。", 
         tut2H4: "⚔️ 戰場沙盤互動指南：", tut2Desc: "點擊左下角「鎖定牌組並開局」自動洗牌！支援卡牌自由拖曳放置，戰鬥場與備戰區皆支援完美錯位疊放。", 
         tut3H4: "🎲 蒙地卡羅機率算力：", tut3Desc: "設定「直接解牌目標」與「連鎖資源」，點擊執行深度推演，系統將在 0.1 秒內模擬 10,000 次真實對局抽牌！", 
-        btnTutReady: "我準備好了！", benchLabel: "格" 
+        btnTutReady: "我準備好了！", benchLabel: "格" ,
         navImport: "🛠️ 1. 編輯牌組",
         navStarter: "🎲 2. 起手勝率健檢",
         navSandbox: "⚔️ 3. 覆盤沙盤戰場",
@@ -271,7 +271,7 @@ const translations = {
         tut1CDesc: "Search database for missing cards, or create proxy cards on the fly.", 
         tut2H4: "⚔️ Battle Board Guide:", tut2Desc: "Click 'Lock & Start Game' to shuffle! Supports drag-and-drop card movement and stacked cards on fields.", 
         tut3H4: "🎲 Monte Carlo Engine:", tut3Desc: "Set your target cards and chain resources, then click Run Simulation to simulate 10,000 real draws in 0.1s!", 
-        btnTutReady: "I'm Ready!", benchLabel: "Slots" 
+        btnTutReady: "I'm Ready!", benchLabel: "Slots" ,
         navImport: "🛠️ 1. Deck Builder",
         navStarter: "🎲 2. Starter Checkup",
         navSandbox: "⚔️ 3. Sandbox Board",
