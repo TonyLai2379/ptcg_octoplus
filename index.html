@@ -603,22 +603,47 @@
         </div>
     </div>
 
-    <div id="sub-modal" class="modal-overlay">
+   <div id="sub-modal" class="modal-overlay">
         <div class="modal-card" style="width: 450px; text-align: center; border-color: #E34C26;">
             <h2 style="color: #FFD700; margin-bottom: 10px;">👑 訂閱方案與會員權限</h2>
-            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">請選擇以下方案解鎖「萬次深度推演」：</p>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 20px;">選擇方案解鎖「萬次蒙地卡羅」深度推演：</p>
+            
             <div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">
-                <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">🎁 1. 免費試用七天 (每日額度限制 30 次)</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">💎 2. 訂閱 1 個月 / 120 元</button>
-                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">👑 3. 訂閱 3 個月 / 299 元</button>
-                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="alert('💡 金流升級中！請點擊「💬 聯絡客服」私訊小章魚轉帳開通，或使用「邀請碼」兌換。')">🏆 4. 訂閱一年 / 999 元</button>
-                <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; document.getElementById('auth-overlay').style.display='flex';">🔑 5. 輸入會員邀請碼</button>
+                <!-- 1. 免費試用 7 天 -->
+                <button class="btn btn-secondary" onclick="activateTrial()" style="border-style: dashed; border-color: #58A6FF; color: #58A6FF;">
+                    🎁 1. 免費試用 7 天 (全功能 / 每日限額 30 次)
+                </button>
+                
+                <!-- 2. 付費訂閱：1 個月 -->
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="buyPlan('1m')">
+                    💎 2. 訂閱 1 個月 / NT$ 120 (無上限)
+                </button>
+                
+                <!-- 3. 付費訂閱：3 個月 -->
+                <button class="btn btn-secondary" style="border-color: #00E5FF; color: #00E5FF;" onclick="buyPlan('3m')">
+                    👑 3. 訂閱 3 個月 / NT$ 299 (熱門優惠)
+                </button>
+                
+                <!-- 4. 付費訂閱：1 年 -->
+                <button class="btn btn-secondary" style="border-color: #FFD700; color: #FFD700; font-weight: bold;" onclick="buyPlan('1y')">
+                    🏆 4. 訂閱 1 年期 / NT$ 999 (享最高折抵)
+                </button>
+                
+                <!-- 5. 邀請碼兌換 (無任何預設提示文字) -->
+                <button class="btn" style="background: #238636;" onclick="document.getElementById('sub-modal').style.display='none'; redeemInviteCode();">
+                    🔑 5. 輸入會員邀請碼開通
+                </button>
             </div>
+
             <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #30363D; text-align: left; font-size: 11px; color: #888; line-height: 1.4;">
-                <b>⚠️ 免責聲明：</b><br>
-                本服務提供之戰術分析數據僅供參考。本工具為第三方獨立開發之 TCG 數據工具，與 Nintendo、Pokémon 及 GAME FREAK 無關。
+                <b>⚠️ 會員與條款須知：</b><br>
+                1. 啟用體驗或訂閱付款前，須於系統完成 E-mail 信箱身分綁定。<br>
+                2. 點擊購買即代表您閱讀並同意我們的 <a href="terms.html" target="_blank" class="legal-link">服務條款</a> 與 <a href="privacy.html" target="_blank" class="legal-link">隱私權免責政策</a>。
             </div>
-            <button class="btn btn-secondary" style="margin-top:15px;" onclick="document.getElementById('sub-modal').style.display='none'">先不要，返回</button>
+            
+            <button class="btn btn-secondary" style="margin-top:15px;" onclick="document.getElementById('sub-modal').style.display='none'">
+                稍後再說，繼續試玩
+            </button>
         </div>
     </div>
 
