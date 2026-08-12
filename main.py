@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Header
+from fastapi import FastAPI, Depends, HTTPException, Header, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import re
@@ -17,106 +17,10 @@ from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
 import hashlib
 import urllib.parse
-from fastapi import Form
-from fastapi.responses import HTMLResponse
 
 # ==========================================
-# 綠界金流設定 (從 .env 讀取，若無則用綠界公用測試參數)
+# 1. 宣告 FastAPI 應用程式 (必須在所有 @app.post 之前)
 # ==========================================
-ECPAY_MERCHANT_ID = os.getenv("ECPAY_MERCHANT_ID", "2000132")
-ECPAY_HASH_KEY = os.getenv("ECPAY_HASH_KEY", "5294y06JbISpM5x9")
-ECPAY_HASH_IV = os.getenv("ECPAY_HASH_IV", "v77hoKGq4kWxNNIS")
-ECPAY_ACTION_URL = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"  # 測試環境 URL
-
-PLAN_PRICES = {
-    "1m": {"amount": 120, "name": "PTCG 小章魚 Pro - 1 個月訂閱", "days": 30},
-    "3m": {"amount": 299, "name": "PTCG 小章魚 Pro - 3 個月訂閱", "days": 90},
-    "1y": {"amount": 999, "name": "PTCG 小章魚 Pro - 1 年期尊榮訂閱", "days": 365}
-}
-
-def generate_ecpay_checkmac(params: dict, hash_key: str, hash_iv: str) -> str:
-    """依照綠界官方規範生成 CheckMacValue"""
-    sorted_keys = sorted(params.keys())
-    raw_str = f"HashKey={hash_key}&" + "&".join([f"{k}={params[k]}" for k in sorted_keys]) + f"&HashIV={hash_iv}"
-    encoded_str = urllib.parse.quote_plus(raw_str).lower()
-    # 綠界特有符號取代規則
-    encoded_str = encoded_str.replace('%2d', '-').replace('%5f', '_').replace('%2e', '.').replace('%21', '!')
-    encoded_str = encoded_str.replace('%2a', '*').replace('%28', '(').replace('%29', ')')
-    return hashlib.sha256(encoded_str.encode('utf-8')).hexdigest().upper()
-
-class CreateOrderReq(BaseModel):
-    plan_type: str
-    return_url: str
-
-@app.post("/api/v1/create_ecpay_order")
-def create_ecpay_order(req: CreateOrderReq, authorization: Optional[str] = Header(None)):
-    user_id, user_email = get_user_and_email_from_token(authorization)
-    if req.plan_type not in PLAN_PRICES:
-        raise HTTPException(status_code=400, detail="無效的訂閱方案")
-    
-    plan = PLAN_PRICES[req.plan_type]
-    trade_no = f"OCTO{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(100,999)}"
-    trade_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-    
-    params = {
-        "MerchantID": ECPAY_MERCHANT_ID,
-        "MerchantTradeNo": trade_no,
-        "MerchantTradeDate": trade_date,
-        "PaymentType": "aio",
-        "TotalAmount": str(plan["amount"]),
-        "TradeDesc": urllib.parse.quote_plus("PTCG Octoplus Pro Subscription"),
-        "ItemName": plan["name"],
-        "ReturnURL": f"https://ptcg-octoplus-api.onrender.com/api/v1/ecpay_callback", # 綠界幕後通知後址
-        "ClientBackURL": req.return_url, # 付款完成導回網址
-        "ChoosePayment": "ALL",
-        "EncryptType": "1",
-        "CustomField1": user_id,       # 把 User ID 放在自訂欄位帶給綠界
-        "CustomField2": str(plan["days"]) # 把訂閱天數帶給綠界
-    }
-    params["CheckMacValue"] = generate_ecpay_checkmac(params, ECPAY_HASH_KEY, ECPAY_HASH_IV)
-    
-    # 產生自動提交表單 HTML 給前端
-    form_inputs = "".join([f'<input type="hidden" name="{k}" value="{v}">' for k, v in params.items()])
-    html_form = f"""
-    <form id="ecpay-form" action="{ECPAY_ACTION_URL}" method="POST">{form_inputs}</form>
-    <script>document.getElementById('ecpay-form').submit();</script>
-    """
-    return {"success": True, "html": html_form}
-
-@app.post("/api/v1/ecpay_callback")
-def ecpay_callback(
-    MerchantID: str = Form(...),
-    MerchantTradeNo: str = Form(...),
-    RtnCode: str = Form(...),
-    RtnMsg: str = Form(...),
-    TradeAmt: str = Form(...),
-    CustomField1: str = Form(None), # user_id
-    CustomField2: str = Form(None), # days
-    CheckMacValue: str = Form(...)
-):
-    """綠界付款成功幕後回傳更新會員權限"""
-    # 這裡驗證 RtnCode == '1' 且檢查碼通過即可寫入
-    if RtnCode == "1" and CustomField1 and CustomField2:
-        try:
-            days = int(CustomField2)
-            user_id = CustomField1
-            now = datetime.datetime.now(datetime.timezone.utc)
-            
-            # 查詢原有過期時間，若尚未過期則展延，過期則從現在起算
-            p_res = supabase.table("profiles").select("pro_expires_at").eq("id", user_id).execute()
-            base_time = now
-            if p_res.data and p_res.data[0].get("pro_expires_at"):
-                old_exp = datetime.datetime.fromisoformat(p_res.data[0]["pro_expires_at"].replace("Z", "+00:00"))
-                if old_exp > now:
-                    base_time = old_exp
-                    
-            new_exp = (base_time + datetime.timedelta(days=days)).isoformat()
-            supabase.table("profiles").update({"is_pro": True, "pro_expires_at": new_exp}).eq("id", user_id).execute()
-        except Exception as e:
-            print(f"綠界 Callback 處理失敗: {e}")
-            return "0|Error"
-    return "1|OK"
-
 app = FastAPI(title="PTCG Octoplus API", version="29.0.0")
 
 app.add_middleware(
@@ -130,9 +34,23 @@ app.add_middleware(
 if os.path.exists("tutor_pic"):
     app.mount("/tutor_pic", StaticFiles(directory="tutor_pic"), name="tutor_pic")
 
+# ==========================================
+# 2. 資料庫與金流環境變數設定
+# ==========================================
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://cnjajimwpuuhkdxelgwg.supabase.co")
 SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "sb_secret_rQ9BehEwCzjbAF5oRDNzYw_l1cXhpbC")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+
+ECPAY_MERCHANT_ID = os.getenv("ECPAY_MERCHANT_ID", "2000132")
+ECPAY_HASH_KEY = os.getenv("ECPAY_HASH_KEY", "5294y06JbISpM5x9")
+ECPAY_HASH_IV = os.getenv("ECPAY_HASH_IV", "v77hoKGq4kWxNNIS")
+ECPAY_ACTION_URL = os.getenv("ECPAY_ACTION_URL", "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5")
+
+PLAN_PRICES = {
+    "1m": {"amount": 120, "name": "PTCG 小章魚 Pro - 1 個月訂閱", "days": 30},
+    "3m": {"amount": 299, "name": "PTCG 小章魚 Pro - 3 個月訂閱", "days": 90},
+    "1y": {"amount": 999, "name": "PTCG 小章魚 Pro - 1 年期尊榮訂閱", "days": 365}
+}
 
 DEFAULT_CARDBACK = "https://asia.pokemon-card.com/tw/assets/images/card-back.png"
 
@@ -153,6 +71,18 @@ LL_TO_OFFICIAL = {
 LOCAL_CARD_DB = {}
 GLOBAL_CARDS_LIST = [] 
 BEST_FALLBACK_CACHE = {} 
+
+# ==========================================
+# 3. 系統共用 Helper 函數
+# ==========================================
+def generate_ecpay_checkmac(params: dict, hash_key: str, hash_iv: str) -> str:
+    """依照綠界官方規範生成 CheckMacValue"""
+    sorted_keys = sorted(params.keys())
+    raw_str = f"HashKey={hash_key}&" + "&".join([f"{k}={params[k]}" for k in sorted_keys]) + f"&HashIV={hash_iv}"
+    encoded_str = urllib.parse.quote_plus(raw_str).lower()
+    encoded_str = encoded_str.replace('%2d', '-').replace('%5f', '_').replace('%2e', '.').replace('%21', '!')
+    encoded_str = encoded_str.replace('%2a', '*').replace('%28', '(').replace('%29', ')')
+    return hashlib.sha256(encoded_str.encode('utf-8')).hexdigest().upper()
 
 def is_valid_url(url):
     return isinstance(url, str) and url.startswith("http")
@@ -206,7 +136,6 @@ def auto_save_new_cards_to_db(cards_to_upsert: list):
     if not cards_to_upsert:
         return
         
-    # 💡 修正：先強制更新伺服器的「記憶體快取」，確保前端搜尋系統立刻找得到
     for card in cards_to_upsert:
         c_key = card["card_key"]
         c_img = card["img_url"]
@@ -215,19 +144,15 @@ def auto_save_new_cards_to_db(cards_to_upsert: list):
         if c_name.lower() not in LOCAL_CARD_DB:
             LOCAL_CARD_DB[c_name.lower()] = c_img
         
-        # 避免重複加入導致搜尋結果出現兩張一樣的卡
         if not any(c['key'] == c_key for c in GLOBAL_CARDS_LIST):
             GLOBAL_CARDS_LIST.append({"key": c_key, "name": c_name, "img": c_img})
             
-    # 💡 接著再嘗試非同步寫入 Supabase 資料庫
     try:
         supabase.table("global_cards").upsert(cards_to_upsert).execute()
         print(f"🎉 [自動擴充卡庫] 成功新增 {len(cards_to_upsert)} 張卡牌至 Supabase！")
     except Exception as e:
-        # 就算資料庫寫入失敗，前端搜尋依然可以運作，因為記憶體已經存了
         print(f"⚠️ [自動擴充資料庫失敗，但已暫存於記憶體]: {e}")
 
-# Token 雙軌驗證
 def get_user_and_email_from_token(auth_header: str):
     if not auth_header or not auth_header.startswith("Bearer "): 
         raise HTTPException(status_code=401, detail="請先登入帳號")
@@ -339,6 +264,13 @@ def run_monte_carlo(deck_cards, direct_dict, chain_dict, draw1, target_rule="AND
             if check_success(hand): success_count += 1
     return (success_count / iterations) * 100.0
 
+# ==========================================
+# 4. Pydantic 模型定義
+# ==========================================
+class CreateOrderReq(BaseModel):
+    plan_type: str
+    return_url: str
+
 class ParseOfficialReq(BaseModel): deck_code: str
 class ParseTextReq(BaseModel): text: str
 class RedeemCodeReq(BaseModel): code: str
@@ -347,6 +279,78 @@ class UpsertCardReq(BaseModel): card_key: str; name: str; img_url: str
 class FeedbackReq(BaseModel): user_email: Optional[str] = None; message: str; image_base64: Optional[str] = None
 class MonteCarloReq(BaseModel):
     deck_cards: List[Dict[str, Any]]; direct_targets: Dict[str, Any]; chain_targets: Dict[str, Any]; draw1: int; target_rule: str = "AND"; dead_hand_size: int = 0
+
+# ==========================================
+# 5. API 路由設定 (Routes)
+# ==========================================
+@app.post("/api/v1/create_ecpay_order")
+def create_ecpay_order(req: CreateOrderReq, authorization: Optional[str] = Header(None)):
+    user_id, user_email = get_user_and_email_from_token(authorization)
+    if req.plan_type not in PLAN_PRICES:
+        raise HTTPException(status_code=400, detail="無效的訂閱方案")
+    
+    plan = PLAN_PRICES[req.plan_type]
+    trade_no = f"OCTO{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(100,999)}"
+    trade_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    
+    params = {
+        "MerchantID": ECPAY_MERCHANT_ID,
+        "MerchantTradeNo": trade_no,
+        "MerchantTradeDate": trade_date,
+        "PaymentType": "aio",
+        "TotalAmount": str(plan["amount"]),
+        "TradeDesc": urllib.parse.quote_plus("PTCG Octoplus Pro Subscription"),
+        "ItemName": plan["name"],
+        "ReturnURL": f"https://ptcg-octoplus-api.onrender.com/api/v1/ecpay_callback", # 綠界幕後通知後址
+        "ClientBackURL": req.return_url, # 付款完成導回網址
+        "ChoosePayment": "ALL",
+        "EncryptType": "1",
+        "CustomField1": user_id,       # 把 User ID 放在自訂欄位帶給綠界
+        "CustomField2": str(plan["days"]) # 把訂閱天數帶給綠界
+    }
+    params["CheckMacValue"] = generate_ecpay_checkmac(params, ECPAY_HASH_KEY, ECPAY_HASH_IV)
+    
+    # 產生自動提交表單 HTML 給前端
+    form_inputs = "".join([f'<input type="hidden" name="{k}" value="{v}">' for k, v in params.items()])
+    html_form = f"""
+    <form id="ecpay-form" action="{ECPAY_ACTION_URL}" method="POST">{form_inputs}</form>
+    <script>document.getElementById('ecpay-form').submit();</script>
+    """
+    return {"success": True, "html": html_form}
+
+@app.post("/api/v1/ecpay_callback")
+def ecpay_callback(
+    MerchantID: str = Form(...),
+    MerchantTradeNo: str = Form(...),
+    RtnCode: str = Form(...),
+    RtnMsg: str = Form(...),
+    TradeAmt: str = Form(...),
+    CustomField1: str = Form(None), # user_id
+    CustomField2: str = Form(None), # days
+    CheckMacValue: str = Form(...)
+):
+    """綠界付款成功幕後回傳更新會員權限"""
+    # 這裡驗證 RtnCode == '1' 且檢查碼通過即可寫入
+    if RtnCode == "1" and CustomField1 and CustomField2:
+        try:
+            days = int(CustomField2)
+            user_id = CustomField1
+            now = datetime.datetime.now(datetime.timezone.utc)
+            
+            # 查詢原有過期時間，若尚未過期則展延，過期則從現在起算
+            p_res = supabase.table("profiles").select("pro_expires_at").eq("id", user_id).execute()
+            base_time = now
+            if p_res.data and p_res.data[0].get("pro_expires_at"):
+                old_exp = datetime.datetime.fromisoformat(p_res.data[0]["pro_expires_at"].replace("Z", "+00:00"))
+                if old_exp > now:
+                    base_time = old_exp
+                    
+            new_exp = (base_time + datetime.timedelta(days=days)).isoformat()
+            supabase.table("profiles").update({"is_pro": True, "pro_expires_at": new_exp}).eq("id", user_id).execute()
+        except Exception as e:
+            print(f"綠界 Callback 處理失敗: {e}")
+            return "0|Error"
+    return "1|OK"
 
 @app.get("/")
 def serve_index():
@@ -444,7 +448,7 @@ def api_redeem_code(req: RedeemCodeReq, authorization: Optional[str] = Header(No
     if not p_res.data: 
         supabase.table("profiles").insert({"id": user_id, "email": user_email}).execute()
     
-    exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)).isoformat()
+    exp_time = (datetime.datetime.now(datetime.timezone.utc) + timedelta(days=days)).isoformat()
     supabase.table("profiles").update({"is_pro": True, "pro_expires_at": exp_time, "email": user_email}).eq("id", user_id).execute()
     supabase.table("promo_codes").update({"used_count": promo["used_count"] + 1}).eq("code", code).execute()
     
@@ -495,11 +499,9 @@ def api_parse_official(req: ParseOfficialReq):
                 is_new_card = False
                 img_url = None
 
-                # 1. 第一優先：精確比對完整 key「卡名 [卡號/ID]」
                 if card_key.lower() in LOCAL_CARD_DB and is_valid_url(LOCAL_CARD_DB[card_key.lower()]):
                     img_url = LOCAL_CARD_DB[card_key.lower()]
 
-                # 2. 第二優先：若快取沒有該 ID，且有官網連結，強制去官網抓專屬新圖
                 if not is_valid_url(img_url) and card_href:
                     try:
                         worker_detail_url = f"https://ptcgmaster.loganlai0422.workers.dev/?path={card_href}"
@@ -516,7 +518,6 @@ def api_parse_official(req: ParseOfficialReq):
                     except Exception as req_err:
                         print(f"⚠️ 抓取官網單卡頁面失敗 ({card_key}): {req_err}")
 
-                # 3. 第三優先：若官網請求失敗，記錄並回退至舊同名卡或預設卡背
                 if not is_valid_url(img_url):
                     fallback_img = LOCAL_CARD_DB.get(name.lower())
                     if is_valid_url(fallback_img):
@@ -533,7 +534,6 @@ def api_parse_official(req: ParseOfficialReq):
                     'fallback_img': DEFAULT_CARDBACK
                 }
 
-                # 4. 只要成功從官網抓到專屬新圖片，就加入自動寫入 Supabase 佇列
                 if is_new_card and is_valid_url(img_url) and img_url != DEFAULT_CARDBACK:
                     cards_to_db.append({
                         "card_key": card_key,
@@ -542,7 +542,6 @@ def api_parse_official(req: ParseOfficialReq):
                         "metadata": {"source": "official_import_auto"}
                     })
 
-        # 自動擴充至 Supabase 全卡庫
         if cards_to_db:
             auto_save_new_cards_to_db(cards_to_db)
 
