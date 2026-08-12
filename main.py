@@ -290,7 +290,7 @@ def create_ecpay_order(req: CreateOrderReq, authorization: Optional[str] = Heade
         raise HTTPException(status_code=400, detail="無效的訂閱方案")
     
     plan = PLAN_PRICES[req.plan_type]
-    trade_no = f"OCTO{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(100,999)}"
+    trade_no = f"OCT{datetime.datetime.now().strftime('%y%m%d%H%M%S')}{random.randint(100,999)}"
     trade_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     
     params = {
