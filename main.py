@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Header, Form
+from fastapi import FastAPI, Depends, HTTPException, Header, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
@@ -319,21 +319,19 @@ def create_ecpay_order(req: CreateOrderReq, authorization: Optional[str] = Heade
     return {"success": True, "html": html_form}
 
 @app.post("/api/v1/ecpay_callback")
-def ecpay_callback(
-    MerchantID: str = Form(...),
-    MerchantTradeNo: str = Form(...),
-    RtnCode: str = Form(...),
-    RtnMsg: str = Form(...),
-    TradeAmt: str = Form(...),
-    CustomField1: str = Form(None), # user_id
-    CustomField2: str = Form(None), # days
-    CheckMacValue: str = Form(...)
-):
-    """綠界付款成功幕後回傳更新會員權限"""
-    if RtnCode == "1" and CustomField1 and CustomField2:
+async def ecpay_callback(request: Request):
+    """綠界付款成功幕後回傳更新會員權限 (無敵防卡版)"""
+    # 1. 把綠界傳來的所有表單資料全部收下來
+    form = await request.form()
+    
+    rtn_code = form.get("RtnCode")
+    user_id = form.get("CustomField1")
+    days_str = form.get("CustomField2")
+    
+    # 2. 如果付款成功 (RtnCode == "1") 且有我們需要的識別碼
+    if rtn_code == "1" and user_id and days_str:
         try:
-            days = int(CustomField2)
-            user_id = CustomField1
+            days = int(days_str)
             now = datetime.datetime.now(datetime.timezone.utc)
             
             p_res = supabase.table("profiles").select("pro_expires_at").eq("id", user_id).execute()
@@ -345,7 +343,7 @@ def ecpay_callback(
                     
             new_exp = (base_time + datetime.timedelta(days=days)).isoformat()
             
-            # 💡 關鍵修復：檢查如果資料庫還沒有這名使用者的檔案，要用 insert 而不是 update！
+            # 更新或建立會員資料
             if not p_res.data:
                 supabase.table("profiles").insert({"id": user_id, "is_pro": True, "pro_expires_at": new_exp}).execute()
             else:
