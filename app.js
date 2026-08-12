@@ -1998,8 +1998,7 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
     return (successCount / iterations) * 100.0;
 }
 
-function runSimulation() {
-    // ==========================================
+// ==========================================
 // 💡 1. 綠界金流購買觸發器
 // ==========================================
 async function buyPlan(planType) {
@@ -2070,16 +2069,15 @@ async function redeemInviteCode() {
 }
 
 // ==========================================
-// 💡 3. 在 runSimulation() 頂部加掛訪客防線
+// 💡 3. 主推演邏輯 (runSimulation) 與訪客防線
 // ==========================================
-// 尋找你 app.js 裡的 function runSimulation()，在最前頭加上這幾行：
 function runSimulation() {
     // 🚧 權限檢查：若完全未登入（純訪客），阻止計算並引導升級！
     if (!window.isUserPro && (!supabaseClient || !supabaseClient.auth)) {
         document.getElementById('sub-modal').style.display = 'flex';
         return;
     }
-    // ... 下方保留你原本的 runSimulation 邏輯不動
+
     let deckForSim = gameCards.filter(c => c.zone === 'deck').map(c => ({ name: c.key }));
     if (deckForSim.length === 0) {
         return alert("⚠️ 牌庫中沒有卡片！請先點擊「鎖定牌組並開局」。");
