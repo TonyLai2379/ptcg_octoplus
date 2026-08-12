@@ -15,6 +15,107 @@ import uuid
 from bs4 import BeautifulSoup
 from typing import List, Dict, Optional, Any
 from supabase import create_client, Client
+import hashlib
+import urllib.parse
+from fastapi import Form
+from fastapi.responses import HTMLResponse
+
+# ==========================================
+# 綠界金流設定 (從 .env 讀取，若無則用綠界公用測試參數)
+# ==========================================
+ECPAY_MERCHANT_ID = os.getenv("ECPAY_MERCHANT_ID", "3509526")
+ECPAY_HASH_KEY = os.getenv("ECPAY_HASH_KEY", "yQWItkjO0VyCIwiQ")
+ECPAY_HASH_IV = os.getenv("ECPAY_HASH_IV", "6g28r58RnmNU0mTd")
+ECPAY_ACTION_URL = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"  # 測試環境 URL
+
+PLAN_PRICES = {
+    "1m": {"amount": 120, "name": "PTCG 小章魚 Pro - 1 個月訂閱", "days": 30},
+    "3m": {"amount": 299, "name": "PTCG 小章魚 Pro - 3 個月訂閱", "days": 90},
+    "1y": {"amount": 999, "name": "PTCG 小章魚 Pro - 1 年期尊榮訂閱", "days": 365}
+}
+
+def generate_ecpay_checkmac(params: dict, hash_key: str, hash_iv: str) -> str:
+    """依照綠界官方規範生成 CheckMacValue"""
+    sorted_keys = sorted(params.keys())
+    raw_str = f"HashKey={hash_key}&" + "&".join([f"{k}={params[k]}" for k in sorted_keys]) + f"&HashIV={hash_iv}"
+    encoded_str = urllib.parse.quote_plus(raw_str).lower()
+    # 綠界特有符號取代規則
+    encoded_str = encoded_str.replace('%2d', '-').replace('%5f', '_').replace('%2e', '.').replace('%21', '!')
+    encoded_str = encoded_str.replace('%2a', '*').replace('%28', '(').replace('%29', ')')
+    return hashlib.sha256(encoded_str.encode('utf-8')).hexdigest().upper()
+
+class CreateOrderReq(BaseModel):
+    plan_type: str
+    return_url: str
+
+@app.post("/api/v1/create_ecpay_order")
+def create_ecpay_order(req: CreateOrderReq, authorization: Optional[str] = Header(None)):
+    user_id, user_email = get_user_and_email_from_token(authorization)
+    if req.plan_type not in PLAN_PRICES:
+        raise HTTPException(status_code=400, detail="無效的訂閱方案")
+    
+    plan = PLAN_PRICES[req.plan_type]
+    trade_no = f"OCTO{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}{random.randint(100,999)}"
+    trade_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    
+    params = {
+        "MerchantID": ECPAY_MERCHANT_ID,
+        "MerchantTradeNo": trade_no,
+        "MerchantTradeDate": trade_date,
+        "PaymentType": "aio",
+        "TotalAmount": str(plan["amount"]),
+        "TradeDesc": urllib.parse.quote_plus("PTCG Octoplus Pro Subscription"),
+        "ItemName": plan["name"],
+        "ReturnURL": f"https://ptcg-octoplus-api.onrender.com/api/v1/ecpay_callback", # 綠界幕後通知後址
+        "ClientBackURL": req.return_url, # 付款完成導回網址
+        "ChoosePayment": "ALL",
+        "EncryptType": "1",
+        "CustomField1": user_id,       # 把 User ID 放在自訂欄位帶給綠界
+        "CustomField2": str(plan["days"]) # 把訂閱天數帶給綠界
+    }
+    params["CheckMacValue"] = generate_ecpay_checkmac(params, ECPAY_HASH_KEY, ECPAY_HASH_IV)
+    
+    # 產生自動提交表單 HTML 給前端
+    form_inputs = "".join([f'<input type="hidden" name="{k}" value="{v}">' for k, v in params.items()])
+    html_form = f"""
+    <form id="ecpay-form" action="{ECPAY_ACTION_URL}" method="POST">{form_inputs}</form>
+    <script>document.getElementById('ecpay-form').submit();</script>
+    """
+    return {"success": True, "html": html_form}
+
+@app.post("/api/v1/ecpay_callback")
+def ecpay_callback(
+    MerchantID: str = Form(...),
+    MerchantTradeNo: str = Form(...),
+    RtnCode: str = Form(...),
+    RtnMsg: str = Form(...),
+    TradeAmt: str = Form(...),
+    CustomField1: str = Form(None), # user_id
+    CustomField2: str = Form(None), # days
+    CheckMacValue: str = Form(...)
+):
+    """綠界付款成功幕後回傳更新會員權限"""
+    # 這裡驗證 RtnCode == '1' 且檢查碼通過即可寫入
+    if RtnCode == "1" and CustomField1 and CustomField2:
+        try:
+            days = int(CustomField2)
+            user_id = CustomField1
+            now = datetime.datetime.now(datetime.timezone.utc)
+            
+            # 查詢原有過期時間，若尚未過期則展延，過期則從現在起算
+            p_res = supabase.table("profiles").select("pro_expires_at").eq("id", user_id).execute()
+            base_time = now
+            if p_res.data and p_res.data[0].get("pro_expires_at"):
+                old_exp = datetime.datetime.fromisoformat(p_res.data[0]["pro_expires_at"].replace("Z", "+00:00"))
+                if old_exp > now:
+                    base_time = old_exp
+                    
+            new_exp = (base_time + datetime.timedelta(days=days)).isoformat()
+            supabase.table("profiles").update({"is_pro": True, "pro_expires_at": new_exp}).eq("id", user_id).execute()
+        except Exception as e:
+            print(f"綠界 Callback 處理失敗: {e}")
+            return "0|Error"
+    return "1|OK"
 
 app = FastAPI(title="PTCG Octoplus API", version="29.0.0")
 
