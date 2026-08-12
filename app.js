@@ -1999,6 +1999,87 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
 }
 
 function runSimulation() {
+    // ==========================================
+// 💡 1. 綠界金流購買觸發器
+// ==========================================
+async function buyPlan(planType) {
+    let token = await checkLoginStatus();
+    if (!token) {
+        alert("⚠️ 訂閱前請先綁定 E-mail 身分並同意會員須知與免責條款！");
+        return;
+    }
+    
+    let btnText = "處理中...";
+    try {
+        const resp = await fetch(`${API_BASE}/api/v1/create_ecpay_order`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                plan_type: planType,
+                return_url: window.location.href
+            })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            // 開啟過渡視窗並提交綠界表單
+            let w = window.open("", "_self");
+            w.document.write(data.html);
+        } else {
+            alert("❌ 建立訂單失敗：" + (data.detail || "未知錯誤"));
+        }
+    } catch (e) {
+        alert("❌ 連線至金流伺服器失敗，請稍後重試。");
+    }
+}
+
+// ==========================================
+// 💡 2. 邀請碼兌換 (無反白提示)
+// ==========================================
+async function redeemInviteCode() {
+    let token = await checkLoginStatus();
+    if (!token) {
+        alert("⚠️ 請先在登入框中綁定您的 E-mail 信箱並同意條款！");
+        return;
+    }
+    
+    let input = prompt("請輸入您的尊榮會員邀請碼：", "");
+    if (!input || !input.trim()) return;
+    
+    try {
+        const resp = await fetch(`${API_BASE}/api/v1/redeem_code`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ code: input.trim() })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(data.detail);
+            location.reload();
+        } else {
+            alert(data.detail || "兌換碼無效！");
+        }
+    } catch (e) {
+        alert("連線失敗，請稍後重試。");
+    }
+}
+
+// ==========================================
+// 💡 3. 在 runSimulation() 頂部加掛訪客防線
+// ==========================================
+// 尋找你 app.js 裡的 function runSimulation()，在最前頭加上這幾行：
+function runSimulation() {
+    // 🚧 權限檢查：若完全未登入（純訪客），阻止計算並引導升級！
+    if (!window.isUserPro && (!supabaseClient || !supabaseClient.auth)) {
+        document.getElementById('sub-modal').style.display = 'flex';
+        return;
+    }
+    // ... 下方保留你原本的 runSimulation 邏輯不動
     let deckForSim = gameCards.filter(c => c.zone === 'deck').map(c => ({ name: c.key }));
     if (deckForSim.length === 0) {
         return alert("⚠️ 牌庫中沒有卡片！請先點擊「鎖定牌組並開局」。");
