@@ -723,7 +723,8 @@ function checkAgreements() {
     if (tStatus) { tStatus.innerHTML = termsAgreed ? '✅ 已同意' : '❌ 尚未同意'; tStatus.style.color = termsAgreed ? '#34A853' : '#FF5252'; }
     if (pStatus) { pStatus.innerHTML = privacyAgreed ? '✅ 已同意' : '❌ 尚未同意'; pStatus.style.color = privacyAgreed ? '#34A853' : '#FF5252'; }
     
-    if (btn && rem) {
+    // 💡 關鍵修正：把原本的 if (btn && rem) 改為 if (btn)，不再因為找不到提示字串就卡死按鈕
+    if (btn) {
         let lastSend = localStorage.getItem('magic_link_last_send');
         let count = parseInt(localStorage.getItem('octoplus_send_count')) || 0;
         let inCooldown = false;
@@ -735,13 +736,11 @@ function checkAgreements() {
         }
         
         if (termsAgreed && privacyAgreed) {
-            rem.style.color = '#34A853';
-            rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！';
-            if (!inCooldown) btn.disabled = false;
+            if (rem) { rem.style.color = '#34A853'; rem.innerText = '✅ 條款皆已同意，可以發送驗證連結了！'; }
+            if (!inCooldown) btn.disabled = false; // 條件滿足，解鎖按鈕！
         } else {
             btn.disabled = true;
-            rem.style.color = '#FF5252';
-            rem.innerText = '⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送';
+            if (rem) { rem.style.color = '#FF5252'; rem.innerText = '⚠️ 請先點擊閱讀並同意上述兩項條款，方可發送'; }
         }
     }
 }
