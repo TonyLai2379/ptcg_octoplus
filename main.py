@@ -359,12 +359,13 @@ async def ecpay_callback(request: Request):
                 supabase.table("payment_logs").insert({
                     "user_id": user_id,
                     "trade_no": trade_no,
-                    "amount": trade_amt,
-                    "plan_days": days,
+                    "amount": float(trade_amt) if trade_amt else 0.0,
+                    "plan_days": int(days),
                     "created_at": now.isoformat()
                 }).execute()
+                print("✅ 成功寫入 payment_logs 交易紀錄！")
             except Exception as log_err:
-                print(f"⚠️ 寫入 payment_logs 失敗 (請確認 Supabase 是否已建立此 Table): {log_err}")
+                print(f"❌ 寫入 payment_logs 失敗: {log_err}")
 
         except Exception as e:
             print(f"❌ 綠界 Callback 處理例外錯誤: {e}")
