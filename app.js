@@ -1999,14 +1999,26 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
 }
 
 // ==========================================
+// 💡 共用防線：強制引導訪客進行 E-mail 與條款驗證
+// ==========================================
+async function requireAuthForAction() {
+    let token = await checkLoginStatus();
+    if (!token) {
+        // 關閉訂閱視窗，彈出 E-mail 驗證與條款視窗
+        document.getElementById('sub-modal').style.display = 'none';
+        document.getElementById('gate-overlay').style.display = 'flex';
+        alert("⚠️ 請先在此輸入 E-mail 並同意會員條款，接收驗證信後即可解鎖權限！");
+        return null;
+    }
+    return token;
+}
+
+// ==========================================
 // 💡 1. 綠界金流購買觸發器
 // ==========================================
 async function buyPlan(planType) {
-    let token = await checkLoginStatus();
-    if (!token) {
-        alert("⚠️ 訂閱前請先綁定 E-mail 身分並同意會員須知與免責條款！");
-        return;
-    }
+    let token = await requireAuthForAction();
+    if (!token) return; // 沒登入會自動被 requireAuthForAction 攔截並跳出驗證框
     
     let btnText = "處理中...";
     try {
@@ -2023,7 +2035,6 @@ async function buyPlan(planType) {
         });
         const data = await resp.json();
         if (data.success) {
-            // 開啟過渡視窗並提交綠界表單
             let w = window.open("", "_self");
             w.document.write(data.html);
         } else {
@@ -2038,11 +2049,8 @@ async function buyPlan(planType) {
 // 💡 2. 邀請碼兌換 (無反白提示)
 // ==========================================
 async function redeemInviteCode() {
-    let token = await checkLoginStatus();
-    if (!token) {
-        alert("⚠️ 請先在登入框中綁定您的 E-mail 信箱並同意條款！");
-        return;
-    }
+    let token = await requireAuthForAction();
+    if (!token) return;
     
     let input = prompt("請輸入您的尊榮會員邀請碼：", "");
     if (!input || !input.trim()) return;
@@ -2069,8 +2077,30 @@ async function redeemInviteCode() {
 }
 
 // ==========================================
-// 💡 3. 主推演邏輯 (runSimulation) 與訪客防線
+// 💡 2.5 補上：免費 7 日體驗開通功能
 // ==========================================
+async function activateTrial() {
+    let token = await requireAuthForAction();
+    if (!token) return;
+
+    try {
+        const resp = await fetch(`${API_BASE}/api/v1/activate_trial`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        const data = await resp.json();
+        if (data.success) {
+            alert(data.detail);
+            location.reload(); // 成功後重新載入網頁，右上角會變回員狀態
+        } else {
+            alert("❌ 失敗：" + (data.detail || "無法開通體驗"));
+        }
+    } catch (e) {
+        alert("連線失敗，請稍後重試。");
+    }
+}
 function runSimulation() {
     // 🚧 權限檢查：若完全未登入（純訪客），阻止計算並引導升級！
     if (!window.isUserPro && (!supabaseClient || !supabaseClient.auth)) {
