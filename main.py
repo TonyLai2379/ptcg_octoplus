@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Header, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import re
@@ -330,14 +330,12 @@ def ecpay_callback(
     CheckMacValue: str = Form(...)
 ):
     """綠界付款成功幕後回傳更新會員權限"""
-    # 這裡驗證 RtnCode == '1' 且檢查碼通過即可寫入
     if RtnCode == "1" and CustomField1 and CustomField2:
         try:
             days = int(CustomField2)
             user_id = CustomField1
             now = datetime.datetime.now(datetime.timezone.utc)
             
-            # 查詢原有過期時間，若尚未過期則展延，過期則從現在起算
             p_res = supabase.table("profiles").select("pro_expires_at").eq("id", user_id).execute()
             base_time = now
             if p_res.data and p_res.data[0].get("pro_expires_at"):
@@ -346,11 +344,19 @@ def ecpay_callback(
                     base_time = old_exp
                     
             new_exp = (base_time + datetime.timedelta(days=days)).isoformat()
-            supabase.table("profiles").update({"is_pro": True, "pro_expires_at": new_exp}).eq("id", user_id).execute()
+            
+            # 💡 關鍵修復：檢查如果資料庫還沒有這名使用者的檔案，要用 insert 而不是 update！
+            if not p_res.data:
+                supabase.table("profiles").insert({"id": user_id, "is_pro": True, "pro_expires_at": new_exp}).execute()
+            else:
+                supabase.table("profiles").update({"is_pro": True, "pro_expires_at": new_exp}).eq("id", user_id).execute()
+                
         except Exception as e:
             print(f"綠界 Callback 處理失敗: {e}")
-            return "0|Error"
-    return "1|OK"
+            return PlainTextResponse("0|Error")
+            
+    # 回傳純文字 "1|OK" 讓綠界知道我們成功接收了
+    return PlainTextResponse("1|OK")
 
 @app.get("/")
 def serve_index():
