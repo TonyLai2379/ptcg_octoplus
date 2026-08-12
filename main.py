@@ -320,15 +320,18 @@ def create_ecpay_order(req: CreateOrderReq, authorization: Optional[str] = Heade
 
 @app.post("/api/v1/ecpay_callback")
 async def ecpay_callback(request: Request):
-    """綠界付款成功幕後回傳更新會員權限 (無敵防卡版)"""
-    # 1. 把綠界傳來的所有表單資料全部收下來
+    """綠界付款成功幕後回傳更新會員權限 (無敵防卡與歷程紀錄版)"""
     form = await request.form()
     
     rtn_code = form.get("RtnCode")
     user_id = form.get("CustomField1")
     days_str = form.get("CustomField2")
+    trade_no = form.get("MerchantTradeNo")
+    trade_amt = form.get("TradeAmt")
     
-    # 2. 如果付款成功 (RtnCode == "1") 且有我們需要的識別碼
+    # 💡 這樣你就可以在 Render 後台的 Logs 看到這行字，確認綠界有沒有把訊號傳過來！
+    print(f"🔗 收到綠界回傳: RtnCode={rtn_code}, User={user_id}, Days={days_str}, TradeNo={trade_no}")
+
     if rtn_code == "1" and user_id and days_str:
         try:
             days = int(days_str)
@@ -336,24 +339,37 @@ async def ecpay_callback(request: Request):
             
             p_res = supabase.table("profiles").select("pro_expires_at").eq("id", user_id).execute()
             base_time = now
-            if p_res.data and p_res.data[0].get("pro_expires_at"):
+            if p_res.data and len(p_res.data) > 0 and p_res.data[0].get("pro_expires_at"):
                 old_exp = datetime.datetime.fromisoformat(p_res.data[0]["pro_expires_at"].replace("Z", "+00:00"))
                 if old_exp > now:
                     base_time = old_exp
                     
             new_exp = (base_time + datetime.timedelta(days=days)).isoformat()
             
-            # 更新或建立會員資料
+            # 1. 更新權限
             if not p_res.data:
                 supabase.table("profiles").insert({"id": user_id, "is_pro": True, "pro_expires_at": new_exp}).execute()
             else:
                 supabase.table("profiles").update({"is_pro": True, "pro_expires_at": new_exp}).eq("id", user_id).execute()
-                
+            
+            print(f"✅ 成功更新權限！用戶: {user_id}, 新到期日: {new_exp}")
+
+            # 2. 自動寫入「交易歷程紀錄」
+            try:
+                supabase.table("payment_logs").insert({
+                    "user_id": user_id,
+                    "trade_no": trade_no,
+                    "amount": trade_amt,
+                    "plan_days": days,
+                    "created_at": now.isoformat()
+                }).execute()
+            except Exception as log_err:
+                print(f"⚠️ 寫入 payment_logs 失敗 (請確認 Supabase 是否已建立此 Table): {log_err}")
+
         except Exception as e:
-            print(f"綠界 Callback 處理失敗: {e}")
+            print(f"❌ 綠界 Callback 處理例外錯誤: {e}")
             return PlainTextResponse("0|Error")
             
-    # 回傳純文字 "1|OK" 讓綠界知道我們成功接收了
     return PlainTextResponse("1|OK")
 
 @app.get("/")
@@ -452,7 +468,8 @@ def api_redeem_code(req: RedeemCodeReq, authorization: Optional[str] = Header(No
     if not p_res.data: 
         supabase.table("profiles").insert({"id": user_id, "email": user_email}).execute()
     
-    exp_time = (datetime.datetime.now(datetime.timezone.utc) + timedelta(days=days)).isoformat()
+    # 💡 修復處：加上 datetime.timedelta
+    exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)).isoformat()
     supabase.table("profiles").update({"is_pro": True, "pro_expires_at": exp_time, "email": user_email}).eq("id", user_id).execute()
     supabase.table("promo_codes").update({"used_count": promo["used_count"] + 1}).eq("code", code).execute()
     
