@@ -230,9 +230,9 @@
                 <button class="q-btn" id="st-tut-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; font-weight:bold; box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
             </div>
 
-            <div class="starter-split-layout">
-                <!-- 🟡 左半部：參數設定區 -->
-                <div class="starter-left-col">
+            <div class="starter-split-layout" style="display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-start;">
+    <!-- 🟡 左半部：參數設定區 -->
+    <div class="starter-left-col" style="flex: 1.2; min-width: 450px;">
                     <div class="prob-card" style="margin-bottom:20px;">
                         <b id="st-sec-a-title" style="font-size:16px; color:#FFD700;">A. 寶可夢起站怪數量配置</b>
                         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin:15px 0;">
@@ -284,7 +284,7 @@
                 </div>
 
                <!-- 🟡 右半部：計算結果與報告區 -->
-                <div class="starter-right-col">
+    <div class="starter-right-col" style="flex: 1; min-width: 400px;">
                     <div id="st-analysisResults" style="display:none;">
                         <h3 id="st-res-title" style="color:#FFD700; margin-bottom:10px;">📊 各支援者獨立劇本勝率結果</h3>
                         <table class="combination-table" style="width:100%; border-collapse:collapse; background:#161B22; border:1px solid #30363D; border-radius:6px; font-size:13px;">
