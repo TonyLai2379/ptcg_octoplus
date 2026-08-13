@@ -25,7 +25,12 @@ app = FastAPI(title="PTCG Octoplus API", version="29.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://ptcg-octoplus.com",         # 你的正式網域
+        "https://www.ptcg-octoplus.com",     # 加上 www 的版本
+        "http://127.0.0.1:5500",             # 本機測試用
+        "http://localhost:5500"              # 本機測試用
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
