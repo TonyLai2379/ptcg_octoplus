@@ -331,6 +331,36 @@ function setTxt(id, val, isHTML=false) {
     } 
 }
 
+// 💡 檢查是否有未完成的動作
+function checkPendingAction() {
+    const action = localStorage.getItem('octoplus_pending_action');
+    if (!action) return; // 如果小本本是空的，就沒事
+
+    // 確定使用者真的登入了，才幫他自動執行
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            // 💡 執行前先擦掉記憶，避免陷入無限迴圈！
+            localStorage.removeItem('octoplus_pending_action');
+
+            // 稍微延遲 0.5 秒，等網頁畫面跟會員狀態都載入完畢再執行，UX會更好
+            setTimeout(() => {
+                if (action === 'free_trial') {
+                    console.log("偵測到未完成的免費體驗，自動執行...");
+                    activateTrial(); // 自動幫他再點一次
+                } 
+                else if (action.startsWith('subscribe_')) {
+                    // 取出天數 (例如從 'subscribe_30' 取出 '30')
+                    const days = action.replace('subscribe_', '');
+                    console.log(`偵測到未完成的付款，自動執行 ${days} 天方案...`);
+                    
+                    // 這裡請換成你原本用來觸發付款的函數，例如：
+                    // handleSubscribe(days); 
+                }
+            }, 500);
+        }
+    });
+}
+
 function changeLanguage(lang) {
     currentLang = lang; 
     localStorage.setItem('app_lang', lang); 
@@ -2013,6 +2043,14 @@ async function requireAuthForAction() {
 // 💡 1. 綠界金流購買觸發器
 // ==========================================
 async function buyPlan(planType) {
+    // 💡 1. 呼叫登入前，記下他想買什麼方案 (例如 'subscribe_30')
+    localStorage.setItem('octoplus_pending_action', 'subscribe_' + planDays);
+
+    let token = await requireAuthForAction();
+    if (!token) return;
+
+    // 💡 2. 同頁登入成功則清除
+    localStorage.removeItem('octoplus_pending_action');
     let token = await requireAuthForAction();
     if (!token) return; // 沒登入會自動被 requireAuthForAction 攔截並跳出驗證框
     
@@ -2076,6 +2114,14 @@ async function redeemInviteCode() {
 // 💡 2.5 補上：免費 7 日體驗開通功能
 // ==========================================
 async function activateTrial() {
+    // 💡 1. 呼叫登入前，先記下他的意圖
+    localStorage.setItem('octoplus_pending_action', 'free_trial');
+
+    let token = await requireAuthForAction();
+    if (!token) return;
+
+    // 💡 2. 如果不需要跳轉(同頁登入成功)，就立刻清除意圖，避免重複執行
+    localStorage.removeItem('octoplus_pending_action');
     let token = await requireAuthForAction();
     if (!token) return;
 
