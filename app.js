@@ -504,12 +504,9 @@ function runSplashAnimation() {
 }
 
 const tourSteps = [
-    { id: 'import-section', title: '💡 步驟 1/6：牌組匯入', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
-    { id: 'btn-start-game', title: '🎲 步驟 2/6：開局沙盤', desc: '匯入好牌組就可以開局啦！系統會自動幫您隨機洗牌並發放手牌與獎賞卡。' },
-    { id: 'cloud-save-section', title: '💾 步驟 3/6：雲端牌組紀錄', desc: '可以記錄牌組，節省時間。隨時儲存最愛的卡組，跨裝置一鍵載入！' },
-    { id: 'battle-board-area', title: '⚔️ 步驟 4/6：覆盤戰場', desc: '設定覆盤戰場，卡片可以自動拖曳呦！支援完美疊放與錯位排列。' },
-    { id: 'prob-panel', title: '🎯 步驟 5/6：萬次蒙地卡羅推演', desc: '複雜機率運算、情境分析沒煩惱！一鍵精算極限對局手牌率。' },
-    { id: 'history-controls', title: '📤 步驟 6/6：一鍵對局分享', desc: '想跟朋友分享嗎？這裡可以一秒分享～產生 6 位數短代碼還原戰局與機率推演！' }
+    { id: 'import-section', title: '💡 步驟 1/3：編輯牌組', desc: '牌組匯入，還可以手動編輯呦！支援繁中官方代碼與 Limitless 英文代碼。' },
+    { id: 'prob-panel', title: '🎯 步驟 2/3：起手健檢', desc: '複雜機率運算、情境分析沒煩惱！一鍵精算極限對局起手勝率。' },
+    { id: 'battle-board-area', title: '⚔️ 步驟 3/3：覆盤戰場', desc: '設定覆盤戰場，卡片可以自動拖曳呦！支援完美疊放與錯位排列。' }
 ];
 
 let currentTourIndex = 0;
