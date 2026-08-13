@@ -377,7 +377,18 @@ function generateOctoTacticalReport(stats) {
     const maxProb = stats.maxProb || 0;
     const isEn = (typeof currentLang !== 'undefined' && currentLang === 'en');
 
-    let stabilityScore = Math.max(0, Math.min(100, 100 - (mulProb * 2) - (forcedProb * 1.5)));
+    // 💡 1. 計算無怪重抽 (Mulligan) 的扣分
+    // 邏輯：10% 以內每 1% 扣 1 分；超過 10% 的部分，每 1% 扣 2 分
+    let mulPenalty = 0;
+    if (mulProb <= 10) {
+        mulPenalty = mulProb * 1;
+    } else {
+        mulPenalty = 10 + ((mulProb - 10) * 2);
+    }
+
+    // 💡 2. 計算最終起手穩定度
+    // 滿分 100，扣除 Mulligan 懲罰，再扣除雷區起站的懲罰 (維持原本每 1% 扣 1.5 分)，最低 0 分
+    let stabilityScore = Math.max(0, Math.min(100, 100 - mulPenalty - (forcedProb * 1.5)));
     let consistencyScore = Math.max(0, Math.min(100, maxProb));
     let totalScore = Math.round(stabilityScore * 0.5 + consistencyScore * 0.5);
 
