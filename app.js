@@ -334,27 +334,22 @@ function setTxt(id, val, isHTML=false) {
 // 💡 檢查是否有未完成的動作
 function checkPendingAction() {
     const action = localStorage.getItem('octoplus_pending_action');
-    if (!action) return; // 如果小本本是空的，就沒事
+    if (!action) return;
 
-    // 確定使用者真的登入了，才幫他自動執行
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-            // 💡 執行前先擦掉記憶，避免陷入無限迴圈！
             localStorage.removeItem('octoplus_pending_action');
 
-            // 稍微延遲 0.5 秒，等網頁畫面跟會員狀態都載入完畢再執行，UX會更好
             setTimeout(() => {
                 if (action === 'free_trial') {
                     console.log("偵測到未完成的免費體驗，自動執行...");
-                    activateTrial(); // 自動幫他再點一次
+                    activateTrial(); 
                 } 
                 else if (action.startsWith('subscribe_')) {
-                    // 取出天數 (例如從 'subscribe_30' 取出 '30')
-                    const days = action.replace('subscribe_', '');
-                    console.log(`偵測到未完成的付款，自動執行 ${days} 天方案...`);
-                    
-                    // 這裡請換成你原本用來觸發付款的函數，例如：
-                    // handleSubscribe(days); 
+                    const planType = action.replace('subscribe_', '');
+                    console.log(`偵測到未完成的付款，自動執行 ${planType} 方案...`);
+                    // 💡 關鍵修復：呼叫正確的綠界付款函數
+                    buyPlan(planType); 
                 }
             }, 500);
         }
@@ -832,7 +827,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 if (supabaseClient) {
     supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (session) handleSession(session);
+        if (session) {
+            handleSession(session);
+            // 💡 關鍵修復：登入後立刻翻開小本本檢查意圖！
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                checkPendingAction();
+            }
+        }
     });
 }
 
@@ -2043,16 +2044,14 @@ async function requireAuthForAction() {
 // 💡 1. 綠界金流購買觸發器
 // ==========================================
 async function buyPlan(planType) {
-    // 💡 1. 呼叫登入前，記下他想買什麼方案 (例如 'subscribe_30')
-    localStorage.setItem('octoplus_pending_action', 'subscribe_' + planDays);
+    // 💡 修正變數名稱：使用 planType
+    localStorage.setItem('octoplus_pending_action', 'subscribe_' + planType);
 
     let token = await requireAuthForAction();
     if (!token) return;
 
-    // 💡 2. 同頁登入成功則清除
+    // 💡 清除意圖，並刪除重複的 let token 宣告
     localStorage.removeItem('octoplus_pending_action');
-    let token = await requireAuthForAction();
-    if (!token) return; // 沒登入會自動被 requireAuthForAction 攔截並跳出驗證框
     
     let btnText = "處理中...";
     try {
@@ -2114,16 +2113,13 @@ async function redeemInviteCode() {
 // 💡 2.5 補上：免費 7 日體驗開通功能
 // ==========================================
 async function activateTrial() {
-    // 💡 1. 呼叫登入前，先記下他的意圖
     localStorage.setItem('octoplus_pending_action', 'free_trial');
 
     let token = await requireAuthForAction();
     if (!token) return;
 
-    // 💡 2. 如果不需要跳轉(同頁登入成功)，就立刻清除意圖，避免重複執行
+    // 💡 刪除重複的 let token 宣告
     localStorage.removeItem('octoplus_pending_action');
-    let token = await requireAuthForAction();
-    if (!token) return;
 
     try {
         const resp = await fetch(`${API_BASE}/api/v1/activate_trial`, {
@@ -2135,7 +2131,7 @@ async function activateTrial() {
         const data = await resp.json();
         if (data.success) {
             alert(data.detail);
-            location.reload(); // 成功後重新載入網頁，右上角會變回員狀態
+            location.reload(); 
         } else {
             alert("❌ 失敗：" + (data.detail || "無法開通體驗"));
         }
