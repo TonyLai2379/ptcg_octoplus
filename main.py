@@ -483,17 +483,43 @@ def api_redeem_code(req: RedeemCodeReq, authorization: Optional[str] = Header(No
 
 @app.post("/api/v1/activate_trial")
 def api_activate_trial(authorization: Optional[str] = Header(None)):
+    """開通 7 天免費體驗"""
     user_id, user_email = get_user_and_email_from_token(authorization)
+    
+    # 1. 查詢該使用者的資料
     p_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
+    
     if not p_res.data:
+        # 如果是全新帳號，先建檔
         supabase.table("profiles").insert({"id": user_id, "email": user_email, "trial_used": False}).execute()
-        trial_used = False
+        user_data = {"trial_used": False}
     else:
-        trial_used = p_res.data[0].get("trial_used", False)
-    if trial_used: raise HTTPException(status_code=400, detail="您已經使用過 7 天免費體驗囉！")
-    exp_time = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)).isoformat()
-    supabase.table("profiles").update({"is_pro": False, "trial_used": True, "pro_expires_at": exp_time, "email": user_email}).eq("id", user_id).execute()
-    return {"success": True, "detail": "🎉 體驗開通成功！接下來 7 天每日可使用 30 次深度推演。"}
+        user_data = p_res.data[0]
+        
+    # 2. 核心防呆：檢查是否已經用過免費體驗！
+    if user_data.get("trial_used"):
+        # 回傳 success: False，前端 app.js 就會跳出這個警告
+        return {"success": False, "detail": "您已經使用過 7 天免費體驗囉！"}
+        
+    # 3. 計算新到期日 (如果是新會員從今天算，如果是舊會員從舊日期疊加)
+    now = datetime.datetime.now(datetime.timezone.utc)
+    base_time = now
+    if user_data.get("pro_expires_at"):
+        old_exp = datetime.datetime.fromisoformat(user_data["pro_expires_at"].replace("Z", "+00:00"))
+        if old_exp > now:
+            base_time = old_exp
+            
+    new_exp = (base_time + datetime.timedelta(days=7)).isoformat()
+    
+    # 4. 更新權限，並把 trial_used 設為 True (做記號)
+    supabase.table("profiles").update({
+        "is_pro": True,
+        "pro_expires_at": new_exp,
+        "trial_used": True,
+        "email": user_email
+    }).eq("id", user_id).execute()
+    
+    return {"success": True, "detail": "🎉 成功開通 7 天免費體驗！"}
 
 @app.post("/api/v1/parse_official")
 def api_parse_official(req: ParseOfficialReq):
