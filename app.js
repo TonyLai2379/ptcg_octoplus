@@ -2140,12 +2140,38 @@ async function activateTrial() {
     }
 }
 function runSimulation() {
-    // 🚧 權限檢查：若完全未登入（純訪客），阻止計算並引導升級！
-    if (!window.isUserPro && (!supabaseClient || !supabaseClient.auth)) {
-        document.getElementById('sub-modal').style.display = 'flex';
-        return;
+    // 🚧 1. 額度與權限檢查：非 Pro 會員每日限制 30 次
+    if (!window.isUserPro) {
+        let today = new Date().toDateString();
+        let lastDate = localStorage.getItem('octoplus_sim_date');
+        let simCount = parseInt(localStorage.getItem('octoplus_sim_count')) || 0;
+
+        // 跨日自動重置額度
+        if (lastDate !== today) {
+            simCount = 0;
+            localStorage.setItem('octoplus_sim_date', today);
+        }
+
+        // 檢查額度是否用盡
+        if (simCount >= 30) {
+            document.getElementById('sub-modal').style.display = 'flex';
+            alert("⚠️ 您今日的 30 次免費試玩額度已用盡！\n👉 請登入點擊【免費試用 7 天】或升級 Pro 會員解鎖無限算力！");
+            return; // 強制中斷運算
+        }
+
+        // 扣除額度並存檔
+        simCount++;
+        localStorage.setItem('octoplus_sim_count', simCount);
+        
+        // 💡 UX 優化：動態更新右上角的文字顯示剩餘次數
+        let statusSub = document.getElementById('txt-status-sub');
+        if (statusSub) {
+            statusSub.innerText = `(今日剩餘: ${30 - simCount} 次)`;
+            statusSub.style.color = (30 - simCount <= 5) ? '#FF5252' : '#FFF'; // 最後 5 次變紅色警告
+        }
     }
 
+    // 既有的防呆檢查與運算邏輯
     let deckForSim = gameCards.filter(c => c.zone === 'deck').map(c => ({ name: c.key }));
     if (deckForSim.length === 0) {
         return alert("⚠️ 牌庫中沒有卡片！請先點擊「鎖定牌組並開局」。");
