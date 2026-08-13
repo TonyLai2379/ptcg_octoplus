@@ -241,14 +241,12 @@
                             <div><label id="st-lbl-unwanted" style="font-size:12px; color:#888;">雷區怪 (Unwanted)：</label><input type="number" id="st-unwantedBasic" value="2"></div>
                         </div>
                         <button class="btn" id="st-btn-calc-basic" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-weight:bold; border:none; box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
-                        <div id="st-basicResultArea" style="display:none; margin-top:15px; background:#21262D; padding:12px; border-radius:6px; font-size:13px; border-left:3px solid #00E5FF;">
-                            <div id="st-txt-mulligan">💥 無基礎怪重抽 (Mulligan) 率：<span id="res-mulligan">0.00%</span></div>
-                            <div id="st-txt-perfect">🎯 完美起站機率：<span id="res-perfect">0.00%</span></div>
-                            <!-- 👇 新增這一行 👇 -->
-                            <div id="st-txt-normal">✅ 正常起站開局率：<span id="res-normal">0.00%</span></div>
-                            <!-- 👆 新增這一行 👆 -->
-                            <div id="st-txt-forced">⚠️ 雷區怪起站率：<span id="res-forced">0.00%</span></div>
-                        </div>
+                        <div id="st-basicResultArea" style="display: none; padding: 15px; margin-top: 15px; background: rgba(0, 229, 255, 0.05); border: 1px solid #00E5FF; border-radius: 8px;">
+    <div id="st-txt-mulligan" style="margin-bottom: 5px;">💥 無基礎怪重抽 (Mulligan) 率：<span id="st-mulliganProb" style="color: #FF5252; font-weight: bold;">0.00%</span></div>
+    <div id="st-txt-perfect" style="margin-bottom: 5px;">🎯 完美起站機率：<span id="st-perfectStartProb" style="color: #00E5FF; font-weight: bold;">0.00%</span></div>
+    <div id="st-txt-normal" style="margin-bottom: 5px;">✅ 正常起站開局率：<span id="st-normalStartProb" style="color: #34A853; font-weight: bold;">0.00%</span></div>
+    <div id="st-txt-forced">⚠️ 雷區怪起站率：<span id="st-forcedStartProb" style="color: #FFD700; font-weight: bold;">0.00%</span></div>
+                    </div>
                     </div>
 
                     <div class="prob-card" style="margin-bottom:20px;">
