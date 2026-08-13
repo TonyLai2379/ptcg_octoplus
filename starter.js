@@ -16,17 +16,20 @@ function starterShuffle(array) {
     return array;
 }
 
-// 1. 獨立 A 區開局起站與 Mulligan 模擬 (超高速數學精算版)
+// 1. 獨立 A 區開局起站與 Mulligan 模擬 (超高速數學精算與全新階層版)
 function runIndependentBasicSimulation() {
+    // 取得輸入數值
     const B = parseInt(document.getElementById('st-totalBasic').value) || 0;
     const W = parseInt(document.getElementById('st-wantBasic').value) || 0;
     const U = parseInt(document.getElementById('st-unwantedBasic').value) || 0;
 
+    // 防呆機制
     if (B > 60 || W > B || U > B || (W + U) > B) {
         alert("輸入數值有誤：基礎怪總數不可超過 60，且 Want + Unwanted 不能超過總基礎怪！");
         return { mulProb: 0, perfProb: 0, normalProb: 0, forcedProb: 0 };
     }
 
+    // 數學組合公式 (C取K)
     function C(n, k) {
         if (k < 0 || k > n) return 0;
         if (k === 0 || k === n) return 1;
@@ -38,41 +41,70 @@ function runIndependentBasicSimulation() {
 
     let totalHands = C(60, 7);
 
-    // 1. 無基礎怪 (Mulligan)：7張全從「非基礎怪(60-B)」裡面抽
-    let pMulligan = C(60 - B, 7) / totalHands;
+    // ==========================================
+    // 核心邏輯運算 (依照站長的完美定義)
+    // ==========================================
 
-    // 2. 完美起站 (Perfect)：至少有 1 張理想怪 (100% 扣除「連1張理想怪都沒有」的組合)
-    let pPerfect = (totalHands - C(60 - W, 7)) / totalHands;
+    // 1. 無怪重抽率 (7張全是非基礎怪)
+    let waysMulligan = C(60 - B, 7);
+    let pMulligan = waysMulligan / totalHands;
 
-    // 3. 正常起站 (Normal)：至少有 1 張基礎怪 (100% 扣除 Mulligan)
-    let pNormal = 1 - pMulligan;
+    // 2. 正常開局率 (有抽到基礎怪)
+    let waysValid = totalHands - waysMulligan;
+    let pValid = waysValid / totalHands;
 
-    // 4. 雷區起站 (Forced Unwanted)：只有抽到雷區怪，不能有 Want 也不能有其他基礎怪
+    // --- 正常開局的 3 個分支 ---
+    
+    // 分支 1：理想怪起站率 / 完美起站率 (抽到至少 1 張 Want)
+    let waysNoWant = C(60 - W, 7);
+    let waysPerfect = totalHands - waysNoWant;
+    let pPerfect = waysPerfect / totalHands;
+
+    // 分支 2：雷區怪起站 (只有雷區怪，0 Want, 0 普通基礎怪)
     // 算法：從 (非基礎怪 + 雷區怪) 中抽 7 張，並扣掉全是廢牌 (Mulligan) 的情況
-    let pUnwanted = (C(60 - B + U, 7) - C(60 - B, 7)) / totalHands;
+    let waysUnwantedAndJunk = C(60 - B + U, 7);
+    let waysForced = waysUnwantedAndJunk - waysMulligan;
+    let pForced = waysForced / totalHands;
 
+    // 分支 3：非理想、雷區基礎怪起站率 (妥協起站)
+    // 算法：正常開局總數 - 完美起站數 - 雷區起站數
+    let waysNormalBasic = waysValid - waysPerfect - waysForced;
+    let pNormalBasic = waysNormalBasic / totalHands;
+
+    // ==========================================
+    // 換算百分比與寫入畫面
+    // ==========================================
     const mulProb = pMulligan * 100;
+    const validProb = pValid * 100;
     const perfProb = pPerfect * 100;
-    const normalProb = pNormal * 100;
-    const forcedProb = pUnwanted * 100;
+    const normProb = pNormalBasic * 100;
+    const forcedProb = pForced * 100;
 
-    // 寫入畫面
-    let elMul = document.getElementById('st-mulliganProb') || document.getElementById('res-mulligan');
-    if (elMul) elMul.innerText = mulProb.toFixed(2) + "%";
+    // 條件機率 (佔「有開局」的比例，供小字參考)
+    const condPerf = (waysPerfect / waysValid) * 100 || 0;
+    const condNorm = (waysNormalBasic / waysValid) * 100 || 0;
+    const condForced = (waysForced / waysValid) * 100 || 0;
 
-    let elPerf = document.getElementById('st-perfectStartProb') || document.getElementById('res-perfect');
-    if (elPerf) elPerf.innerText = perfProb.toFixed(2) + "%";
+    // 寫入對應的 HTML ID
+    document.getElementById('st-mulliganProb').innerText = mulProb.toFixed(2) + "%";
+    document.getElementById('st-validStartProb').innerText = validProb.toFixed(2) + "%";
+    
+    document.getElementById('st-perfectStartProb-top').innerText = perfProb.toFixed(2) + "%";
+    document.getElementById('st-validStartProb-sub').innerText = "共 " + validProb.toFixed(2) + "%";
+    
+    document.getElementById('st-perfectStartProb-branch').innerText = perfProb.toFixed(2) + "%";
+    document.getElementById('st-perfectStartCond').innerText = "佔開局的 " + condPerf.toFixed(1) + "%";
+    
+    document.getElementById('st-forcedStartProb').innerText = forcedProb.toFixed(2) + "%";
+    document.getElementById('st-forcedStartCond').innerText = "佔開局的 " + condForced.toFixed(1) + "%";
+    
+    document.getElementById('st-normalStartProb').innerText = normProb.toFixed(2) + "%";
+    document.getElementById('st-normalStartCond').innerText = "佔開局的 " + condNorm.toFixed(1) + "%";
 
-    let elNorm = document.getElementById('st-normalStartProb') || document.getElementById('res-normal');
-    if (elNorm) elNorm.innerText = normalProb.toFixed(2) + "%";
+    document.getElementById('st-basicResultArea').style.display = 'block';
 
-    let elForced = document.getElementById('st-forcedStartProb') || document.getElementById('res-forced');
-    if (elForced) elForced.innerText = forcedProb.toFixed(2) + "%";
-
-    let resultArea = document.getElementById('st-basicResultArea');
-    if (resultArea) resultArea.style.display = 'block';
-
-    return { mulProb, perfProb, normalProb, forcedProb };
+    // 回傳給下方的小章魚戰術評分引擎
+    return { mulProb, perfProb, normalProb: normProb, forcedProb };
 }
 
 // 2. 看 X 張選 Y 張智慧壓牌濾牌演算法
