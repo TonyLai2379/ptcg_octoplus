@@ -246,7 +246,8 @@ const translations = {
         stBtnCalcBasic: "📊 獨立計算開局起站機率",
         stTxtMulligan: "無基礎怪重抽 (Mulligan) 率：",
         stTxtPerfect: "完美起站機率：",
-        stTxtForced: "迫出雷區怪起站率：",
+        stTxtNormal: "正常起站開局率：",
+        stTxtForced: "雷區怪起站率：",
         stSecB: "B. 重點卡與資源檢索設定",
         stBtnAddKey: "＋ 新增重點牌種類",
         stBtnAddSearch: "＋ 新增物品過牌卡",
@@ -307,7 +308,8 @@ const translations = {
         stBtnCalcBasic: "📊 Calculate Independent Starter Probabilities",
         stTxtMulligan: "Mulligan Rate (No Basic PKMN):",
         stTxtPerfect: "Perfect Starter Probability:",
-        stTxtForced: "Forced Risky Starter Rate:",
+        stTxtNormal: "Normal Starter Rate:",
+        stTxtForced: "Risky Starter Rate:",
         stSecB: "B. Key Cards & Resource Retrieval",
         stBtnAddKey: "＋ Add Key Card Type",
         stBtnAddSearch: "＋ Add Item Searching Card",
@@ -465,6 +467,7 @@ function changeLanguage(lang) {
     setTxt('st-btn-calc-basic', t.stBtnCalcBasic);
     setTxt('st-txt-mulligan', t.stTxtMulligan);
     setTxt('st-txt-perfect', t.stTxtPerfect);
+    setTxt('st-txt-normal', t.stTxtNormal);
     setTxt('st-txt-forced', t.stTxtForced);
     setTxt('st-sec-b-title', t.stSecB);
     setTxt('st-btn-add-key', t.stBtnAddKey);
