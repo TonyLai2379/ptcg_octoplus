@@ -1312,8 +1312,9 @@ function confirmGallerySelection() {
     } else if (currentModalMode === 'chain') {
         if(tempSelectedKeys.length > 0) {
             let k = tempSelectedKeys[0];
-            // 💡 賦予預設的發動優先級 step: 1
-            if(!chainList[k]) chainList[k] = { name: deckDict[k].name, img: deckDict[k].img, type: '物品/特性 - 抽牌', val: 1, targets: {}, guaranteed: false, step: 1 };
+            // 💡 自動計算目前有幾張連鎖卡，新加入的順序自動 +1
+            let currentCount = Object.keys(chainList).length;
+            if(!chainList[k]) chainList[k] = { name: deckDict[k].name, img: deckDict[k].img, type: '物品/特性 - 抽牌', val: 1, targets: {}, guaranteed: false, step: currentCount + 1 };
             renderChainUI();
         }
     } else if (currentModalMode.startsWith('search_multi')) {
@@ -1400,18 +1401,19 @@ function renderChainUI() {
         let safeKey = k.replace(/'/g, "\\\\'");
         
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #30363D; padding-bottom: 6px; margin-bottom: 8px;">
-                <div style="display:flex; align-items:center;"><img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:26px;height:36px;margin-right:8px; border-radius:3px;"><span style="font-weight:bold; font-size:14px; color:#FFF;">${c.name}</span></div>
-                <button class="btn-secondary" style="width:22px; height:22px; padding:0; display:flex; align-items:center; justify-content:center; color:#FF5252; font-weight:bold; cursor:pointer; border-radius:50%;" onclick="removeChain('${safeKey}')">✕</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #30363D; padding-bottom: 8px; margin-bottom: 12px;">
+                <div style="display:flex; align-items:center;"><img src="${safeImg}" onerror="this.src='${DEFAULT_CARDBACK}'" style="width:28px;height:40px;margin-right:10px; border-radius:4px;"><span style="font-weight:bold; font-size:15px; color:#FFF;">${c.name}</span></div>
+                <button class="btn-secondary" style="width:26px; height:26px; padding:0; display:flex; align-items:center; justify-content:center; color:#FF5252; font-weight:bold; cursor:pointer; border-radius:50%;" onclick="removeChain('${safeKey}')">✕</button>
             </div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <!-- 💡 新增：發動順序 (Step) 設定 -->
-                <div style="display:flex; align-items:center; background:#0D1117; border:1px solid #30363D; border-radius:4px; padding:2px 6px;" title="發動順序 (數字越小越先發動)">
-                    <span style="font-size:11px; color:#888; margin-right:4px;">順序</span>
-                    <input type="number" value="${c.step || 1}" min="1" max="9" style="width:25px; background:transparent; color:#FFD700; border:none; text-align:center; font-weight:bold; font-size:13px;" onchange="chainList['${safeKey}'].step=parseInt(this.value); renderChainUI();">
+            
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
+                <!-- 💡 放大版：發動順序 (Step) 設定 -->
+                <div style="display:flex; align-items:center; background:#161B22; border:1px solid #58A6FF; border-radius:6px; padding:4px 8px; box-shadow: 0 0 8px rgba(88,166,255,0.15);" title="發動順序 (數字越小越先發動)">
+                    <span style="font-size:13px; color:#58A6FF; font-weight:bold; margin-right:6px;">順序</span>
+                    <input type="number" value="${c.step}" min="1" max="99" style="width:45px; background:#0D1117; color:#FFD700; border:1px solid #30363D; border-radius:4px; text-align:center; font-weight:bold; font-size:15px; padding:4px;" onchange="chainList['${safeKey}'].step=parseInt(this.value); renderChainUI();">
                 </div>
                 
-                <select style="flex:2; font-size:12px; padding:6px; background:#0D1117; color:#FFF; border:1px solid #30363D; border-radius:4px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();">
+                <select style="flex:1; font-size:13px; padding:8px; background:#0D1117; color:#FFF; border:1px solid #30363D; border-radius:6px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();">
                     <option value="物品/特性 - 抽牌" ${c.type.includes('抽牌') && !c.type.includes('組合技') ? 'selected':''}>物品/特性 - 抽牌</option> 
                     <option value="條件組合技 - 需搭配卡片抽牌" ${c.type.includes('條件組合技')?'selected':''}>條件組合技 - 需搭卡抽牌</option>
                     <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> 
@@ -1420,11 +1422,15 @@ function renderChainUI() {
                     <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> 
                     <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>
                 </select>
-                <input type="number" value="${c.val}" min="1" max="15" style="width:40px; padding:5px; text-align:center; font-size:13px; background:#0D1117; color:#00E5FF; font-weight:bold; border:1px solid #30363D; border-radius:4px;" title="過牌張數/數量" onchange="chainList['${safeKey}'].val=parseInt(this.value)">
+                
+                <input type="number" value="${c.val}" min="1" max="15" style="width:50px; padding:8px; text-align:center; font-size:14px; background:#0D1117; color:#00E5FF; font-weight:bold; border:1px solid #30363D; border-radius:6px;" title="過牌張數/數量" onchange="chainList['${safeKey}'].val=parseInt(this.value)">
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:6px; flex-wrap:wrap;">
-                <label style="font-size:12px; display:flex; align-items:center; gap:6px; color:#00E5FF; cursor:pointer; font-weight:bold; user-select:none;"><input type="checkbox" style="width:16px; height:16px; accent-color:#00E5FF; cursor:pointer;" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}><span>已在手上/場上 (保證發動)</span></label>
-                ${isSearch ? `<button class="btn-secondary" style="padding:3px 8px; font-size:11px; color:#FFD700; border-color:#FFD700; border-radius:4px; font-weight:bold;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取條件/目標...'}</button>` : ''}
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                <label style="font-size:13px; display:flex; align-items:center; gap:6px; color:#00E5FF; cursor:pointer; font-weight:bold; user-select:none;"><input type="checkbox" style="width:18px; height:18px; accent-color:#00E5FF; cursor:pointer;" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}><span>已在手上/場上</span></label>
+                
+                <!-- 💡 放大版：選取目標按鈕 (使用 flex:1 讓他撐滿剩餘空間，字體加粗變大) -->
+                ${isSearch ? `<button class="btn-secondary" style="flex:1; min-width:200px; padding:8px 12px; font-size:13px; color:#FFD700; border-color:#FFD700; border-radius:6px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取條件/目標...'}</button>` : ''}
             </div>
         `;
         container.appendChild(div);
