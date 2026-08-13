@@ -244,26 +244,76 @@
                         </div>
                         <button class="btn" id="st-btn-calc-basic" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-weight:bold; border:none; box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
                         
-                        <!-- 機率結果顯示區 -->
-                        <div id="st-basicResultArea" style="display: none; padding: 15px; margin-top: 15px; background: rgba(0, 229, 255, 0.05); border: 1px solid #00E5FF; border-radius: 8px;">
-                            <div style="margin-bottom: 5px;">
-                                <span id="st-txt-mulligan">💥 無基礎怪重抽 (Mulligan) 率：</span>
-                                <span id="st-mulliganProb" style="color: #FF5252; font-weight: bold;">0.00%</span>
-                            </div>
-                            <div style="margin-bottom: 5px;">
-                                <span id="st-txt-perfect">🎯 完美起站機率 (包含理想怪)：</span>
-                                <span id="st-perfectStartProb" style="color: #00E5FF; font-weight: bold;">0.00%</span>
-                            </div>
-                            <div style="margin-bottom: 5px;">
-                                <span id="st-txt-normal">✅ 正常起站開局率 (無理想怪但有正常怪)：</span>
-                                <span id="st-normalStartProb" style="color: #34A853; font-weight: bold;">0.00%</span>
-                            </div>
-                            <div>
-                                <span id="st-txt-forced">⚠️ 雷區怪起站率 (只抽到雷區怪)：</span>
-                                <span id="st-forcedStartProb" style="color: #FFD700; font-weight: bold;">0.00%</span>
-                            </div>
-                        </div>
-                    </div>
+                       <!-- 機率結果顯示區 (全新階層化 UI) -->
+<div id="st-basicResultArea" style="display: none; margin-top: 15px;">
+    
+    <!-- 頂層 1 & 2：絕對機率 100% 總和 -->
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <div style="flex: 1; background: rgba(255, 82, 82, 0.05); border: 1px dashed #FF5252; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: #FF5252; margin-bottom: 4px;">💥 1. 無基礎怪重抽率</div>
+            <div id="st-mulliganProb" style="font-size: 20px; font-weight: bold; color: #FF5252;">0.00%</div>
+        </div>
+        <div style="display: flex; align-items: center; font-size: 16px; color: #888;">+</div>
+        <div style="flex: 1.2; background: rgba(52, 168, 83, 0.05); border: 1px solid #34A853; padding: 12px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: #34A853; margin-bottom: 4px;">✅ 2. 正常開局率 (有基礎怪)</div>
+            <div id="st-validStartProb" style="font-size: 20px; font-weight: bold; color: #34A853;">0.00%</div>
+        </div>
+        <div style="display: flex; align-items: center; font-size: 14px; color: #888; font-weight: bold;">= 100%</div>
+    </div>
+
+    <!-- 頂層 3：獨立高亮 完美起站率 -->
+    <div style="background: linear-gradient(90deg, rgba(0, 229, 255, 0.1), transparent); border-left: 4px solid #00E5FF; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div>
+            <div style="color: #00E5FF; font-weight: bold; font-size: 14px;">🎯 3. 完美起站率</div>
+            <div style="color: #aaa; font-size: 11px; margin-top: 2px;">(60抽7至少1張理想起站怪)</div>
+        </div>
+        <div id="st-perfectStartProb-top" style="font-size: 24px; font-weight: bold; color: #00E5FF;">0.00%</div>
+    </div>
+
+    <!-- 正常開局的分支解析 -->
+    <div style="border: 1px solid #30363D; border-radius: 8px; background: #0D1117; padding: 12px;">
+        <div style="font-size: 13px; font-weight: bold; color: #FFF; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #30363D; display: flex; justify-content: space-between;">
+            <span>👇 「正常開局」的實際狀況分支</span>
+            <span id="st-validStartProb-sub" style="color: #34A853;">共 0.00%</span>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- 分支 1 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #161B22; border-left: 3px solid #00E5FF; padding: 8px 12px; border-radius: 4px;">
+                <div>
+                    <div style="color: #00E5FF; font-weight: bold; font-size: 13px;">1. 理想怪起站率</div>
+                    <div style="color: #888; font-size: 11px; margin-top: 2px;">抽到的基礎怪至少有 1 張理想怪</div>
+                </div>
+                <div style="text-align: right;">
+                    <div id="st-perfectStartProb-branch" style="color: #00E5FF; font-weight: bold; font-size: 15px;">0.00%</div>
+                    <div id="st-perfectStartCond" style="color: #666; font-size: 10px;">佔開局 0%</div>
+                </div>
+            </div>
+            <!-- 分支 2 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #161B22; border-left: 3px solid #FF9800; padding: 8px 12px; border-radius: 4px;">
+                <div>
+                    <div style="color: #FF9800; font-weight: bold; font-size: 13px;">2. 雷區怪起站</div>
+                    <div style="color: #888; font-size: 11px; margin-top: 2px;">抽到的基礎怪只有抽到雷區怪 (可複數)</div>
+                </div>
+                <div style="text-align: right;">
+                    <div id="st-forcedStartProb" style="color: #FF9800; font-weight: bold; font-size: 15px;">0.00%</div>
+                    <div id="st-forcedStartCond" style="color: #666; font-size: 10px;">佔開局 0%</div>
+                </div>
+            </div>
+            <!-- 分支 3 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #161B22; border-left: 3px solid #FFD700; padding: 8px 12px; border-radius: 4px;">
+                <div>
+                    <div style="color: #FFD700; font-weight: bold; font-size: 13px;">3. 非理想、雷區基礎怪起站率</div>
+                    <div style="color: #888; font-size: 11px; margin-top: 2px;">妥協起站：有基礎怪可擋，但皆非理想或雷區</div>
+                </div>
+                <div style="text-align: right;">
+                    <div id="st-normalStartProb" style="color: #FFD700; font-weight: bold; font-size: 15px;">0.00%</div>
+                    <div id="st-normalStartCond" style="color: #666; font-size: 10px;">佔開局 0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                     <div class="prob-card" style="margin-bottom:20px;">
                         <b id="st-sec-b-title" style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
