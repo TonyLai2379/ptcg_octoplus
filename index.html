@@ -242,12 +242,27 @@
                         </div>
                         <button class="btn" id="st-btn-calc-basic" style="background:linear-gradient(90deg, #00C9FF, #92FE9D); color:#000; font-weight:bold; border:none; box-shadow: 0 4px 15px rgba(0, 201, 255, 0.3);" onclick="runIndependentBasicSimulation()">📊 獨立計算開局起站機率</button>
                         <div id="st-basicResultArea" style="display: none; padding: 15px; margin-top: 15px; background: rgba(0, 229, 255, 0.05); border: 1px solid #00E5FF; border-radius: 8px;">
-    <div id="st-txt-mulligan" style="margin-bottom: 5px;">💥 無基礎怪重抽 (Mulligan) 率：<span id="st-mulliganProb" style="color: #FF5252; font-weight: bold;">0.00%</span></div>
-    <div id="st-txt-perfect" style="margin-bottom: 5px;">🎯 完美起站機率：<span id="st-perfectStartProb" style="color: #00E5FF; font-weight: bold;">0.00%</span></div>
-    <div id="st-txt-normal" style="margin-bottom: 5px;">✅ 正常起站開局率：<span id="st-normalStartProb" style="color: #34A853; font-weight: bold;">0.00%</span></div>
-    <div id="st-txt-forced">⚠️ 雷區怪起站率：<span id="st-forcedStartProb" style="color: #FFD700; font-weight: bold;">0.00%</span></div>
-                    </div>
-                    </div>
+    <!-- 💡 修正：把 st-txt-mulligan 獨立包在一個 span 裡面 -->
+    <div style="margin-bottom: 5px;">
+        <span id="st-txt-mulligan">💥 無基礎怪重抽 (Mulligan) 率：</span>
+        <span id="st-mulliganProb" style="color: #FF5252; font-weight: bold;">0.00%</span>
+    </div>
+    
+    <div style="margin-bottom: 5px;">
+        <span id="st-txt-perfect">🎯 完美起站機率：</span>
+        <span id="st-perfectStartProb" style="color: #00E5FF; font-weight: bold;">0.00%</span>
+    </div>
+    
+    <div style="margin-bottom: 5px;">
+        <span id="st-txt-normal">✅ 正常起站開局率：</span>
+        <span id="st-normalStartProb" style="color: #34A853; font-weight: bold;">0.00%</span>
+    </div>
+    
+    <div>
+        <span id="st-txt-forced">⚠️ 雷區怪起站率：</span>
+        <span id="st-forcedStartProb" style="color: #FFD700; font-weight: bold;">0.00%</span>
+    </div>
+</div>
 
                     <div class="prob-card" style="margin-bottom:20px;">
                         <b id="st-sec-b-title" style="font-size:16px; color:#FFD700;">B. 重點卡與資源檢索設定</b>
