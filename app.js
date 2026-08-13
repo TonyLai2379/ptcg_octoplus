@@ -1312,7 +1312,8 @@ function confirmGallerySelection() {
     } else if (currentModalMode === 'chain') {
         if(tempSelectedKeys.length > 0) {
             let k = tempSelectedKeys[0];
-            if(!chainList[k]) chainList[k] = { name: deckDict[k].name, img: deckDict[k].img, type: '物品/特性 - 抽牌', val: 1, targets: {}, guaranteed: false };
+            // 💡 賦予預設的發動優先級 step: 1
+            if(!chainList[k]) chainList[k] = { name: deckDict[k].name, img: deckDict[k].img, type: '物品/特性 - 抽牌', val: 1, targets: {}, guaranteed: false, step: 1 };
             renderChainUI();
         }
     } else if (currentModalMode.startsWith('search_multi')) {
@@ -1394,7 +1395,7 @@ function renderChainUI() {
         div.style.flexDirection = 'column';
         div.style.alignItems = 'stretch';
         div.style.borderLeftColor = '#FFD700';
-        let isSearch = c.type.includes('檢索') || c.type.includes('Search');
+        let isSearch = c.type.includes('檢索') || c.type.includes('Search') || c.type.includes('組合技');
         let safeImg = (c.img && c.img.startsWith('http')) ? c.img : DEFAULT_CARDBACK;
         let safeKey = k.replace(/'/g, "\\\\'");
         
@@ -1404,14 +1405,26 @@ function renderChainUI() {
                 <button class="btn-secondary" style="width:22px; height:22px; padding:0; display:flex; align-items:center; justify-content:center; color:#FF5252; font-weight:bold; cursor:pointer; border-radius:50%;" onclick="removeChain('${safeKey}')">✕</button>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
+                <!-- 💡 新增：發動順序 (Step) 設定 -->
+                <div style="display:flex; align-items:center; background:#0D1117; border:1px solid #30363D; border-radius:4px; padding:2px 6px;" title="發動順序 (數字越小越先發動)">
+                    <span style="font-size:11px; color:#888; margin-right:4px;">順序</span>
+                    <input type="number" value="${c.step || 1}" min="1" max="9" style="width:25px; background:transparent; color:#FFD700; border:none; text-align:center; font-weight:bold; font-size:13px;" onchange="chainList['${safeKey}'].step=parseInt(this.value); renderChainUI();">
+                </div>
+                
                 <select style="flex:2; font-size:12px; padding:6px; background:#0D1117; color:#FFF; border:1px solid #30363D; border-radius:4px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();">
-                    <option value="物品/特性 - 抽牌" ${c.type.includes('抽牌')?'selected':''}>物品/特性 - 抽牌</option> <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>
+                    <option value="物品/特性 - 抽牌" ${c.type.includes('抽牌') && !c.type.includes('組合技') ? 'selected':''}>物品/特性 - 抽牌</option> 
+                    <option value="條件組合技 - 需搭配卡片抽牌" ${c.type.includes('條件組合技')?'selected':''}>條件組合技 - 需搭卡抽牌</option>
+                    <option value="物品/特性 - 指定檢索" ${c.type.includes('指定檢索')?'selected':''}>物品/特性 - 指定檢索</option> 
+                    <option value="支援者 - 洗回牌庫重抽" ${c.type.includes('洗回牌庫重抽')?'selected':''}>支援者 - 洗回牌庫重抽</option> 
+                    <option value="支援者 - 丟棄重抽" ${c.type.includes('丟棄重抽')?'selected':''}>支援者 - 丟棄重抽</option> 
+                    <option value="支援者 - 洗回牌底重抽" ${c.type.includes('支援者 - 洗回牌底重抽')?'selected':''}>支援者 - 洗回牌底重抽</option> 
+                    <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>
                 </select>
-                <input type="number" value="${c.val}" min="1" max="15" style="width:55px; padding:5px; text-align:center; font-size:13px; background:#0D1117; color:#00E5FF; font-weight:bold; border:1px solid #30363D; border-radius:4px;" title="過牌張數/數量" onchange="chainList['${safeKey}'].val=parseInt(this.value)">
+                <input type="number" value="${c.val}" min="1" max="15" style="width:40px; padding:5px; text-align:center; font-size:13px; background:#0D1117; color:#00E5FF; font-weight:bold; border:1px solid #30363D; border-radius:4px;" title="過牌張數/數量" onchange="chainList['${safeKey}'].val=parseInt(this.value)">
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:6px; flex-wrap:wrap;">
                 <label style="font-size:12px; display:flex; align-items:center; gap:6px; color:#00E5FF; cursor:pointer; font-weight:bold; user-select:none;"><input type="checkbox" style="width:16px; height:16px; accent-color:#00E5FF; cursor:pointer;" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}><span>已在手上/場上 (保證發動)</span></label>
-                ${isSearch ? `<button class="btn-secondary" style="padding:3px 8px; font-size:11px; color:#FFD700; border-color:#FFD700; border-radius:4px; font-weight:bold;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取目標...'}</button>` : ''}
+                ${isSearch ? `<button class="btn-secondary" style="padding:3px 8px; font-size:11px; color:#FFD700; border-color:#FFD700; border-radius:4px; font-weight:bold;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取條件/目標...'}</button>` : ''}
             </div>
         `;
         container.appendChild(div);
@@ -2001,28 +2014,101 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
             continue;
         }
 
-        let maxSupporter = 0;
-        let totalItem = 0;
-        for (let card of hand) {
-            if (chainDict[card]) {
-                let ctype = chainDict[card].type || '';
-                let cval = chainDict[card].val || 0;
-                if (ctype.includes('支援者')) maxSupporter = Math.max(maxSupporter, cval);
-                else if (ctype.includes('物品/特性')) totalItem += cval;
-            }
-        }
+        // ==========================================
+        // 💡 動態迴圈賽局模擬引擎 (Dynamic Iterative Loop Engine)
+        // ==========================================
+        
+        // 1. 將所有連鎖設定轉為「行動佇列」，並依照玩家設定的 Step 排序 (由小到大)
+        let actionQueue = Object.keys(chainDict).map(k => ({ cardId: k, ...chainDict[k] }));
+        actionQueue.sort((a, b) => (a.step || 1) - (b.step || 1));
 
-        let totalDraw = maxSupporter + totalItem;
-        if (totalDraw > 0) {
-            if (deadHandSize > 0) {
-                for (let d = 0; d < deadHandSize; d++) remDeck.push('blank');
-                for (let i = remDeck.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [remDeck[i], remDeck[j]] = [remDeck[j], remDeck[i]];
+        let supporterUsed = false;
+        let actionTriggered = true; 
+        let costHand = [...hand]; // 複製一份手牌，專門用來給條件卡「消耗」用
+
+        // 2. 啟動賽局迴圈，只要有動作被執行，就會重新掃描新手牌！
+        while (actionTriggered) {
+            actionTriggered = false;
+
+            for (let i = 0; i < actionQueue.length; i++) {
+                let action = actionQueue[i];
+                if (action.used) continue; // 這張場上特性已經發動過了，跳過
+
+                let inHandIndex = costHand.indexOf(action.cardId);
+                let isAvailable = (inHandIndex !== -1) || action.guaranteed;
+
+                if (!isAvailable) continue; // 手上沒這張牌，場上也沒有，跳過
+
+                let ctype = action.type || '';
+                let cval = action.val || 0;
+                let executed = false;
+
+                // 🎯 動作 A：支援者 (一回合限一次)
+                if (ctype.includes('支援者')) {
+                    if (!supporterUsed) {
+                        supporterUsed = true;
+                        executed = true;
+                        let drawCount = cval;
+                        if (deadHandSize > 0 && (ctype.includes('洗回') || ctype.includes('底'))) {
+                            for (let d = 0; d < deadHandSize; d++) remDeck.push('blank');
+                            remDeck.sort(() => Math.random() - 0.5);
+                        }
+                        let drawn = remDeck.splice(0, drawCount);
+                        hand.push(...drawn);
+                        costHand.push(...drawn); // 剛抽到的牌立刻加入資源庫
+                    }
+                } 
+                // 🎯 動作 B：普通抽牌物品 (如：自行車)
+                else if (ctype.includes('抽牌') && !ctype.includes('條件組合技')) {
+                    executed = true;
+                    let drawn = remDeck.splice(0, cval);
+                    hand.push(...drawn);
+                    costHand.push(...drawn);
+                } 
+                // 🎯 動作 C：條件組合技 (如：碧草厄鬼椪、甲賀忍蛙)
+                else if (ctype.includes('條件組合技')) {
+                    let reqCards = action.search_targets || [];
+                    if (reqCards.length > 0) {
+                        // 尋找手牌是否有代價卡 (如草能量)
+                        let costIdx = costHand.findIndex(hc => reqCards.includes(hc));
+                        if (costIdx !== -1) {
+                            costHand.splice(costIdx, 1); // 💡 找到並將能量「消耗」掉！
+                            executed = true;
+                            let drawn = remDeck.splice(0, cval);
+                            hand.push(...drawn);
+                            costHand.push(...drawn);
+                        }
+                    } else {
+                        // 沒設條件，當作無條件觸發
+                        executed = true;
+                        let drawn = remDeck.splice(0, cval);
+                        hand.push(...drawn);
+                        costHand.push(...drawn);
+                    }
+                }
+
+                // 3. 收尾結算：如果成功發動了卡片
+                if (executed) {
+                    // 將發動的卡片本體從資源庫移除 (避免同一張牌重複發動)
+                    if (inHandIndex !== -1) {
+                        costHand.splice(inHandIndex, 1);
+                    } else if (action.guaranteed) {
+                        // 如果是場上特性，標記為已使用 (一局限一次)
+                        action.used = true;
+                    }
+                    
+                    actionTriggered = true; // 觸發成功！準備啟動下一輪迴圈
+                    
+                    // 每執行完一次抽牌，立刻檢查是否已達成解牌目標！
+                    if (checkSuccess(hand)) {
+                        successCount++;
+                        actionTriggered = false; // 已達成天胡目標，提早終止本局推演！
+                    }
+                    
+                    // 💡 打斷當前的 for 迴圈，從 Step 1 開始重新掃描剛抽上來的新手牌！
+                    break; 
                 }
             }
-            hand.push(...remDeck.slice(0, totalDraw));
-            if (checkSuccess(hand)) successCount++;
         }
     }
     return (successCount / iterations) * 100.0;
@@ -2196,7 +2282,8 @@ function runSimulation() {
             type: chainList[k].type,
             val: chainList[k].val,
             search_targets: Object.keys(chainList[k].targets),
-            guaranteed: chainList[k].guaranteed || false
+            guaranteed: chainList[k].guaranteed || false,
+            step: chainList[k].step || 1  // 💡 將順序傳給引擎
         };
     });
 
