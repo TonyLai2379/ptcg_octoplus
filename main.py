@@ -486,22 +486,17 @@ def api_activate_trial(authorization: Optional[str] = Header(None)):
     """開通 7 天免費體驗"""
     user_id, user_email = get_user_and_email_from_token(authorization)
     
-    # 1. 查詢該使用者的資料
     p_res = supabase.table("profiles").select("*").eq("id", user_id).execute()
     
     if not p_res.data:
-        # 如果是全新帳號，先建檔
         supabase.table("profiles").insert({"id": user_id, "email": user_email, "trial_used": False}).execute()
         user_data = {"trial_used": False}
     else:
         user_data = p_res.data[0]
         
-    # 2. 核心防呆：檢查是否已經用過免費體驗！
     if user_data.get("trial_used"):
-        # 回傳 success: False，前端 app.js 就會跳出這個警告
         return {"success": False, "detail": "您已經使用過 7 天免費體驗囉！"}
         
-    # 3. 計算新到期日 (如果是新會員從今天算，如果是舊會員從舊日期疊加)
     now = datetime.datetime.now(datetime.timezone.utc)
     base_time = now
     if user_data.get("pro_expires_at"):
@@ -511,13 +506,26 @@ def api_activate_trial(authorization: Optional[str] = Header(None)):
             
     new_exp = (base_time + datetime.timedelta(days=7)).isoformat()
     
-    # 4. 更新權限，並把 trial_used 設為 True (做記號)
     supabase.table("profiles").update({
         "is_pro": True,
         "pro_expires_at": new_exp,
         "trial_used": True,
         "email": user_email
     }).eq("id", user_id).execute()
+    
+    # ==========================================
+    # 💡 新增：將免費體驗當作 0 元訂單寫入歷程帳本
+    # ==========================================
+    try:
+        supabase.table("payment_logs").insert({
+            "user_id": user_id,
+            "trade_no": "FREE_TRIAL_7DAYS", # 專屬辨識碼
+            "amount": 0,                    # 0 元
+            "plan_days": 7,                 # 獲得 7 天
+            "created_at": now.isoformat()
+        }).execute()
+    except Exception as log_err:
+        print(f"⚠️ 寫入免費體驗紀錄失敗: {log_err}")
     
     return {"success": True, "detail": "🎉 成功開通 7 天免費體驗！"}
 
