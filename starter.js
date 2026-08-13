@@ -16,51 +16,70 @@ function starterShuffle(array) {
     return array;
 }
 
-// 1. 獨立 A 區開局起站與 Mulligan 模擬
+// 1. 獨立 A 區開局起站與 Mulligan 模擬 (超高速數學精算版)
 function runIndependentBasicSimulation() {
-    starterSeed = 42; 
-    const totalBasic = parseInt(document.getElementById('st-totalBasic').value) || 0;
-    const wantBasic = parseInt(document.getElementById('st-wantBasic').value) || 0;
-    const unwantedBasic = parseInt(document.getElementById('st-unwantedBasic').value) || 0;
-    const normalBasic = Math.max(0, totalBasic - wantBasic - unwantedBasic);
+    // 取得輸入數值
+    const B = parseInt(document.getElementById('st-totalBasic').value) || 0;
+    const W = parseInt(document.getElementById('st-wantBasic').value) || 0;
+    const U = parseInt(document.getElementById('st-unwantedBasic').value) || 0;
 
-    let basicPool = [];
-    for(let i=0; i<wantBasic; i++) basicPool.push('want');
-    for(let i=0; i<unwantedBasic; i++) basicPool.push('unwanted');
-    for(let i=0; i<normalBasic; i++) basicPool.push('normal');
-    while(basicPool.length < 60) basicPool.push('other');
-
-    const simCount = 50000;
-    let mulligans = 0, perfectStarts = 0, forcedStarts = 0;
-
-    for (let s = 0; s < simCount; s++) {
-        let deck = [...basicPool];
-        starterShuffle(deck);
-        let initialHand = deck.slice(0, 7);
-
-        let hasWant = initialHand.includes('want');
-        let hasUnwanted = initialHand.includes('unwanted');
-        let hasNormal = initialHand.includes('normal');
-
-        if (!hasWant && !hasUnwanted && !hasNormal) {
-            mulligans++;
-        } else if (hasWant || hasNormal) {
-            perfectStarts++;
-        } else if (hasUnwanted && !hasNormal && !hasWant) {
-            forcedStarts++;
-        }
+    // 防呆機制
+    if (B > 60 || W > B || U > B || (W + U) > B) {
+        alert("輸入數值有誤：基礎怪總數不可超過 60，且 Want + Unwanted 不能超過總基礎怪！");
+        return { mulProb: 0, perfProb: 0, normalProb: 0, forcedProb: 0 };
     }
 
-    const mulProb = (mulligans / simCount) * 100;
-    const perfProb = (perfectStarts / simCount) * 100;
-    const forcedProb = (forcedStarts / simCount) * 100;
+    // 數學組合公式 (C取K)
+    function C(n, k) {
+        if (k < 0 || k > n) return 0;
+        if (k === 0 || k === n) return 1;
+        k = Math.min(k, n - k);
+        let c = 1;
+        for (let i = 1; i <= k; i++) c = c * (n - i + 1) / i;
+        return c;
+    }
 
-    document.getElementById('st-mulliganProb').innerText = mulProb.toFixed(2) + "%";
-    document.getElementById('st-perfectStartProb').innerText = perfProb.toFixed(2) + "%";
-    document.getElementById('st-forcedStartProb').innerText = forcedProb.toFixed(2) + "%";
+    let totalHands = C(60, 7);
+
+    // 1. 無基礎怪 (Mulligan) = 7張都從「非基礎怪(60-B)」裡面抽
+    let mulliganWays = C(60 - B, 7);
+    let pMulligan = mulliganWays / totalHands;
+
+    // 2. 完美起站 (Perfect) = 至少 1 張 Want
+    // 算法：100% - 抽不到任何 Want 的機率
+    let noWantWays = C(60 - W, 7);
+    let pPerfect = 1 - (noWantWays / totalHands);
+
+    // 3. 雷區怪起站 (Forced Unwanted) = 0 張 Want，0 張 Normal，至少 1 張 Unwanted
+    // 算法：從 (非基礎怪 + Unwanted) 中抽 7 張的組合，扣掉 (全是非基礎怪/Mulligan) 的組合
+    let unwantedAndNonBasicWays = C(60 - B + U, 7);
+    let pUnwanted = (unwantedAndNonBasicWays - mulliganWays) / totalHands;
+
+    // 4. 正常起站 (Normal) = 0 張 Want，至少 1 張 Normal
+    // 算法：沒有 Want 的組合數，扣除掉「連 Normal 都沒有」的組合數
+    let pNormal = (noWantWays - unwantedAndNonBasicWays) / totalHands;
+
+    // 換算成百分比
+    const mulProb = pMulligan * 100;
+    const perfProb = pPerfect * 100;
+    const normalProb = pNormal * 100;
+    const forcedProb = pUnwanted * 100;
+
+    // 寫入畫面 (相容原本的 ID 以及你剛剛新增的 HTML 標籤)
+    let elMul = document.getElementById('res-mulligan') || document.getElementById('st-mulliganProb');
+    let elPerf = document.getElementById('res-perfect') || document.getElementById('st-perfectStartProb');
+    let elNorm = document.getElementById('res-normal'); // 新增的正常起站
+    let elForced = document.getElementById('res-forced') || document.getElementById('st-forcedStartProb');
+
+    if(elMul) elMul.innerText = mulProb.toFixed(2) + "%";
+    if(elPerf) elPerf.innerText = perfProb.toFixed(2) + "%";
+    if(elNorm) elNorm.innerText = normalProb.toFixed(2) + "%";
+    if(elForced) elForced.innerText = forcedProb.toFixed(2) + "%";
+
     document.getElementById('st-basicResultArea').style.display = 'block';
 
-    return { mulProb, perfProb, forcedProb };
+    // 回傳給下方的小章魚戰術評分引擎繼續使用
+    return { mulProb, perfProb, normalProb, forcedProb };
 }
 
 // 2. 看 X 張選 Y 張智慧壓牌濾牌演算法
