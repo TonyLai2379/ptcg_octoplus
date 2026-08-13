@@ -41,22 +41,19 @@ function runIndependentBasicSimulation() {
 
     let totalHands = C(60, 7);
 
-    // 1. 無基礎怪 (Mulligan) = 7張都從「非基礎怪(60-B)」裡面抽
+    // 1. 無基礎怪 (Mulligan)
     let mulliganWays = C(60 - B, 7);
     let pMulligan = mulliganWays / totalHands;
 
-    // 2. 完美起站 (Perfect) = 至少 1 張 Want
-    // 算法：100% - 抽不到任何 Want 的機率
+    // 2. 完美起站 (Perfect)
     let noWantWays = C(60 - W, 7);
     let pPerfect = 1 - (noWantWays / totalHands);
 
-    // 3. 雷區怪起站 (Forced Unwanted) = 0 張 Want，0 張 Normal，至少 1 張 Unwanted
-    // 算法：從 (非基礎怪 + Unwanted) 中抽 7 張的組合，扣掉 (全是非基礎怪/Mulligan) 的組合
+    // 3. 雷區怪起站 (Forced Unwanted)
     let unwantedAndNonBasicWays = C(60 - B + U, 7);
     let pUnwanted = (unwantedAndNonBasicWays - mulliganWays) / totalHands;
 
-    // 4. 正常起站 (Normal) = 0 張 Want，至少 1 張 Normal
-    // 算法：沒有 Want 的組合數，扣除掉「連 Normal 都沒有」的組合數
+    // 4. 正常起站 (Normal)
     let pNormal = (noWantWays - unwantedAndNonBasicWays) / totalHands;
 
     // 換算成百分比
@@ -65,18 +62,21 @@ function runIndependentBasicSimulation() {
     const normalProb = pNormal * 100;
     const forcedProb = pUnwanted * 100;
 
-    // 寫入畫面 (相容原本的 ID 以及你剛剛新增的 HTML 標籤)
-    let elMul = document.getElementById('res-mulligan') || document.getElementById('st-mulliganProb');
-    let elPerf = document.getElementById('res-perfect') || document.getElementById('st-perfectStartProb');
-    let elNorm = document.getElementById('res-normal'); // 新增的正常起站
-    let elForced = document.getElementById('res-forced') || document.getElementById('st-forcedStartProb');
+    // 💡 絕對防呆寫入畫面 (找不到標籤也會安靜跳過，不會當機)
+    let elMul = document.getElementById('st-mulliganProb') || document.getElementById('res-mulligan');
+    if (elMul) elMul.innerText = mulProb.toFixed(2) + "%";
 
-    if(elMul) elMul.innerText = mulProb.toFixed(2) + "%";
-    if(elPerf) elPerf.innerText = perfProb.toFixed(2) + "%";
-    if(elNorm) elNorm.innerText = normalProb.toFixed(2) + "%";
-    if(elForced) elForced.innerText = forcedProb.toFixed(2) + "%";
+    let elPerf = document.getElementById('st-perfectStartProb') || document.getElementById('res-perfect');
+    if (elPerf) elPerf.innerText = perfProb.toFixed(2) + "%";
 
-    document.getElementById('st-basicResultArea').style.display = 'block';
+    let elNorm = document.getElementById('st-normalStartProb') || document.getElementById('res-normal');
+    if (elNorm) elNorm.innerText = normalProb.toFixed(2) + "%";
+
+    let elForced = document.getElementById('st-forcedStartProb') || document.getElementById('res-forced');
+    if (elForced) elForced.innerText = forcedProb.toFixed(2) + "%";
+
+    let resultArea = document.getElementById('st-basicResultArea');
+    if (resultArea) resultArea.style.display = 'block';
 
     // 回傳給下方的小章魚戰術評分引擎繼續使用
     return { mulProb, perfProb, normalProb, forcedProb };
