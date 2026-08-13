@@ -41,20 +41,26 @@ function runIndependentBasicSimulation() {
 
     let totalHands = C(60, 7);
 
-    // 1. 無基礎怪 (Mulligan)
+    // 1. 無基礎怪 (Mulligan) - 這是「絕對機率」
     let mulliganWays = C(60 - B, 7);
     let pMulligan = mulliganWays / totalHands;
 
-    // 2. 完美起站 (Perfect)
+    // 💡 關鍵進化：計算「成功起站的有效總局數」做為新分母
+    let validHands = totalHands - mulliganWays;
+
+    // 2. 完美起站 (Perfect) - 改除以 validHands
     let noWantWays = C(60 - W, 7);
-    let pPerfect = 1 - (noWantWays / totalHands);
+    let perfectWays = totalHands - noWantWays;
+    let pPerfect = perfectWays / validHands; 
 
-    // 3. 雷區怪起站 (Forced Unwanted)
+    // 3. 雷區怪起站 (Forced Unwanted) - 改除以 validHands
     let unwantedAndNonBasicWays = C(60 - B + U, 7);
-    let pUnwanted = (unwantedAndNonBasicWays - mulliganWays) / totalHands;
+    let forcedWays = unwantedAndNonBasicWays - mulliganWays;
+    let pUnwanted = forcedWays / validHands; 
 
-    // 4. 正常起站 (Normal)
-    let pNormal = (noWantWays - unwantedAndNonBasicWays) / totalHands;
+    // 4. 正常起站 (Normal) - 改除以 validHands
+    let normalWays = noWantWays - unwantedAndNonBasicWays;
+    let pNormal = normalWays / validHands; 
 
     // 換算成百分比
     const mulProb = pMulligan * 100;
@@ -62,7 +68,7 @@ function runIndependentBasicSimulation() {
     const normalProb = pNormal * 100;
     const forcedProb = pUnwanted * 100;
 
-    // 💡 絕對防呆寫入畫面 (找不到標籤也會安靜跳過，不會當機)
+    // 寫入畫面
     let elMul = document.getElementById('st-mulliganProb') || document.getElementById('res-mulligan');
     if (elMul) elMul.innerText = mulProb.toFixed(2) + "%";
 
@@ -78,7 +84,7 @@ function runIndependentBasicSimulation() {
     let resultArea = document.getElementById('st-basicResultArea');
     if (resultArea) resultArea.style.display = 'block';
 
-    // 回傳給下方的小章魚戰術評分引擎繼續使用
+    // 回傳給下方評分引擎繼續使用
     return { mulProb, perfProb, normalProb, forcedProb };
 }
 
