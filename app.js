@@ -1423,7 +1423,7 @@ function renderChainUI() {
                     <option value="支援者 - 指定檢索" ${c.type.includes('支援者 - 指定檢索')?'selected':''}>支援者 - 指定檢索</option>
                 </select>
                 
-                <input type="number" value="${c.val}" min="1" max="15" style="width:50px; padding:8px; text-align:center; font-size:14px; background:#0D1117; color:#00E5FF; font-weight:bold; border:1px solid #30363D; border-radius:6px;" title="過牌張數/數量" onchange="chainList['${safeKey}'].val=parseInt(this.value)">
+                <input type="number" value="${c.val}" min="1" max="15" style="width:85px; min-width:85px; padding:8px; text-align:center; font-size:14px; background:#0D1117; color:#00E5FF; font-weight:bold; border:1px solid #30363D; border-radius:6px;" title="過牌張數/數量" onchange="chainList['${safeKey}'].val=parseInt(this.value)">
             </div>
             
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -2300,6 +2300,7 @@ function runSimulation() {
 
     setTimeout(() => {
         try {
+            // 1. 執行主路線推演 (完全依照玩家設定的 Step 順序，先搶先贏)
             let prob = runMonteCarloClient(deckForSim, directDict, formattedChainDict, d1, targetRule, deadHand, 10000);
 
             lastSimResult = {
@@ -2311,6 +2312,58 @@ function runSimulation() {
             resultEl.innerText = `${prob.toFixed(1)} %`;
             resultEl.style.color = "#00E5FF";
             resultEl.style.fontSize = "46px";
+
+            // ==========================================
+            // 💡 支援者分歧路線自動比較 (User's Brilliant Idea)
+            // ==========================================
+            let supporters = Object.keys(formattedChainDict).filter(k => formattedChainDict[k].type.includes('支援者'));
+            
+            // 尋找或建立顯示分支結果的容器
+            let branchContainer = document.getElementById('sim-branch-results');
+            if (!branchContainer) {
+                branchContainer = document.createElement('div');
+                branchContainer.id = 'sim-branch-results';
+                branchContainer.style.cssText = 'margin-top: 20px; text-align: left; display: flex; flex-direction: column; gap: 10px;';
+                // 插入在「紀錄至比較板」按鈕的前面
+                let saveBtn = document.getElementById('btn-save-scenario');
+                saveBtn.parentNode.insertBefore(branchContainer, saveBtn);
+            }
+            
+            branchContainer.innerHTML = ""; // 每次運算前先清空舊資料
+
+            // 只有當玩家放了 2 張以上的支援者時，才啟動單飛測試
+            if (supporters.length > 1) {
+                let branchHTML = `<div style="font-size:13px; color:#aaa; margin-bottom:2px; text-align:center;">👇 分別單獨使用各支援者的解牌率</div>`;
+                
+                for (let supKey of supporters) {
+                    // 複製一份連鎖設定，但「剔除」除了當前這位以外的其他支援者
+                    let branchChainDict = {};
+                    Object.keys(formattedChainDict).forEach(k => {
+                        let c = formattedChainDict[k];
+                        if (c.type.includes('支援者') && k !== supKey) {
+                            // 略過其他競爭的支援者
+                        } else {
+                            branchChainDict[k] = c;
+                        }
+                    });
+
+                    // 針對這位支援者，獨立跑一次 10,000 次的蒙地卡羅模擬
+                    let branchProb = runMonteCarloClient(deckForSim, directDict, branchChainDict, d1, targetRule, deadHand, 10000);
+                    let supName = chainList[supKey].name; 
+                    
+                    branchHTML += `
+                        <div style="background: #161B22; border: 1px solid #30363D; border-left: 4px solid #FF9800; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                            <div style="display:flex; flex-direction:column; gap: 4px;">
+                                <span style="color: #DDD; font-size: 14px; font-weight:bold;">打出【${supName}】</span>
+                                <span style="color: #888; font-size: 11px;">(排除其他支援者干擾)</span>
+                            </div>
+                            <span style="color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);">${branchProb.toFixed(1)}%</span>
+                        </div>
+                    `;
+                }
+                branchContainer.innerHTML = branchHTML;
+            }
+
         } catch (err) {
             resultEl.innerText = "❌ 運算發生錯誤";
             resultEl.style.color = "#FF5252";
