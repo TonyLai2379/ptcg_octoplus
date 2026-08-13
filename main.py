@@ -46,9 +46,9 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "https://cnjajimwpuuhkdxelgwg.supabase.
 SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "sb_secret_rQ9BehEwCzjbAF5oRDNzYw_l1cXhpbC")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
-ECPAY_MERCHANT_ID = os.getenv("ECPAY_MERCHANT_ID", "2000132")
-ECPAY_HASH_KEY = os.getenv("ECPAY_HASH_KEY", "5294y06JbISpM5x9")
-ECPAY_HASH_IV = os.getenv("ECPAY_HASH_IV", "v77hoKGq4kWxNNIS")
+ECPAY_MERCHANT_ID = os.getenv("ECPAY_MERCHANT_ID", "3509526")
+ECPAY_HASH_KEY = os.getenv("ECPAY_HASH_KEY", "yQWItkjO0VyCIwiQ")
+ECPAY_HASH_IV = os.getenv("ECPAY_HASH_IV", "6g28r58RnmNU0mTd")
 ECPAY_ACTION_URL = os.getenv("ECPAY_ACTION_URL", "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5")
 
 PLAN_PRICES = {
