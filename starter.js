@@ -18,18 +18,15 @@ function starterShuffle(array) {
 
 // 1. 獨立 A 區開局起站與 Mulligan 模擬 (超高速數學精算版)
 function runIndependentBasicSimulation() {
-    // 取得輸入數值
     const B = parseInt(document.getElementById('st-totalBasic').value) || 0;
     const W = parseInt(document.getElementById('st-wantBasic').value) || 0;
     const U = parseInt(document.getElementById('st-unwantedBasic').value) || 0;
 
-    // 防呆機制
     if (B > 60 || W > B || U > B || (W + U) > B) {
         alert("輸入數值有誤：基礎怪總數不可超過 60，且 Want + Unwanted 不能超過總基礎怪！");
         return { mulProb: 0, perfProb: 0, normalProb: 0, forcedProb: 0 };
     }
 
-    // 數學組合公式 (C取K)
     function C(n, k) {
         if (k < 0 || k > n) return 0;
         if (k === 0 || k === n) return 1;
@@ -41,28 +38,19 @@ function runIndependentBasicSimulation() {
 
     let totalHands = C(60, 7);
 
-    // 1. 無基礎怪 (Mulligan) - 這是「絕對機率」
-    let mulliganWays = C(60 - B, 7);
-    let pMulligan = mulliganWays / totalHands;
+    // 1. 無基礎怪 (Mulligan)：7張全從「非基礎怪(60-B)」裡面抽
+    let pMulligan = C(60 - B, 7) / totalHands;
 
-    // 💡 關鍵進化：計算「成功起站的有效總局數」做為新分母
-    let validHands = totalHands - mulliganWays;
+    // 2. 完美起站 (Perfect)：至少有 1 張理想怪 (100% 扣除「連1張理想怪都沒有」的組合)
+    let pPerfect = (totalHands - C(60 - W, 7)) / totalHands;
 
-    // 2. 完美起站 (Perfect) - 改除以 validHands
-    let noWantWays = C(60 - W, 7);
-    let perfectWays = totalHands - noWantWays;
-    let pPerfect = perfectWays / validHands; 
+    // 3. 正常起站 (Normal)：至少有 1 張基礎怪 (100% 扣除 Mulligan)
+    let pNormal = 1 - pMulligan;
 
-    // 3. 雷區怪起站 (Forced Unwanted) - 改除以 validHands
-    let unwantedAndNonBasicWays = C(60 - B + U, 7);
-    let forcedWays = unwantedAndNonBasicWays - mulliganWays;
-    let pUnwanted = forcedWays / validHands; 
+    // 4. 雷區起站 (Forced Unwanted)：只有抽到雷區怪，不能有 Want 也不能有其他基礎怪
+    // 算法：從 (非基礎怪 + 雷區怪) 中抽 7 張，並扣掉全是廢牌 (Mulligan) 的情況
+    let pUnwanted = (C(60 - B + U, 7) - C(60 - B, 7)) / totalHands;
 
-    // 4. 正常起站 (Normal) - 改除以 validHands
-    let normalWays = noWantWays - unwantedAndNonBasicWays;
-    let pNormal = normalWays / validHands; 
-
-    // 換算成百分比
     const mulProb = pMulligan * 100;
     const perfProb = pPerfect * 100;
     const normalProb = pNormal * 100;
@@ -84,7 +72,6 @@ function runIndependentBasicSimulation() {
     let resultArea = document.getElementById('st-basicResultArea');
     if (resultArea) resultArea.style.display = 'block';
 
-    // 回傳給下方評分引擎繼續使用
     return { mulProb, perfProb, normalProb, forcedProb };
 }
 
