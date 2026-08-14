@@ -382,7 +382,6 @@ function runUltimateSimulation() {
                 if (runDynamicScenario(simHand, simDeck, combo, keyCounts, name)) resultsData[k][name]++;
             });
         });
-        });
     }
 
     // 💡 渲染對比表格（支援中英雙語標頭）
