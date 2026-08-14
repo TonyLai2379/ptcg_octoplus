@@ -534,7 +534,13 @@ function addKeyCardRow(name = "", qty = 2) {
     container.appendChild(div);
 }
 
-function addSearchCardRow(name = "", qty = 2, step = 1, mech = "search_deck", look = 7, pick = 1, targets = "1,2") {
+// 💡 將 step 的預設值改為 0，當觸發時自動計算
+function addSearchCardRow(name = "", qty = 2, step = 0, mech = "search_deck", look = 7, pick = 1, targets = "1,2") {
+    // 💡 自動偵測順序：計算目前畫面上總共有幾張「過牌 + 支援者」，然後自動 +1
+    if (step === 0) {
+        step = document.querySelectorAll('.st-search-row, .st-draw-row').length + 1;
+    }
+
     if (!window.isUserPro) {
         const currentCount = document.querySelectorAll('.st-search-row').length;
         if (currentCount >= 1) { document.getElementById('sub-modal').style.display = 'flex'; return; }
@@ -584,7 +590,13 @@ function addSearchCardRow(name = "", qty = 2, step = 1, mech = "search_deck", lo
     container.appendChild(div);
 }
 
-function addDrawCardRow(name = "", qty = 2, mech = "shuffle_back", val = 5, targets = "-", step = 2) {
+// 💡 將 step 的預設值改為 0，當觸發時自動計算
+function addDrawCardRow(name = "", qty = 2, mech = "shuffle_back", val = 5, targets = "-", step = 0) {
+    // 💡 自動偵測順序：計算目前畫面上總共有幾張「過牌 + 支援者」，然後自動 +1
+    if (step === 0) {
+        step = document.querySelectorAll('.st-search-row, .st-draw-row').length + 1;
+    }
+
     if (!window.isUserPro) {
         const currentCount = document.querySelectorAll('.st-draw-row').length;
         if (currentCount >= 1) { document.getElementById('sub-modal').style.display = 'flex'; return; }
