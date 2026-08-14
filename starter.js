@@ -282,7 +282,7 @@ function runUltimateSimulation() {
 
     const keyNames = Array.from(document.querySelectorAll('.st-key-name')).map(el => el.value || "未命名");
     const keyCounts = Array.from(document.querySelectorAll('.st-key-count')).map(el => parseInt(el.value) || 0);
-    
+    const keyScoreToggles = Array.from(document.querySelectorAll('.st-key-score-toggle')).map(el => el.checked);
     let baseDeck = [];
     let uid = 0;
     
@@ -395,13 +395,31 @@ function runUltimateSimulation() {
 
     let bodyHtml = "";
     let maxOverallProb = 0;
+    // 💡 計算哪些標籤被選為「終極 Combo 評分目標」
+    const scoringCombo = [];
+    keyScoreToggles.forEach((isChecked, index) => {
+        if (isChecked) scoringCombo.push(index);
+    });
+    const scoringComboStr = scoringCombo.join(','); // 例如 '0,1' 代表要同時達成標籤1和2
+
+    let bodyHtml = "";
+    let maxScoringProb = 0; // 💡 改變：只記錄「指定 AND 組合」的最高勝率
+
     allCombos.sort((a,b)=>a.length-b.length).forEach(combo => {
         const k = combo.join(',');
         let names = combo.map(idx => `[${keyNames[idx]}]`).join(' + ');
         bodyHtml += `<tr><td style="font-weight:bold; color:#FFD700;">${names}</td>`;
+        
+        let isScoringRow = (k === scoringComboStr); // 判斷這列是不是我們要評分的那一列
+
         supporterNames.forEach(name => {
             let pVal = (resultsData[k][name] / simCount) * 100;
-            if (pVal > maxOverallProb) maxOverallProb = pVal;
+            
+            // 💡 只有當前這列是「玩家勾選要評分的 AND 組合」時，才比較並記錄最高分
+            if (isScoringRow && pVal > maxScoringProb) {
+                maxScoringProb = pVal;
+            }
+            
             bodyHtml += `<td class="prob-tag" style="color:#00E5FF; font-weight:bold;">${pVal.toFixed(1)}%</td>`;
         });
         let pNone = ((resultsData[k]['none'] / simCount) * 100).toFixed(1) + "%";
@@ -414,10 +432,9 @@ function runUltimateSimulation() {
     generateOctoTacticalReport({
         totalBasic: totalBasic,
         unwantedBasic: unwantedBasic,
-        maxProb: maxOverallProb
+        maxProb: maxScoringProb // 💡 將嚴格 AND 勝率傳遞給評分引擎
     });
 }
-
 // 5. 小章魚自動評分與評語生成引擎
 function generateOctoTacticalReport(stats) {
     const basicRes = runIndependentBasicSimulation();
@@ -443,9 +460,28 @@ function generateOctoTacticalReport(stats) {
 
     let rankBadge = isEn ? "A Tier - Stable" : "A 級穩定隊";
     let badgeColor = "#00E5FF";
-    if (totalScore >= 90) { rankBadge = isEn ? "SSS Tier - Godly" : "SSS 級神隊"; badgeColor = "#FFD700"; }
-    else if (totalScore >= 80) { rankBadge = isEn ? "S Tier - Meta" : "S 級主流隊"; badgeColor = "#FF80AB"; }
-    else if (totalScore < 65) { rankBadge = isEn ? "B Tier - Bricky" : "B 級事故隊"; badgeColor = "#FF5252"; }
+    
+    // 💡 全新徽章評級區間
+    if (totalScore >= 90) { 
+        rankBadge = isEn ? "SSS Tier - Godly" : "SSS 級神隊"; 
+        badgeColor = "#FFD700"; 
+    }
+    else if (totalScore >= 80) { 
+        rankBadge = isEn ? "S Tier - Meta" : "S 級主流隊"; 
+        badgeColor = "#FF80AB"; 
+    }
+    else if (totalScore >= 75) { 
+        rankBadge = isEn ? "A+ Tier - Great" : "A+ 級強權隊"; // 💡 新增 A+ 級
+        badgeColor = "#B388FF"; // 給 A+ 專屬的紫色
+    }
+    else if (totalScore >= 65) { 
+        rankBadge = isEn ? "A Tier - Stable" : "A 級穩定隊"; 
+        badgeColor = "#00E5FF"; 
+    }
+    else { 
+        rankBadge = isEn ? "B Tier - Bricky" : "B 級事故隊"; 
+        badgeColor = "#FF5252"; 
+    }
 
     let comments = [];
     if (mulProb > 10) {
@@ -528,6 +564,13 @@ function addKeyCardRow(name = "", qty = 2) {
         <div style="display:flex; flex-direction:column; align-items:center; margin-left: 10px; flex:1;">
             <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">牌組投入</span>
             <input type="number" value="${qty}" min="1" max="4" class="st-key-count" style="width:50px; text-align:center; padding:4px;">
+        </div>
+        <!-- 💡 新增：是否加入 T1 爆發力評分 (預設打勾) -->
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-left: 10px; flex:1;">
+            <label style="font-size:12px; color:#FFF; display:flex; align-items:center; gap:6px; cursor:pointer;" title="勾選後，此卡將列入 T1 爆發力嚴格 AND 條件">
+                <input type="checkbox" class="st-key-score-toggle" checked style="width:18px; height:18px; accent-color:#00E5FF; cursor:pointer;">
+                <span>加入評分</span>
+            </label>
         </div>
         <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; margin-left:10px;" onclick="this.parentElement.remove()">✕</button>
     `;
