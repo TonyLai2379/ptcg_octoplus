@@ -393,8 +393,6 @@ function runUltimateSimulation() {
     headerHtml += `<th style="background:rgba(255,255,255,0.05); color:#AAA;">🪵 ${isEn ? 'No Supporter' : '完全不開支援者'}</th></tr>`;
     document.getElementById('st-tableHeader').innerHTML = headerHtml;
 
-    let bodyHtml = "";
-    let maxOverallProb = 0;
     // 💡 計算哪些標籤被選為「終極 Combo 評分目標」
     const scoringCombo = [];
     keyScoreToggles.forEach((isChecked, index) => {
@@ -402,7 +400,7 @@ function runUltimateSimulation() {
     });
     const scoringComboStr = scoringCombo.join(','); // 例如 '0,1' 代表要同時達成標籤1和2
 
-    let bodyHtml = "";
+    let bodyHtml = ""; 
     let maxScoringProb = 0; // 💡 改變：只記錄「指定 AND 組合」的最高勝率
 
     allCombos.sort((a,b)=>a.length-b.length).forEach(combo => {
