@@ -2300,12 +2300,19 @@ function runSimulation() {
 
     setTimeout(() => {
         try {
-            // 1. 執行主路線推演 (完全依照玩家設定的 Step 順序，先搶先贏)
+            // 1. 執行主路線推演
             let prob = runMonteCarloClient(deckForSim, directDict, formattedChainDict, d1, targetRule, deadHand, 10000);
+
+            // 💡 整理連鎖與支援者清單，提供給「比較板詳細資訊」使用
+            let chainArr = Object.keys(chainList).map(k => ({ name: chainList[k].name, ...formattedChainDict[k] })).sort((a, b) => a.step - b.step);
+            let strItems = chainArr.filter(c => !c.type.includes('支援者')).map(c => `[順序 ${c.step}] ${c.name}`).join('\n') || '無';
+            let strSupporters = chainArr.filter(c => c.type.includes('支援者')).map(c => `[順序 ${c.step}] ${c.name}`).join('\n') || '無';
 
             lastSimResult = {
                 title: `首波 ${d1} 抽`,
                 desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`,
+                items: strItems,           // 紀錄物品連鎖
+                supporters: strSupporters, // 紀錄支援者
                 prob: prob
             };
 
@@ -2314,48 +2321,41 @@ function runSimulation() {
             resultEl.style.fontSize = "46px";
 
             // ==========================================
-            // 💡 支援者分歧路線自動比較 (User's Brilliant Idea)
+            // 💡 支援者分歧路線自動比較
             // ==========================================
             let supporters = Object.keys(formattedChainDict).filter(k => formattedChainDict[k].type.includes('支援者'));
             
-            // 尋找或建立顯示分支結果的容器
             let branchContainer = document.getElementById('sim-branch-results');
             if (!branchContainer) {
                 branchContainer = document.createElement('div');
                 branchContainer.id = 'sim-branch-results';
                 branchContainer.style.cssText = 'margin-top: 20px; text-align: left; display: flex; flex-direction: column; gap: 10px;';
-                // 插入在「紀錄至比較板」按鈕的前面
                 let saveBtn = document.getElementById('btn-save-scenario');
                 saveBtn.parentNode.insertBefore(branchContainer, saveBtn);
             }
             
-            branchContainer.innerHTML = ""; // 每次運算前先清空舊資料
+            branchContainer.innerHTML = "";
 
-            // 只有當玩家放了 2 張以上的支援者時，才啟動單飛測試
             if (supporters.length > 1) {
                 let branchHTML = `<div style="font-size:13px; color:#aaa; margin-bottom:2px; text-align:center;">👇 分別單獨使用各支援者的解牌率</div>`;
                 
                 for (let supKey of supporters) {
-                    // 複製一份連鎖設定，但「剔除」除了當前這位以外的其他支援者
                     let branchChainDict = {};
                     Object.keys(formattedChainDict).forEach(k => {
                         let c = formattedChainDict[k];
-                        if (c.type.includes('支援者') && k !== supKey) {
-                            // 略過其他競爭的支援者
-                        } else {
-                            branchChainDict[k] = c;
-                        }
+                        if (c.type.includes('支援者') && k !== supKey) {} 
+                        else { branchChainDict[k] = c; }
                     });
 
-                    // 針對這位支援者，獨立跑一次 10,000 次的蒙地卡羅模擬
                     let branchProb = runMonteCarloClient(deckForSim, directDict, branchChainDict, d1, targetRule, deadHand, 10000);
                     let supName = chainList[supKey].name; 
                     
+                    // 💡 加入 overflow: hidden 解決破圖，並修改備註文字
                     branchHTML += `
-                        <div style="background: #161B22; border: 1px solid #30363D; border-left: 4px solid #FF9800; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        <div style="background: #161B22; border: 1px solid #30363D; border-left: 4px solid #FF9800; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); overflow: hidden;">
                             <div style="display:flex; flex-direction:column; gap: 4px;">
                                 <span style="color: #DDD; font-size: 14px; font-weight:bold;">打出【${supName}】</span>
-                                <span style="color: #888; font-size: 11px;">(排除其他支援者干擾)</span>
+                                <span style="color: #888; font-size: 11px;">(不管手中有什麼支援者，只開此張的機率)</span>
                             </div>
                             <span style="color: #FFD700; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);">${branchProb.toFixed(1)}%</span>
                         </div>
@@ -2381,7 +2381,10 @@ function saveScenario() {
     div.dataset.prob = lastSimResult.prob;
     div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444';
     div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`;
-    div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 條件：\n${lastSimResult.desc}\n\n📊 成功率：${lastSimResult.prob.toFixed(1)}%`);
+    
+    // 💡 點擊比較板卡片時，顯示最完整的細節資訊
+    div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 目標條件：\n${lastSimResult.desc}\n\n🔄 延續解牌 (物品/特性)：\n${lastSimResult.items}\n\n🧑‍🤝‍🧑 支援者：\n${lastSimResult.supporters}\n\n📊 最終成功率：${lastSimResult.prob.toFixed(1)}%`);
+    
     b.appendChild(div);
 }
 
