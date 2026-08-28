@@ -1314,7 +1314,7 @@ function confirmGallerySelection() {
             let k = tempSelectedKeys[0];
             // 💡 自動計算目前有幾張連鎖卡，新加入的順序自動 +1
             let currentCount = Object.keys(chainList).length;
-            if(!chainList[k]) chainList[k] = { name: deckDict[k].name, img: deckDict[k].img, type: '物品/特性 - 抽牌', val: 1, targets: {}, guaranteed: false, step: currentCount + 1 };
+            if(!chainList[k]) chainList[k] = { name: deckDict[k].name, img: deckDict[k].img, type: '物品/特性 - 抽牌', val: 1, targets: {}, guaranteed: false, step: currentCount + 1, guaranteed_qty: 0, max_qty: 1 };
             renderChainUI();
         }
     } else if (currentModalMode.startsWith('search_multi')) {
@@ -1407,12 +1407,13 @@ function renderChainUI() {
             </div>
             
             <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px;">
-                <!-- 💡 放大版：發動順序 (Step) 設定 -->
+                <!-- 💡 發動順序 (Step) 設定 -->
                 <div style="display:flex; align-items:center; background:#161B22; border:1px solid #58A6FF; border-radius:6px; padding:4px 8px; box-shadow: 0 0 8px rgba(88,166,255,0.15);" title="發動順序 (數字越小越先發動)">
                     <span style="font-size:13px; color:#58A6FF; font-weight:bold; margin-right:6px;">順序</span>
                     <input type="number" value="${c.step}" min="1" max="99" style="width:45px; background:#0D1117; color:#FFD700; border:1px solid #30363D; border-radius:4px; text-align:center; font-weight:bold; font-size:15px; padding:4px;" onchange="chainList['${safeKey}'].step=parseInt(this.value); renderChainUI();">
                 </div>
                 
+                <!-- 💡 發動機制下拉選單 -->
                 <select style="flex:1; font-size:13px; padding:8px; background:#0D1117; color:#FFF; border:1px solid #30363D; border-radius:6px;" onchange="chainList['${safeKey}'].type = this.value; renderChainUI();">
                     <option value="物品/特性 - 抽牌" ${c.type.includes('抽牌') && !c.type.includes('組合技') ? 'selected':''}>物品/特性 - 抽牌</option> 
                     <option value="條件組合技 - 需搭配卡片抽牌" ${c.type.includes('條件組合技')?'selected':''}>條件組合技 - 需搭卡抽牌</option>
@@ -1427,9 +1428,26 @@ function renderChainUI() {
             </div>
             
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-                <label style="font-size:13px; display:flex; align-items:center; gap:6px; color:#00E5FF; cursor:pointer; font-weight:bold; user-select:none;"><input type="checkbox" style="width:18px; height:18px; accent-color:#00E5FF; cursor:pointer;" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}><span>已在手上/場上</span></label>
+                ${(c.type.includes('物品/特性 - 抽牌') || c.type.includes('條件組合技')) ? `
+                    <!-- 💡 新版雙維度次數控制 (只在抽牌或組合技時顯示) -->
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="display:flex; align-items:center; background:#161B22; border:1px solid #00E5FF; border-radius:6px; padding:4px 8px;" title="場上已準備好的數量 (無條件直接發動)">
+                            <span style="font-size:12px; color:#00E5FF; font-weight:bold; margin-right:6px;">保證發動</span>
+                            <input type="number" value="${c.guaranteed_qty !== undefined ? c.guaranteed_qty : 0}" min="0" max="4" style="width:40px; background:#0D1117; color:#FFF; border:1px solid #30363D; border-radius:4px; text-align:center; font-weight:bold;" onchange="chainList['${safeKey}'].guaranteed_qty=parseInt(this.value); renderChainUI();">
+                            <span style="font-size:12px; color:#aaa; margin-left:4px;">次</span>
+                        </div>
+                        <div style="display:flex; align-items:center; background:#161B22; border:1px solid #FF9800; border-radius:6px; padding:4px 8px;" title="這回合最多允許發動幾次">
+                            <span style="font-size:12px; color:#FF9800; font-weight:bold; margin-right:6px;">發動上限</span>
+                            <input type="number" value="${c.max_qty !== undefined ? c.max_qty : 1}" min="1" max="4" style="width:40px; background:#0D1117; color:#FFF; border:1px solid #30363D; border-radius:4px; text-align:center; font-weight:bold;" onchange="chainList['${safeKey}'].max_qty=parseInt(this.value); renderChainUI();">
+                            <span style="font-size:12px; color:#aaa; margin-left:4px;">次</span>
+                        </div>
+                    </div>
+                ` : `
+                    <!-- 💡 原本的單純打勾選項 (指定檢索或支援者時顯示) -->
+                    <label style="font-size:13px; display:flex; align-items:center; gap:6px; color:#00E5FF; cursor:pointer; font-weight:bold; user-select:none;"><input type="checkbox" style="width:18px; height:18px; accent-color:#00E5FF; cursor:pointer;" onchange="chainList['${safeKey}'].guaranteed = this.checked" ${c.guaranteed?'checked':''}><span>已在手上/場上</span></label>
+                `}
                 
-                <!-- 💡 放大版：選取目標按鈕 (使用 flex:1 讓他撐滿剩餘空間，字體加粗變大) -->
+                <!-- 💡 放大版：選取目標按鈕 -->
                 ${isSearch ? `<button class="btn-secondary" style="flex:1; min-width:200px; padding:8px 12px; font-size:13px; color:#FFD700; border-color:#FFD700; border-radius:6px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" onclick="openChainTargetSelector('${safeKey}')">🎯 ${Object.keys(c.targets).map(tk => c.targets[tk].name).join(', ') || '點擊選取條件/目標...'}</button>` : ''}
             </div>
         `;
@@ -1972,9 +1990,7 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
         let hand = deck.slice(0, draw1);
         let remDeck = deck.slice(draw1);
 
-        Object.keys(chainDict).forEach(k => {
-            if (chainDict[k].guaranteed && !hand.includes(k)) hand.push(k);
-        });
+        
 
         const checkSuccess = (currentHand) => {
             let missing = {};
@@ -2024,26 +2040,45 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
         // 💡 動態迴圈賽局模擬引擎 (Dynamic Iterative Loop Engine)
         // ==========================================
         
-        // 1. 將所有連鎖設定轉為「行動佇列」，並依照玩家設定的 Step 排序 (由小到大)
-        let actionQueue = Object.keys(chainDict).map(k => ({ cardId: k, ...chainDict[k] }));
+        // 1. 根據「發動上限(max_qty)」，將連鎖卡片轉化為多個獨立的「任務實體」
+        let actionQueue = [];
+        Object.keys(chainDict).forEach(k => {
+            let c = chainDict[k];
+            let maxQty = c.max_qty !== undefined ? c.max_qty : 1;
+            let guarQty = c.guaranteed_qty !== undefined ? c.guaranteed_qty : (c.guaranteed ? 1 : 0);
+            
+            // 如果上限是 4，就會在這個迴圈中產生 4 個同名任務排隊等著被發動
+            for (let i = 0; i < maxQty; i++) {
+                actionQueue.push({ 
+                    cardId: k, 
+                    ...c, 
+                    is_guaranteed_instance: (i < guarQty), // 標記這個任務是不是「保證發動」
+                    used: false 
+                });
+            }
+        });
+        
+        // 依照玩家設定的 Step 排序 (由小到大)
         actionQueue.sort((a, b) => (a.step || 1) - (b.step || 1));
 
         let supporterUsed = false;
         let actionTriggered = true; 
-        let costHand = [...hand]; // 複製一份手牌，專門用來給條件卡「消耗」用
+        let costHand = [...hand]; 
 
-        // 2. 啟動賽局迴圈，只要有動作被執行，就會重新掃描新手牌！
+        // 2. 啟動賽局迴圈
         while (actionTriggered) {
             actionTriggered = false;
 
             for (let i = 0; i < actionQueue.length; i++) {
                 let action = actionQueue[i];
-                if (action.used) continue; // 這張場上特性已經發動過了，跳過
+                if (action.used) continue; 
 
                 let inHandIndex = costHand.indexOf(action.cardId);
-                let isAvailable = (inHandIndex !== -1) || action.guaranteed;
+                
+                // 💡 關鍵判斷：這「一次」的任務是否保證發動？或者有在手牌中抽到？
+                let isAvailable = action.is_guaranteed_instance || (inHandIndex !== -1);
 
-                if (!isAvailable) continue; // 手上沒這張牌，場上也沒有，跳過
+                if (!isAvailable) continue; 
 
                 let ctype = action.type || '';
                 let cval = action.val || 0;
@@ -2061,31 +2096,29 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
                         }
                         let drawn = remDeck.splice(0, drawCount);
                         hand.push(...drawn);
-                        costHand.push(...drawn); // 剛抽到的牌立刻加入資源庫
+                        costHand.push(...drawn);
                     }
                 } 
-                // 🎯 動作 B：普通抽牌物品 (如：自行車)
+                // 🎯 動作 B：普通抽牌物品
                 else if (ctype.includes('抽牌') && !ctype.includes('條件組合技')) {
                     executed = true;
                     let drawn = remDeck.splice(0, cval);
                     hand.push(...drawn);
                     costHand.push(...drawn);
                 } 
-                // 🎯 動作 C：條件組合技 (如：碧草厄鬼椪、甲賀忍蛙)
+                // 🎯 動作 C：條件組合技
                 else if (ctype.includes('條件組合技')) {
                     let reqCards = action.search_targets || [];
                     if (reqCards.length > 0) {
-                        // 尋找手牌是否有代價卡 (如草能量)
                         let costIdx = costHand.findIndex(hc => reqCards.includes(hc));
                         if (costIdx !== -1) {
-                            costHand.splice(costIdx, 1); // 💡 找到並將能量「消耗」掉！
+                            costHand.splice(costIdx, 1); 
                             executed = true;
                             let drawn = remDeck.splice(0, cval);
                             hand.push(...drawn);
                             costHand.push(...drawn);
                         }
                     } else {
-                        // 沒設條件，當作無條件觸發
                         executed = true;
                         let drawn = remDeck.splice(0, cval);
                         hand.push(...drawn);
@@ -2093,25 +2126,20 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
                     }
                 }
 
-                // 3. 收尾結算：如果成功發動了卡片
+                // 3. 收尾結算
                 if (executed) {
-                    // 將發動的卡片本體從資源庫移除 (避免同一張牌重複發動)
-                    if (inHandIndex !== -1) {
+                    // 如果這一次「不是」因為保證發動而執行的，就必須消耗手牌裡的那張本體
+                    if (!action.is_guaranteed_instance && inHandIndex !== -1) {
                         costHand.splice(inHandIndex, 1);
-                    } else if (action.guaranteed) {
-                        // 如果是場上特性，標記為已使用 (一局限一次)
-                        action.used = true;
                     }
                     
-                    actionTriggered = true; // 觸發成功！準備啟動下一輪迴圈
+                    action.used = true; // 標記為已發動，下次掃描會跳過
+                    actionTriggered = true; 
                     
-                    // 每執行完一次抽牌，立刻檢查是否已達成解牌目標！
                     if (checkSuccess(hand)) {
                         successCount++;
-                        actionTriggered = false; // 已達成天胡目標，提早終止本局推演！
+                        actionTriggered = false; 
                     }
-                    
-                    // 💡 打斷當前的 for 迴圈，從 Step 1 開始重新掃描剛抽上來的新手牌！
                     break; 
                 }
             }
@@ -2289,7 +2317,9 @@ function runSimulation() {
             val: chainList[k].val,
             search_targets: Object.keys(chainList[k].targets),
             guaranteed: chainList[k].guaranteed || false,
-            step: chainList[k].step || 1  // 💡 將順序傳給引擎
+            step: chainList[k].step || 1,
+            guaranteed_qty: chainList[k].guaranteed_qty !== undefined ? chainList[k].guaranteed_qty : 0, // 💡 傳入新參數
+            max_qty: chainList[k].max_qty !== undefined ? chainList[k].max_qty : 1                       // 💡 傳入新參數
         };
     });
 
@@ -2303,16 +2333,29 @@ function runSimulation() {
             // 1. 執行主路線推演
             let prob = runMonteCarloClient(deckForSim, directDict, formattedChainDict, d1, targetRule, deadHand, 10000);
 
-            // 💡 整理連鎖與支援者清單，提供給「比較板詳細資訊」使用
+            // 💡 整理連鎖與支援者清單 (換行符號改用 HTML 的 <br> 配合客製化彈窗)
             let chainArr = Object.keys(chainList).map(k => ({ name: chainList[k].name, ...formattedChainDict[k] })).sort((a, b) => a.step - b.step);
-            let strItems = chainArr.filter(c => !c.type.includes('支援者')).map(c => `[順序 ${c.step}] ${c.name}`).join('\n') || '無';
-            let strSupporters = chainArr.filter(c => c.type.includes('支援者')).map(c => `[順序 ${c.step}] ${c.name}`).join('\n') || '無';
+            
+            let strItems = chainArr.filter(c => !c.type.includes('支援者')).map(c => {
+                let extra = "";
+                if (c.type.includes('抽牌') || c.type.includes('組合技')) {
+                    extra = ` <span style="color:#888; font-size:12px;">(保證發動: ${c.guaranteed_qty}, 上限: ${c.max_qty})</span>`;
+                } else if (c.guaranteed) {
+                    extra = ` <span style="color:#00E5FF; font-size:12px;">(已在場上)</span>`;
+                }
+                return `[順序 ${c.step}] ${c.name}${extra}`;
+            }).join('<br>') || '<span style="color:#888;">無</span>';
+
+            let strSupporters = chainArr.filter(c => c.type.includes('支援者')).map(c => {
+                let extra = c.guaranteed ? ` <span style="color:#00E5FF; font-size:12px;">(已在手上)</span>` : "";
+                return `[順序 ${c.step}] ${c.name}${extra}`;
+            }).join('<br>') || '<span style="color:#888;">無</span>';
 
             lastSimResult = {
                 title: `首波 ${d1} 抽`,
                 desc: `解: ${Object.keys(targetList).map(k => `${targetList[k].name}x${targetList[k].qty}`).join(targetRule === 'AND' ? ' + ' : ' 或 ')}`,
-                items: strItems,           // 紀錄物品連鎖
-                supporters: strSupporters, // 紀錄支援者
+                items: strItems,           
+                supporters: strSupporters, 
                 prob: prob
             };
 
@@ -2380,14 +2423,68 @@ function saveScenario() {
     div.className = 'ab-item';
     div.dataset.prob = lastSimResult.prob;
     div.style.borderTopColor = (lastSimResult.prob >= maxProb && lastSimResult.prob > 0) ? '#E53935' : '#444';
-    div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${lastSimResult.desc}">${lastSimResult.desc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`;
     
-    // 💡 點擊比較板卡片時，顯示最完整的細節資訊
-    div.onclick = () => alert(`【對局機率詳細資訊】\n\n🎯 路線：${lastSimResult.title}\n\n📝 目標條件：\n${lastSimResult.desc}\n\n🔄 延續解牌 (物品/特性)：\n${lastSimResult.items}\n\n🧑‍🤝‍🧑 支援者：\n${lastSimResult.supporters}\n\n📊 最終成功率：${lastSimResult.prob.toFixed(1)}%`);
+    // 把 HTML 標籤從標題過濾掉，維持外觀乾淨
+    let cleanDesc = lastSimResult.desc.replace(/<[^>]*>?/gm, '');
+    div.innerHTML = `<div style="color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${cleanDesc}">${cleanDesc}</div> <div style="color:#fff; font-weight:bold; margin-top:6px;">${lastSimResult.title}</div> <div style="color:#00E5FF; font-size:24px; font-weight:bold;">${lastSimResult.prob.toFixed(1)}%</div>`;
+    
+    // 💡 關鍵修復：建立一個獨立的資料快照 (Snapshot)，確保舊卡片不會被新資料覆蓋
+    let currentResult = { ...lastSimResult };
+    
+    // 💡 點擊時呼叫客製化 Modal，並且使用剛剛建立的快照 currentResult
+    div.onclick = () => {
+        showCustomAlert(`
+            <div style="text-align: left; line-height: 1.8;">
+                <div style="margin-bottom: 15px;">
+                    <span style="color:#00E5FF; font-weight:bold;">🎯 路線：</span> <span style="color:#FFF;">${currentResult.title}</span>
+                </div>
+                <div style="background: #21262D; border-left: 3px solid #FF5252; padding: 10px; border-radius: 4px; margin-bottom: 12px;">
+                    <div style="color:#FF5252; font-weight:bold; margin-bottom:4px;">📝 目標條件：</div>
+                    <div style="color:#FFF;">${currentResult.desc}</div>
+                </div>
+                <div style="background: #21262D; border-left: 3px solid #4CAF50; padding: 10px; border-radius: 4px; margin-bottom: 12px;">
+                    <div style="color:#4CAF50; font-weight:bold; margin-bottom:4px;">🔄 延續解牌 (物品/特性)：</div>
+                    <div style="color:#CCC;">${currentResult.items}</div>
+                </div>
+                <div style="background: #21262D; border-left: 3px solid #FF9800; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                    <div style="color:#FF9800; font-weight:bold; margin-bottom:4px;">🧑‍🤝‍🧑 支援者：</div>
+                    <div style="color:#CCC;">${currentResult.supporters}</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0, 229, 255, 0.1); border: 1px solid #00E5FF; padding: 12px 20px; border-radius: 8px;">
+                    <span style="color:#FFF; font-weight:bold; font-size:16px;">最終解牌機率</span> 
+                    <span style="color:#FFD700; font-weight:bold; font-size: 32px; text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);">${currentResult.prob.toFixed(1)}%</span>
+                </div>
+            </div>
+        `);
+    };
     
     b.appendChild(div);
 }
-
+// 💡 專屬的高質感彈出視窗產生器
+function showCustomAlert(htmlContent) {
+    let modal = document.getElementById('custom-alert-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'custom-alert-modal';
+        modal.className = 'modal-overlay';
+        modal.style.zIndex = '35000';
+        modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
+        
+        modal.innerHTML = `
+            <div class="modal-card" style="width: 500px; text-align: center; border-color: #00E5FF; box-shadow: 0 10px 40px rgba(0, 229, 255, 0.2);" onclick="event.stopPropagation()">
+                <div style="color: #00E5FF; font-size: 18px; border-bottom: 1px solid #30363D; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📊 萬次推演詳細數據</span>
+                    <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; font-weight:bold; display:flex; justify-content:center; align-items:center;" onclick="document.getElementById('custom-alert-modal').style.display='none'">✕</button>
+                </div>
+                <div id="custom-alert-content" style="font-size: 14px; margin-bottom: 20px;"></div>
+                <button class="btn" style="background: #238636; width: 100%; font-size: 16px; padding: 10px;" onclick="document.getElementById('custom-alert-modal').style.display='none'">我知道了</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    document.getElementById('custom-alert-content').innerHTML = htmlContent;
+    modal.style.display = 'flex';
+}
 function exportGameState() {
     if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。");
     let ruleEl = document.querySelector('input[name="target_rule"]:checked');
