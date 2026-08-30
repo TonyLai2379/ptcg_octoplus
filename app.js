@@ -40,7 +40,7 @@ const POPULAR_DECKS = [
     { name: "化隱", code: "DfPGpo-EbFJRT-vzELZu" },
     { name: "魔靈多龍", code: "rAwHnZ-kLhnNT-EnmbLY" },
     { name: "袋獸列空坐", code: "TOlRYY-vAKTOT-OFdGqI" },
-    { name: "更新中", code: "8Yxx8a-4VwKq8-xcxxYG" },
+    { name: "胡地", code: "cRGyAd-cXbyMg-UOheAM" },
     { name: "更新中", code: "GcxYc8-aA0F0D-cK8a4G" }
     // 💡 你以後只要在這裡修改名稱跟代碼即可
 ];
