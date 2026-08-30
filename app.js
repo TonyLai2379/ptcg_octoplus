@@ -37,6 +37,8 @@ let feedbackBase64 = "";
 // 🔥 環境熱門牌組一鍵匯入設定
 // ==========================================
 const POPULAR_DECKS = [
+    { name: "魔靈多龍(WCS2026_TOP4)", code: "nouIZT-zdUidZ-lrEWUw" },
+    { name: "紅槌多龍(WCS2026_TOP4)", code: "ujFFnC-QnyJZz-Qvfhsu" },
     { name: "化隱", code: "DfPGpo-EbFJRT-vzELZu" },
     { name: "魔靈多龍", code: "rAwHnZ-kLhnNT-EnmbLY" },
     { name: "袋獸列空坐", code: "TOlRYY-vAKTOT-OFdGqI" },
