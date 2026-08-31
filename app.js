@@ -37,13 +37,13 @@ let feedbackBase64 = "";
 // 🔥 環境熱門牌組一鍵匯入設定
 // ==========================================
 const POPULAR_DECKS = [
+    { name: "紅槌多龍(WCS2026_TOP4)", code: "mOlYqI-NqVKug-kXhxoU" },
+    { name: "胡地(WCS2026_TOP4)", code: "GnZdXd-rVNsfY-UfzeyM" },
     { name: "魔靈多龍(WCS2026_TOP4)", code: "nouIZT-zdUidZ-lrEWUw" },
     { name: "紅槌多龍(WCS2026_TOP4)", code: "ujFFnC-QnyJZz-Qvfhsu" },
     { name: "化隱", code: "DfPGpo-EbFJRT-vzELZu" },
-    { name: "魔靈多龍", code: "rAwHnZ-kLhnNT-EnmbLY" },
     { name: "袋獸列空坐", code: "TOlRYY-vAKTOT-OFdGqI" },
-    { name: "胡地", code: "cRGyAd-cXbyMg-UOheAM" },
-    { name: "紅槌多龍", code: "ssPtno-HMBNtQ-VOsKnC" }
+    
     // 💡 你以後只要在這裡修改名稱跟代碼即可
 ];
 
