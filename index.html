@@ -39,11 +39,7 @@
         </div>
     </div>
 
-    <!-- 💡 可自由拖曳的資訊框 (跑馬燈與免責聲明) -->
-    <div id="draggable-info-box" onmousedown="startInfoDrag(event)" ontouchstart="startInfoDrag(event)">
-        <div class="marquee-container" style="margin-bottom: 8px;"><div class="marquee-content" id="marquee-text">💬 正在載入留言...</div></div>
-        <div class="disclaimer-box" id="txt-disclaimer"><b>⚠️ 免責聲明：</b>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。</div>
-    </div>
+   
 
     <!-- 開場動畫 -->
     <div id="octopus-splash" onclick="dismissSplash()">
@@ -80,8 +76,15 @@
             <button class="nav-3d-btn" id="btn-view-sandbox" onclick="switchMainView('sandbox')">⚔️ 3. 覆盤沙盤戰場</button>
         </div>
         
-        <!-- 💡 移至頂部的會員狀態列 -->
-        <div style="display:flex; align-items:center; gap: 15px;">
+        <!-- 💡 新增：跑馬燈置入導覽列中央 (加上 max-width 限制) -->
+        <div class="nav-marquee-wrapper" style="flex: 1; max-width: 400px; margin: 0 20px; overflow: hidden;">
+            <div class="marquee-container" style="margin: 0; padding: 5px 12px; width: 100%; border: 1px solid rgba(255, 152, 0, 0.5); background: rgba(255, 152, 0, 0.08); border-radius: 6px;">
+                <div class="marquee-content" id="marquee-text" style="color: #FFB74D; font-size: 13px;">💬 正在載入留言...</div>
+            </div>
+        </div>
+
+        <!-- 💡 移至頂部的會員狀態列 (加上防止擠壓斷行) -->
+        <div style="display:flex; align-items:center; gap: 15px; flex-shrink: 0; white-space: nowrap;">
             <div id="header-auth-info" style="text-align:right; line-height:1.3;">
                 <div id="txt-status" style="font-size:14px; font-weight:bold; color:#CCC;">訪客試玩模式</div>
                 <div id="txt-status-sub" style="font-size:11px; color:#888;">(每日限制 30 次額度)</div>
@@ -218,6 +221,11 @@
                                 <option value="" id="opt-load-cloud">載入雲端牌組...</option>
                             </select>
                         </div>
+                        <!-- 💡 新增：靜態低調的免責聲明 -->
+                        <div id="txt-disclaimer" style="margin-top: 25px; padding: 12px; background-color: rgba(0, 0, 0, 0.2); border-left: 3px solid #E53935; border-radius: 6px; font-size: 12px; color: #888; line-height: 1.5; text-align: left;">
+                            <b>⚠️ 免責聲明：</b>本工具為第三方 TCG 戰術分析數據工具，與 Nintendo / Pokémon / GAME FREAK 無關。
+                        </div>
+
                     </div> <!-- 結束右欄 -->
 
                 </div> <!-- 結束雙欄容器 -->
@@ -602,7 +610,12 @@
                 <b style="color:#00E5FF;">設定步驟：</b>
                 <ol style="margin-left: 20px; margin-top: 10px;">
                     <li style="margin-bottom: 8px;"><b>基礎怪配置：</b>設定你想用哪隻怪起站，系統會算出「Mulligan 率」與「鬼抓人率」。</li>
-                    <li style="margin-bottom: 8px;"><b>重點卡設定：</b>設定你首回合最想抓到的關鍵卡（支援手動打字或放大鏡搜尋）。</li>
+                    <li style="margin-bottom: 8px;"><b>重點卡設定：</b>設定你首回合最想抓到的關鍵卡（支援手動打字或放大鏡搜尋）。
+                        <ul style="margin-top: 6px; margin-left: 15px; color: #CCC; list-style-type: disc; font-size: 13px;">
+                            <li style="margin-bottom: 6px;"><b style="color:#00E5FF;">【加入評分】：</b>勾選後，此卡將列入「T1 展開爆發力」的嚴格計算目標（打勾的卡必須全部湊齊才算天胡成功）。</li>
+                            <li><b style="color:#34A853;">【抽到即下場】：</b>模擬真實賽場動作。若該卡為基礎怪、能量或場地，勾選後系統會在發動支援者前將其保留在場上，防止被洗掉或丟棄。</li>
+                        </ul>
+                    </li>
                     <li style="margin-bottom: 8px;"><b>支援者對比：</b>加入不同的支援者（如：博士、莉莉艾），系統會幫你算出開哪張勝率最高！</li>
                 </ol>
             </div>
@@ -809,22 +822,18 @@
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
         <div id="dice-result" class="bounce-in" style="font-size:140px; text-shadow: 0 10px 40px rgba(0,0,0,0.9); font-weight: bold;">🎲</div>
     </div>
-<!-- 📱 手機版專屬底部導覽列 (Bottom Tab Bar) -->
+<!-- 📱 手機版專屬底部導覽列 (扁平化純文字版) -->
     <div id="mobile-bottom-nav">
         <div class="m-nav-item active" id="m-nav-import" onclick="switchMainView('import')">
-            <span class="m-nav-icon">🛠️</span>
             <span class="m-nav-text">編輯牌組</span>
         </div>
         <div class="m-nav-item" id="m-nav-starter" onclick="switchMainView('starter')">
-            <span class="m-nav-icon">🎲</span>
             <span class="m-nav-text">起手健檢</span>
         </div>
         <div class="m-nav-item" id="m-nav-sandbox" onclick="switchMainView('sandbox')">
-            <span class="m-nav-icon">⚔️</span>
             <span class="m-nav-text">沙盤戰場</span>
         </div>
     </div>
-
     <!-- 腳本正確載入順序 -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="starter.js?v=1"></script>
