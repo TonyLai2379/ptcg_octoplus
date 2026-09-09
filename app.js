@@ -140,11 +140,12 @@ async function switchMainView(viewName) {
     
     checkOrientation(); // 檢查並顯示/隱藏原本的轉向警告遮罩
 
-    // 💡 方案 C：智慧判定沙盤模式 (自動收合/展開上方導覽列)
+    // 💡 整合方案：不自動隱藏，讓 User 透過下方齒輪自行手動縮放
+    // 僅保留 in-sandbox-mode 標籤供其他底層樣式備用
     if (viewName === 'sandbox') {
-        document.body.classList.add('auto-hide-nav', 'in-sandbox-mode');
+        document.body.classList.add('in-sandbox-mode');
     } else {
-        document.body.classList.remove('auto-hide-nav', 'in-sandbox-mode');
+        document.body.classList.remove('in-sandbox-mode');
     }
 }
 
