@@ -341,33 +341,6 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     margin: 20px 0;
 }
 
-/* ==========================================
-   排版優化：起手左右分欄 & 可拖曳資訊懸浮窗
-   ========================================== */
-#draggable-info-box {
-    position: fixed;
-    bottom: 25px;
-    left: 90px;
-    z-index: 9999;
-    width: 320px;
-    background: rgba(14, 17, 23, 0.85);
-    border: 1px solid #30363D;
-    border-radius: 8px;
-    padding: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px);
-    cursor: grab;
-    user-select: none;
-    -webkit-user-select: none;
-}
-#draggable-info-box:active {
-    cursor: grabbing;
-}
-#draggable-info-box > * {
-    pointer-events: auto; 
-    margin: 0 !important;
-    width: 100%;
-}
 
 /* 起手健檢左右分欄 */
 .starter-split-layout {
@@ -423,7 +396,7 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     #btn-unlock { padding: 4px 8px !important; font-size: 11px !important; white-space: nowrap; }
     #top-nav-bar .nav-3d-btn { padding: 4px 8px !important; font-size: 11px !important; white-space: nowrap; }
 
-    /* 💡 顯示底部導覽列：確保 1/3 等分填滿 */
+    /* 💡 顯示底部導覽列：扁平化無圖標設計 */
     #mobile-bottom-nav {
         display: flex;
         justify-content: space-between;
@@ -436,18 +409,52 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
         padding-bottom: env(safe-area-inset-bottom);
     }
     .m-nav-item {
-        flex: 1 1 33.33%; /* 強制各佔 1/3 */
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        padding: 8px 0; color: #888; cursor: pointer; transition: 0.2s;
+        flex: 1 1 33.33%;
+        display: flex; align-items: center; justify-content: center;
+        padding: 14px 0; /* 💡 放大點擊熱區 */
+        color: #888; cursor: pointer; transition: 0.2s;
+        border-right: 1px solid #30363D; /* 💡 加入分隔線提升質感 */
     }
-    .m-nav-item.active { color: #00E5FF; }
-    .m-nav-icon { font-size: 22px; margin-bottom: 4px; filter: grayscale(1); transition: 0.2s; }
-    .m-nav-item.active .m-nav-icon { filter: grayscale(0); transform: scale(1.1); }
-    .m-nav-text { font-size: 11px; font-weight: bold; }
+    .m-nav-item:last-child { border-right: none; }
+    .m-nav-item.active { color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
+    .m-nav-text { font-size: 15px; font-weight: bold; } /* 💡 字體放大至 15px */
 
-    /* 讓主視圖底部留出空間，不被導覽列遮住 */
-    #app-viewport { padding-bottom: 75px; }
-}
+    /* 讓主視圖底部留出空間縮小 */
+    #app-viewport { padding-bottom: 55px; } /* 💡 從原本的 75px 大幅縮減到 55px，把空間還給戰場 */
+
+   /* 💡 重新定義上方導覽列的手機版排版 (雙層極簡結構) */
+    #top-nav-bar {
+        flex-wrap: wrap !important;
+        padding: 10px !important;
+        gap: 8px !important;
+    }
+    
+    /* 1. 徹底隱藏標題區塊，把垂直空間省下來 */
+    #top-nav-bar > div:first-child {
+        display: none !important;
+    }
+    
+    /* 2. 會員與按鈕群：強制獨立一行、開啟手指左右滑動、絕對不換行 */
+    #top-nav-bar > div:last-child {
+        flex: 1 1 100%;
+        overflow-x: auto;
+        padding-bottom: 5px; /* 留出空間給隱藏滑動條 */
+        justify-content: flex-start !important;
+    }
+    
+    /* 確保所有按鈕文字不准斷行、不准被擠壓 */
+    #header-auth-info, #btn-unlock, .nav-3d-btn, .nav-lang-select {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important; 
+    }
+    
+    /* 3. 跑馬燈：滿版置底 */
+    .nav-marquee-wrapper {
+        flex: 1 1 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        order: 3;
+    }
 
 /* ==========================================
    📱 手機強制橫向提示 (Portrait Warning)
