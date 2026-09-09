@@ -425,7 +425,7 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     #btn-unlock { padding: 4px 8px !important; font-size: 11px !important; white-space: nowrap; }
     #top-nav-bar .nav-3d-btn { padding: 4px 8px !important; font-size: 11px !important; white-space: nowrap; }
 
-    /* 💡 顯示底部導覽列：扁平化無圖標設計 */
+    /* 💡 顯示底部導覽列：極簡圖示設計，高度極致壓縮 */
     #mobile-bottom-nav {
         display: flex;
         justify-content: space-between;
@@ -440,16 +440,20 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     .m-nav-item {
         flex: 1 1 33.33%;
         display: flex; align-items: center; justify-content: center;
-        padding: 14px 0; /* 💡 放大點擊熱區 */
+        padding: 8px 0; /* 💡 將上下內距大幅縮減至 8px */
         color: #888; cursor: pointer; transition: 0.2s;
-        border-right: 1px solid #30363D; /* 💡 加入分隔線提升質感 */
+        border-right: 1px solid #30363D;
     }
     .m-nav-item:last-child { border-right: none; }
-    .m-nav-item.active { color: #00E5FF; background: rgba(0, 229, 255, 0.05); }
-    .m-nav-text { font-size: 15px; font-weight: bold; } /* 💡 字體放大至 15px */
+    
+    /* 讓被選中的圖示稍微放大並發光，增加點擊回饋感 */
+    .m-nav-item.active { background: rgba(0, 229, 255, 0.05); }
+    .m-nav-item.active .m-nav-icon { filter: drop-shadow(0 0 5px rgba(0,229,255,0.8)); transform: scale(1.1); }
+    
+    .m-nav-icon { font-size: 22px; transition: 0.2s; } /* 💡 圖示放大，方便手指點擊 */
 
-    /* 讓主視圖底部留出空間縮小 */
-    #app-viewport { padding-bottom: 55px; } /* 💡 從原本的 75px 大幅縮減到 55px，把空間還給戰場 */
+    /* 讓主視圖底部留出空間縮小，把空間還給戰場 */
+    #app-viewport { padding-bottom: 45px !important; } /* 💡 從原本的 55px 進一步壓縮到 45px */
 
    /* 💡 重新定義上方導覽列的手機版排版 (雙層極簡結構) */
     #top-nav-bar {
