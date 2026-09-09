@@ -69,7 +69,7 @@
 
     <!-- 頂部 3D 立體感導覽列 -->
     <div id="top-nav-bar">
-        <div style="display:flex; gap:12px; align-items:center;">
+       <div id="nav-left-section" style="display:flex; gap:12px; align-items:center;">
             <span style="font-size:18px; font-weight:900; color:#00E5FF; margin-right:5px; text-shadow:0 0 10px rgba(0,229,255,0.5);">🐙 OCTOPLUS PTCG</span>
             <button class="nav-3d-btn active" id="btn-view-import" onclick="switchMainView('import')">🛠️ 1. 編輯牌組</button>
             <button class="nav-3d-btn" id="btn-view-starter" onclick="switchMainView('starter')">🎲 2. 起手勝率健檢</button>
@@ -77,14 +77,14 @@
         </div>
         
         <!-- 💡 新增：跑馬燈置入導覽列中央 (加上 max-width 限制) -->
-        <div class="nav-marquee-wrapper" style="flex: 1; max-width: 400px; margin: 0 20px; overflow: hidden;">
+        <div id="nav-center-marquee" class="nav-marquee-wrapper" style="flex: 1; max-width: 400px; margin: 0 20px; overflow: hidden;">
             <div class="marquee-container" style="margin: 0; padding: 5px 12px; width: 100%; border: 1px solid rgba(255, 152, 0, 0.5); background: rgba(255, 152, 0, 0.08); border-radius: 6px;">
                 <div class="marquee-content" id="marquee-text" style="color: #FFB74D; font-size: 13px;">💬 正在載入留言...</div>
             </div>
         </div>
 
         <!-- 💡 移至頂部的會員狀態列 (加上防止擠壓斷行) -->
-        <div style="display:flex; align-items:center; gap: 15px; flex-shrink: 0; white-space: nowrap;">
+        <div id="nav-right-section" style="display:flex; align-items:center; gap: 15px; flex-shrink: 0; white-space: nowrap;">
             <div id="header-auth-info" style="text-align:right; line-height:1.3;">
                 <div id="txt-status" style="font-size:14px; font-weight:bold; color:#CCC;">訪客試玩模式</div>
                 <div id="txt-status-sub" style="font-size:11px; color:#888;">(每日限制 30 次額度)</div>
