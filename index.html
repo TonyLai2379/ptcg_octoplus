@@ -822,22 +822,23 @@
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
         <div id="dice-result" class="bounce-in" style="font-size:140px; text-shadow: 0 10px 40px rgba(0,0,0,0.9); font-weight: bold;">🎲</div>
     </div>
-<!-- 📱 手機版專屬底部導覽列 (極簡純圖示版) -->
+<!-- 📱 手機版專屬底部導覽列 (加入極簡選單縮放按鈕) -->
     <div id="mobile-bottom-nav">
-        <!-- 📱 手機版沙盤專屬：呼叫上方選單的懸浮按鈕 -->
-    <button id="btn-sandbox-nav-toggle" onclick="document.body.classList.toggle('auto-hide-nav')">
-        ⚙️ 頂部選單
-    </button>
-        <div class="m-nav-item active" id="m-nav-import" onclick="switchMainView('import')" title="編輯牌組">
+        <!-- 💡 加入 main-tab 標籤，這三個各佔 30% -->
+        <div class="m-nav-item active main-tab" id="m-nav-import" onclick="switchMainView('import')" title="編輯牌組">
             <span class="m-nav-icon">🛠️</span>
         </div>
-        <div class="m-nav-item" id="m-nav-starter" onclick="switchMainView('starter')" title="起手健檢">
+        <div class="m-nav-item main-tab" id="m-nav-starter" onclick="switchMainView('starter')" title="起手健檢">
             <span class="m-nav-icon">🎲</span>
         </div>
-        <div class="m-nav-item" id="m-nav-sandbox" onclick="switchMainView('sandbox')" title="沙盤戰場">
+        <div class="m-nav-item main-tab" id="m-nav-sandbox" onclick="switchMainView('sandbox')" title="沙盤戰場">
             <span class="m-nav-icon">⚔️</span>
         </div>
-    </div>
+        
+        <!-- 💡 加入 gear-tab 標籤，這個佔 10% -->
+        <div class="m-nav-item gear-tab" id="m-nav-toggle-top" onclick="document.body.classList.toggle('auto-hide-nav')" title="縮放頂部選單">
+            <span class="m-nav-icon" style="font-size: 16px;">⚙️</span>
+        </div>
     </div>
     <!-- 腳本正確載入順序 -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
