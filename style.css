@@ -385,39 +385,56 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
     .modal-body { max-height: 60vh; overflow-y: auto; }
 
     /* =========================================================
-   💡 手機與平板 (直/橫向通用的導覽列優化) 
-   將斷點擴大至 930px，確保大尺寸 iPhone 橫放時不會被切回電腦版
-   ========================================================= */
-@media (max-width: 930px) {
-    #top-nav-bar {
-        flex-wrap: wrap !important;
-        padding: 10px !important;
-        gap: 8px !important;
+       💡 手機與平板 (直/橫向通用的導覽列優化 - 終極瘦身版) 
+       將斷點擴大至 930px，確保大尺寸 iPhone 橫放時不會被切回電腦版
+       ========================================================= */
+    @media (max-width: 930px) {
+        /* 💡 極致壓縮頂部導覽列高度 */
+        #top-nav-bar {
+            flex-wrap: wrap !important;
+            padding: 4px 8px !important; /* 從 10px 縮減到 4px */
+            gap: 8px !important;
+            min-height: auto !important;
+        }
+        
+        /* 1. 精準隱藏左側 (OCTOPLUS 標題與電腦版按鈕) */
+        #nav-left-section {
+            display: none !important;
+        }
+        
+        /* 2. 右側按鈕群 (獨立一行、可橫向滑動) */
+        #nav-right-section {
+            flex: 1 1 100%;
+            overflow-x: auto;
+            padding-bottom: 0 !important; /* 拿掉留給滑動條的 5px 空間 */
+            justify-content: flex-start !important;
+            align-items: center !important;
+            
+            /* 💡 隱藏瀏覽器原生的滑動條，把空間還給畫面 (仍可手指滑動) */
+            scrollbar-width: none;       /* Firefox */
+            -ms-overflow-style: none;    /* IE and Edge */
+        }
+        #nav-right-section::-webkit-scrollbar {
+            display: none;               /* Chrome, Safari, Opera */
+        }
+        
+        /* 💡 壓縮內部所有按鈕與文字的體積 */
+        #nav-right-section > * {
+            flex-shrink: 0 !important; 
+        }
+        #header-auth-info { font-size: 11px !important; line-height: 1.1 !important; }
+        #header-auth-info div:first-child { font-size: 12px !important; }
+        #btn-unlock, .nav-lang-select, #nav-right-section .btn-secondary {
+            padding: 4px 10px !important; 
+            font-size: 13px !important; 
+            height: auto !important;
+        }
+        
+        /* 3. 精準狙擊：中央跑馬燈 (手機版直接隱藏，節省版面) */
+        #nav-center-marquee {
+            display: none !important;
+        }
     }
-    
-    /* 1. 精準隱藏左側 (OCTOPLUS 標題與電腦版按鈕) */
-    #nav-left-section {
-        display: none !important;
-    }
-    
-    /* 2. 右側按鈕群 (獨立一行、可橫向滑動) */
-    #nav-right-section {
-        flex: 1 1 100%;
-        overflow-x: auto;
-        padding-bottom: 5px; /* 留出空間給隱藏滑動條 */
-        justify-content: flex-start !important;
-    }
-    
-    /* 確保右側裡面的所有按鈕都不准被擠壓變形 */
-    #nav-right-section > * {
-        flex-shrink: 0 !important; 
-    }
-    
-    /* 3. 精準狙擊：中央跑馬燈 (手機版直接隱藏，節省版面) */
-    #nav-center-marquee {
-        display: none !important;
-    }
-}
     
     /* 壓縮訪客狀態文字與按鈕 */
     #txt-status { font-size: 11px !important; white-space: nowrap; }
