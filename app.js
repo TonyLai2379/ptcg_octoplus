@@ -139,6 +139,13 @@ async function switchMainView(viewName) {
     }
     
     checkOrientation(); // 檢查並顯示/隱藏原本的轉向警告遮罩
+
+    // 💡 方案 C：智慧判定沙盤模式 (自動收合/展開上方導覽列)
+    if (viewName === 'sandbox') {
+        document.body.classList.add('auto-hide-nav', 'in-sandbox-mode');
+    } else {
+        document.body.classList.remove('auto-hide-nav', 'in-sandbox-mode');
+    }
 }
 
 // 💡 智慧偵測：只在「沙盤戰場」且「直向」時才跳出警告
