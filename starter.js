@@ -107,12 +107,12 @@ function runIndependentBasicSimulation() {
     return { mulProb, perfProb, normalProb: normProb, forcedProb };
 }
 
-// 2. 判定是否達成起手重點卡目標
-function checkComboSuccess(hand, combo) {
-    let staticKeyIds = hand.filter(c => c.type === 'key').map(c => c.id);
+// 2. 判定是否達成起手重點卡目標 (💡 修改為合併檢查手牌與場上)
+function checkComboSuccess(hand, field, combo) {
+    let combined = [...hand, ...field]; // 合併兩個區域
+    let staticKeyIds = combined.filter(c => c.type === 'key').map(c => c.id);
     return combo.every(id => staticKeyIds.includes(id));
 }
-
 // 💡 輔助函數：切換發動機制的 UI 文字顯示
 function toggleSearchMech(selectEl) {
     const row = selectEl.closest('.st-search-row');
@@ -130,21 +130,21 @@ function toggleSearchMech(selectEl) {
     }
 }
 
-// 3. 全新 AI 代打模擬劇本 (動態迴圈 + 順序排程)
-function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSupporterName) {
+// 3. 全新 AI 代打模擬劇本 (動態迴圈 + 防洗棄下場機制)
+function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSupporterName, keySafeToggles) {
     let hand = [...initialHand].map(c => Object.assign({}, c));
     let deck = [...currentDeck].map(c => Object.assign({}, c));
+    let field = []; // 💡 新增安全保留區 (模擬已經打入戰鬥場/備戰區/填能)
     let costHand = [...hand]; // 用於扣除消耗條件卡
     let supporterUsed = false;
 
     // 起手就天胡達成，直接判定成功
-    if (checkComboSuccess(hand, combo)) return true;
+    if (checkComboSuccess(hand, field, combo)) return true;
 
     let actionTriggered = true;
     while(actionTriggered) {
         actionTriggered = false;
 
-        // 掃描手上可以發動的動作卡，並過濾掉非目標的支援者
         let availableActions = [];
         for (let i = 0; i < hand.length; i++) {
             let card = hand[i];
@@ -162,21 +162,20 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
             if (cardInHand.used) continue;
 
             let executed = false;
+            let combinedHand = [...hand, ...field]; // 💡 每次動作前合併手牌與場上牌，供檢索判斷避免重複抓取
 
             if (action.type === 'search') {
                 if (action.mechanism === 'conditional_draw') {
-                    // 條件組合技：檢查是否有對應標籤的代價卡 (例如：草能)
                     let costIdx = costHand.findIndex(hc => hc.type === 'key' && action.targets.includes(hc.id));
                     if (costIdx !== -1) {
-                        costHand.splice(costIdx, 1); // 消耗代價卡
+                        costHand.splice(costIdx, 1); 
                         executed = true;
                         let drawn = deck.splice(0, Math.min(action.pickCount, deck.length));
                         hand.push(...drawn);
                         costHand.push(...drawn);
                     }
                 } else {
-                    // 一般檢索或看牌庫頂
-                    let missingComboIds = combo.filter(id => !hand.some(hc => hc.type === 'key' && hc.id === id));
+                    let missingComboIds = combo.filter(id => !combinedHand.some(hc => hc.type === 'key' && hc.id === id));
                     let searchPool = [];
                     let isFullDeck = (action.mechanism === 'search_deck' || action.lookCount >= deck.length);
                     
@@ -188,7 +187,6 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
                         let allowedTargets = action.targets || [];
                         let criticalPickedCount = 0;
 
-                        // 優先抓缺少的目標卡
                         for (let i = 0; i < searchPool.length; i++) {
                             if (criticalPickedCount >= pickMax) break;
                             let c = searchPool[i];
@@ -196,11 +194,10 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
                                 hand.push(c); costHand.push(c);
                                 searchPool.splice(i, 1); i--;
                                 criticalPickedCount++;
-                                missingComboIds = combo.filter(id => !hand.some(hc => hc.type === 'key' && hc.id === id));
+                                missingComboIds = missingComboIds.filter(mid => mid !== c.id);
                             }
                         }
 
-                        // 其次抓任何允許的標籤
                         for (let i = 0; i < searchPool.length; i++) {
                             if (criticalPickedCount >= pickMax) break;
                             let c = searchPool[i];
@@ -211,7 +208,6 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
                             }
                         }
 
-                        // 若未指定目標，無條件抽牌
                         if (allowedTargets.length === 0 || (allowedTargets.length === 1 && isNaN(allowedTargets[0]))) {
                             let freeDraw = searchPool.splice(0, Math.min(pickMax - criticalPickedCount, searchPool.length));
                             freeDraw.forEach(c => { hand.push(c); costHand.push(c); });
@@ -226,6 +222,20 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
                 if (!supporterUsed) {
                     supporterUsed = true;
                     executed = true;
+
+                    // 💡 【核心邏輯：防洗棄避難所】在支援者洗棄手牌前，將標記的卡片送上戰場！
+                    if (action.mechanism === 'discard_all' || action.mechanism === 'shuffle_back' || action.mechanism === 'put_bottom') {
+                        let safeHand = [];
+                        for (let c of hand) {
+                            // 若是重點卡且玩家有勾選「防洗棄」，就移至 field 保護
+                            if (c.type === 'key' && keySafeToggles[c.id]) {
+                                field.push(c);
+                            } else {
+                                safeHand.push(c); // 其他的留在手牌準備被洗掉
+                            }
+                        }
+                        hand = safeHand; 
+                    }
 
                     if (action.mechanism === 'discard_all') {
                         hand = deck.splice(0, Math.min(action.paramCount, deck.length));
@@ -242,9 +252,10 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
                         tempHand.forEach(c => deck.push(c));
                         costHand = [...hand];
                     } else if (action.mechanism === 'search_key') {
+                        // 指定檢索並不會洗棄手牌，因此不觸發避難所
                         let maxSearch = action.paramCount;
                         let allowedTargets = action.targets || [];
-                        let missingIds = [...combo].filter(id => !hand.some(hc => hc.type === 'key' && hc.id === id) && allowedTargets.includes(id));
+                        let missingIds = [...combo].filter(id => !combinedHand.some(hc => hc.type === 'key' && hc.id === id) && allowedTargets.includes(id));
                         missingIds.sort((a, b) => keyCounts[a] - keyCounts[b]);
                         
                         let searchCount = 0;
@@ -264,15 +275,14 @@ function runDynamicScenario(initialHand, currentDeck, combo, keyCounts, targetSu
 
             if (executed) {
                 cardInHand.used = true;
-                actionTriggered = true; // 觸發成功，迴圈將重新啟動掃描新牌
-                if (checkComboSuccess(hand, combo)) return true; // 提早達成即結束
+                actionTriggered = true; 
+                if (checkComboSuccess(hand, field, combo)) return true; // 💡 修改：加上 field
                 break; 
             }
         }
     }
-    return checkComboSuccess(hand, combo);
-}
-// 4. 複合勝率矩陣模擬主控制
+    return checkComboSuccess(hand, field, combo); // 💡 修改：加上 field
+}// 4. 複合勝率矩陣模擬主控制
 function runUltimateSimulation() {
     starterSeed = 1;
     const totalBasic = parseInt(document.getElementById('st-totalBasic').value) || 0;
@@ -283,6 +293,7 @@ function runUltimateSimulation() {
     const keyNames = Array.from(document.querySelectorAll('.st-key-name')).map(el => el.value || "未命名");
     const keyCounts = Array.from(document.querySelectorAll('.st-key-count')).map(el => parseInt(el.value) || 0);
     const keyScoreToggles = Array.from(document.querySelectorAll('.st-key-score-toggle')).map(el => el.checked);
+    const keySafeToggles = Array.from(document.querySelectorAll('.st-key-safe-toggle')).map(el => el.checked); // 💡 新增這行
     let baseDeck = [];
     let uid = 0;
     
@@ -376,10 +387,9 @@ function runUltimateSimulation() {
             let simDeck = currentDeck.map(c => Object.assign({}, c));
 
             const k = combo.join(',');
-            // 💡 全部改用新寫好的 runDynamicScenario 動態迴圈函數！
-            if (runDynamicScenario(simHand, simDeck, combo, keyCounts, 'none')) resultsData[k]['none']++;
+            if (runDynamicScenario(simHand, simDeck, combo, keyCounts, 'none', keySafeToggles)) resultsData[k]['none']++;
             supporterNames.forEach(name => {
-                if (runDynamicScenario(simHand, simDeck, combo, keyCounts, name)) resultsData[k][name]++;
+                if (runDynamicScenario(simHand, simDeck, combo, keyCounts, name, keySafeToggles)) resultsData[k][name]++;
             });
         });
     }
@@ -563,18 +573,21 @@ function addKeyCardRow(name = "", qty = 2) {
             <span style="font-size:14px; font-weight:bold; color:#58A6FF; margin-bottom:4px;">牌組投入</span>
             <input type="number" value="${qty}" min="1" max="4" class="st-key-count" style="width:50px; text-align:center; padding:4px;">
         </div>
-        <!-- 💡 新增：是否加入 T1 爆發力評分 (預設打勾) -->
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-left: 10px; flex:1;">
+        <!-- 💡 新增：加入評分與防洗棄下場 (左齊對齊排版) -->
+        <div style="display:flex; flex-direction:column; align-items:flex-start; justify-content:center; margin-left: 10px; flex:1.2; gap:6px;">
             <label style="font-size:12px; color:#FFF; display:flex; align-items:center; gap:6px; cursor:pointer;" title="勾選後，此卡將列入 T1 爆發力嚴格 AND 條件">
-                <input type="checkbox" class="st-key-score-toggle" checked style="width:18px; height:18px; accent-color:#00E5FF; cursor:pointer;">
+                <input type="checkbox" class="st-key-score-toggle" checked style="width:16px; height:16px; accent-color:#00E5FF; cursor:pointer;">
                 <span>加入評分</span>
+            </label>
+            <label style="font-size:12px; color:#34A853; display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:bold;" title="勾選後，遇到洗回/丟棄手牌的支援者時，此卡將會被保留在場上不被洗掉">
+                <input type="checkbox" class="st-key-safe-toggle" checked style="width:16px; height:16px; accent-color:#34A853; cursor:pointer;">
+                <span>抽到即下場(防止支援者洗、棄)</span>
             </label>
         </div>
         <button class="btn-secondary" style="width:28px; height:28px; padding:0; border-radius:50%; color:#FF5252; margin-left:10px;" onclick="this.parentElement.remove()">✕</button>
     `;
     container.appendChild(div);
 }
-
 // 💡 將 step 的預設值改為 0，當觸發時自動計算
 function addSearchCardRow(name = "", qty = 2, step = 0, mech = "search_deck", look = 7, pick = 1, targets = "1,2") {
     // 💡 自動偵測順序：計算目前畫面上總共有幾張「過牌 + 支援者」，然後自動 +1
