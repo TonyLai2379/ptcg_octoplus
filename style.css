@@ -413,12 +413,9 @@ input[type="radio"] { width: 18px; height: 18px; cursor: pointer; accent-color: 
         flex-shrink: 0 !important; 
     }
     
-    /* 3. 中央跑馬燈 (滿版置底) */
+    /* 3. 精準狙擊：中央跑馬燈 (手機版直接隱藏，節省版面) */
     #nav-center-marquee {
-        flex: 1 1 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        order: 3;
+        display: none !important;
     }
 }
     
