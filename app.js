@@ -2099,16 +2099,51 @@ function runMonteCarloClient(deckCards, directDict, chainDict, draw1, targetRule
                     if (!supporterUsed) {
                         supporterUsed = true;
                         executed = true;
-                        let drawCount = cval;
-                        if (deadHandSize > 0 && (ctype.includes('洗回') || ctype.includes('底'))) {
-                            for (let d = 0; d < deadHandSize; d++) remDeck.push('blank');
-                            remDeck.sort(() => Math.random() - 0.5);
+                        
+                        // 💡 關鍵修正 1：先將「打出的支援者」從手牌消耗掉，避免它跟著被洗回牌庫
+                        if (!action.is_guaranteed_instance && inHandIndex !== -1) {
+                            costHand.splice(inHandIndex, 1);
+                            let realHandIdx = hand.indexOf(action.cardId);
+                            if(realHandIdx !== -1) hand.splice(realHandIdx, 1);
+                            // 重置 inHandIndex，避免底下的「收尾結算」誤刪新抽到的同名卡
+                            inHandIndex = -1; 
                         }
+
+                        let drawCount = cval;
+                        let currentDeadHand = [];
+                        if (deadHandSize > 0) {
+                            for (let d = 0; d < deadHandSize; d++) currentDeadHand.push('blank');
+                        }
+
+                        // 💡 關鍵修正 2：真實還原三種支援者的過牌物理機制
+                        if (ctype.includes('丟棄')) {
+                            // 機制 B：丟棄重抽 (如博士) -> 直接清空舊手牌 (進入棄牌區，不污染牌庫)
+                            hand = [];
+                            costHand = [];
+                        } 
+                        else if (ctype.includes('底')) {
+                            // 機制 C：洗回牌底重抽 -> 將剩餘手牌與廢牌墊入牌庫底 (不洗牌)
+                            remDeck.push(...hand, ...currentDeadHand);
+                            hand = [];
+                            costHand = [];
+                        } 
+                        else {
+                            // 機制 A：洗回牌庫重抽 (如裁判、奇樹) -> 將剩餘手牌加入牌庫並執行完美洗牌
+                            remDeck.push(...hand, ...currentDeadHand);
+                            for (let d = remDeck.length - 1; d > 0; d--) {
+                                const r = Math.floor(Math.random() * (d + 1));
+                                [remDeck[d], remDeck[r]] = [remDeck[r], remDeck[d]];
+                            }
+                            hand = [];
+                            costHand = [];
+                        }
+
+                        // 💡 執行最終抽牌
                         let drawn = remDeck.splice(0, drawCount);
                         hand.push(...drawn);
                         costHand.push(...drawn);
                     }
-                } 
+                }
                 // 🎯 動作 B：普通抽牌物品
                 else if (ctype.includes('抽牌') && !ctype.includes('條件組合技')) {
                     executed = true;
@@ -2328,8 +2363,11 @@ function runSimulation() {
             search_targets: Object.keys(chainList[k].targets),
             guaranteed: chainList[k].guaranteed || false,
             step: chainList[k].step || 1,
-            guaranteed_qty: chainList[k].guaranteed_qty !== undefined ? chainList[k].guaranteed_qty : 0, // 💡 傳入新參數
-            max_qty: chainList[k].max_qty !== undefined ? chainList[k].max_qty : 1                       // 💡 傳入新參數
+            // 💡 關鍵修復：針對舊版打勾介面（支援者/指定檢索），強制將 true/false 轉為數字 1/0 餵給引擎
+            guaranteed_qty: (!chainList[k].type.includes('抽牌') && !chainList[k].type.includes('組合技')) 
+                            ? (chainList[k].guaranteed ? 1 : 0) 
+                            : (chainList[k].guaranteed_qty !== undefined ? chainList[k].guaranteed_qty : 0),
+            max_qty: chainList[k].max_qty !== undefined ? chainList[k].max_qty : 1
         };
     });
 
@@ -2498,13 +2536,27 @@ function showCustomAlert(htmlContent) {
 function exportGameState() {
     if(gameCards.length === 0) return alert("尚未開局！請先點擊左下角「鎖定牌組並開局」。");
     let ruleEl = document.querySelector('input[name="target_rule"]:checked');
+    
+    // 💡 關鍵修復：瘦身 deckDict，避免 Payload 過大導致連線失敗
+    let cleanDeck = {};
+    Object.keys(deckDict).forEach(k => {
+        let c = deckDict[k];
+        cleanDeck[k] = {
+            qty: c.qty,
+            name: c.name,
+            // 如果是 data:image (Base64) 就轉為預設卡背，避免字串過長
+            img: (c.img && c.img.startsWith('data:')) ? 'default_back' : c.img,
+            fallback_img: (c.fallback_img && c.fallback_img.startsWith('data:')) ? 'default_back' : c.fallback_img
+        };
+    });
+
     fetch(`${API_BASE}/api/v1/share_game`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({
             game_data: {
                 cards: gameCards.map(c => ({ k: c.key, z: c.zone, i: c.img, n: c.name, f: c.fallback_img })),
-                deck: deckDict,
+                deck: cleanDeck, // 使用瘦身後的牌組資料
                 targets: targetList,
                 chains: chainList,
                 draw1: parseInt(document.getElementById('draw1-qty').value) || 7,
@@ -2604,24 +2656,79 @@ async function saveDeckToDB() {
     } catch (err) { alert("儲存失敗：" + err.message); }
 }
 
+
+// 💡 新增：刪除雲端牌組邏輯
+async function deleteDeckFromDB() {
+    let select = document.getElementById('saved-decks-select');
+    let deckId = select.value;
+    
+    if (!deckId) return alert("請先從下拉選單選擇要刪除的牌組！");
+    if (!confirm("確定要從雲端永久刪除這個牌組嗎？")) return;
+
+    let token = await checkLoginStatus();
+    if (!token) return;
+
+    try {
+        const { error } = await supabaseClient.from('user_decks').delete().eq('id', deckId);
+        if (error) throw error;
+        alert("🗑️ 牌組已成功刪除！");
+        fetchSavedDecks(); // 重新整理下拉選單
+    } catch (err) { 
+        alert("刪除失敗：" + err.message); 
+    }
+}
+
+// 💡 開啟雲端牌組管理視窗
+function openCloudDeckModal() {
+    document.getElementById('cloud-deck-modal').style.display = 'flex';
+    fetchSavedDecks(); // 開啟時抓取最新資料
+}
+
+// 💡 抓取並渲染雲端牌組列表 (新版介面)
 async function fetchSavedDecks() {
     if (!supabaseClient) return;
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return;
+    if (!session) {
+        document.getElementById('cloud-deck-list-container').innerHTML = '<div style="text-align:center; color:#888; padding:20px;">請先登入會員以使用雲端功能。</div>';
+        return;
+    }
+    
+    let container = document.getElementById('cloud-deck-list-container');
+    container.innerHTML = '<div style="text-align:center; color:#FFD700; padding:20px;">⏳ 讀取中...</div>';
+    
     try {
-        const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name').order('created_at', { ascending: false });
+        const { data, error } = await supabaseClient.from('user_decks').select('id, deck_name, created_at').order('created_at', { ascending: false });
         if (error) throw error;
-        let select = document.getElementById('saved-decks-select');
-        select.innerHTML = `<option value="">載入雲端牌組...</option>`;
+        
+        container.innerHTML = '';
+        if (data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">目前雲端尚無儲存的牌組。</div>';
+            return;
+        }
+
         data.forEach(deck => {
-            let opt = document.createElement('option');
-            opt.value = deck.id;
-            opt.innerText = deck.deck_name;
-            select.appendChild(opt);
+            let dateStr = new Date(deck.created_at).toLocaleDateString();
+            let row = document.createElement('div');
+            row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#161B22; border:1px solid #30363D; padding:10px 15px; border-radius:6px; margin-bottom:10px;';
+            
+            row.innerHTML = `
+                <div style="display:flex; flex-direction:column; max-width:60%; overflow:hidden;">
+                    <span style="color:#FFF; font-weight:bold; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${deck.deck_name}</span>
+                    <span style="color:#888; font-size:11px; margin-top:4px;">建立於: ${dateStr}</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-secondary" style="padding:6px 12px; font-size:13px; color:#00E5FF; border-color:#00E5FF;" onclick="loadDeckFromDB('${deck.id}')">📥 載入</button>
+                    <button class="btn-secondary" style="padding:6px 12px; font-size:13px; color:#FF5252; border-color:#FF5252;" onclick="deleteDeckFromDB('${deck.id}')" title="刪除">🗑️</button>
+                </div>
+            `;
+            container.appendChild(row);
         });
-    } catch (err) {}
+    } catch (err) {
+        container.innerHTML = `<div style="text-align:center; color:#FF5252; padding:20px;">讀取失敗：${err.message}</div>`;
+    }
 }
 
+// 💡 載入雲端牌組 (修復版：不再尋找舊下拉選單，改為自動關閉 Modal)
 async function loadDeckFromDB(deckId) {
     if (!deckId || !supabaseClient) return;
     try {
@@ -2630,8 +2737,21 @@ async function loadDeckFromDB(deckId) {
         deckDict = data.deck_data;
         updateDeckUI();
         alert("📥 牌組載入成功！");
-        document.getElementById('saved-decks-select').value = "";
+        // 載入成功後，自動關閉管理視窗
+        document.getElementById('cloud-deck-modal').style.display = 'none';
     } catch (err) { alert("載入失敗：" + err.message); }
+}
+
+// 💡 刪除指定雲端牌組
+async function deleteDeckFromDB(deckId) {
+    if (!confirm("確定要永久刪除這個牌組嗎？")) return;
+    try {
+        const { error } = await supabaseClient.from('user_decks').delete().eq('id', deckId);
+        if (error) throw error;
+        fetchSavedDecks(); // 刪除成功後重新渲染列表
+    } catch (err) { 
+        alert("刪除失敗：" + err.message); 
+    }
 }
 
 async function fetchMarquee() {
