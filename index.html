@@ -217,9 +217,8 @@
                         
                         <div id="cloud-save-section" style="display:flex; gap:5px; margin-top:10px;">
                             <button class="btn-secondary" id="btn-save-cloud" style="flex:1; padding:8px;" onclick="saveDeckToDB()">💾 紀錄至雲端</button>
-                            <select id="saved-decks-select" style="flex:2; margin:0;" onchange="loadDeckFromDB(this.value)">
-                                <option value="" id="opt-load-cloud">載入雲端牌組...</option>
-                            </select>
+                            <!-- 💡 升級：改用獨立按鈕呼叫管理介面 -->
+                            <button class="btn-secondary" style="flex:2; padding:8px; border-color:#00E5FF; color:#00E5FF;" onclick="openCloudDeckModal()">☁️ 載入 / 管理雲端牌組</button>
                         </div>
                         <!-- 💡 新增：靜態低調的免責聲明 -->
                         <div id="txt-disclaimer" style="margin-top: 25px; padding: 12px; background-color: rgba(0, 0, 0, 0.2); border-left: 3px solid #E53935; border-radius: 6px; font-size: 12px; color: #888; line-height: 1.5; text-align: left;">
@@ -234,7 +233,12 @@
        <!-- View 2: 功能 A 起手勝率健檢 -->
         <div id="view-starter" class="view-section" style="display:none; max-width:1450px; width:95%; margin:20px auto; padding:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:#161B22; border:1px solid #30363D; border-left:4px solid #00E5FF; padding:12px 20px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-                <h2 id="st-main-title" style="color:#00E5FF; font-size:20px; margin:0; font-weight:bold; letter-spacing:1px;">🎲 起手勝率健檢</h2>
+                <!-- 💡 用 div 包起來，並加上 gap: 15px 來隔開標題與新增按鈕 -->
+                <div style="display:flex; align-items:center; gap: 15px;">
+                    <h2 id="st-main-title" style="color:#00E5FF; font-size:20px; margin:0; font-weight:bold; letter-spacing:1px;">🎲 起手勝率健檢</h2>
+                    <!-- 💡 新增：預覽卡組按鈕 -->
+                    <button class="btn-secondary" style="padding:6px 12px; font-size:14px;" onclick="openPreviewModal()">👁️ 預覽卡組</button>
+                </div>
                 <button class="q-btn" id="st-tut-btn" style="background: linear-gradient(145deg, #FFD700, #FF9800); color: #000; font-weight:bold; box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);" onclick="document.getElementById('tut-starter-modal').style.display='flex'">❓ 起手勝率教學</button>
             </div>
 
@@ -659,7 +663,18 @@
             <button class="btn btn-secondary" style="margin-top: 12px; width: 140px; cursor: pointer;" onclick="document.getElementById('lightbox-modal').style.display='none'">關閉大圖</button>
         </div>
     </div>
-
+<!-- 📤 分享對局短代碼 Modal -->
+    <div id="share-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 20000; display: none;">
+        <div class="modal-card" style="width: 400px; text-align: center; border-color: #FF9800;">
+            <h2 style="color: #FF9800; margin-bottom: 10px;">📤 分享對局</h2>
+            <p style="color: #ccc; font-size: 13px; margin-bottom: 20px;">複製下方 6 位數代碼傳給朋友，即可在任何電腦還原戰局與機率推演！</p>
+            <input type="text" id="share-code-display" readonly style="width: 100%; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; padding: 10px; color: #00E5FF; background: #0D1117; border: 1px solid #30363D; border-radius: 6px; margin-bottom: 15px;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" style="background: #238636; flex: 2;" onclick="copyShareCode()">📋 一鍵複製短代碼</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="document.getElementById('share-modal').style.display='none'">關閉</button>
+            </div>
+        </div>
+    </div>
     <div id="support-modal" class="modal-overlay">
         <div class="modal-card" style="width: 480px; text-align: center; border-color: #00E5FF;">
             <h2 style="color: #00E5FF; margin: 0; font-size: 20px;">💬 聯絡小章魚客服</h2>
@@ -822,6 +837,19 @@
     <div id="dice-modal" class="modal-overlay" onclick="this.style.display='none'" style="z-index: 10005;">
         <div id="dice-result" class="bounce-in" style="font-size:140px; text-shadow: 0 10px 40px rgba(0,0,0,0.9); font-weight: bold;">🎲</div>
     </div>
+
+    <!-- ☁️ 雲端牌組管理 Modal -->
+    <div id="cloud-deck-modal" class="modal-overlay" onclick="if(event.target===this) this.style.display='none'" style="z-index: 20000; display: none;">
+        <div class="modal-card" style="width: 500px; max-width: 95vw;">
+            <div class="modal-header">
+                <h2 style="color: #00E5FF; margin: 0; font-size: 18px;">☁️ 雲端牌組管理</h2>
+                <button class="btn-secondary" style="width:auto; padding:2px 8px; border-radius:4px; font-weight:bold;" onclick="document.getElementById('cloud-deck-modal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body" style="padding-top: 10px; max-height: 400px; overflow-y: auto;" id="cloud-deck-list-container">
+                <!-- JS 動態產生列表 -->
+            </div>
+        </div>
+    </div>
 <!-- 📱 手機版專屬底部導覽列 (加入極簡選單縮放按鈕) -->
     <div id="mobile-bottom-nav">
         <!-- 💡 加入 main-tab 標籤，這三個各佔 30% -->
@@ -844,6 +872,9 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="starter.js?v=1"></script>
     <script src="app.js?v=41"></script>
+
+
+
 </body>
 </html>
   
